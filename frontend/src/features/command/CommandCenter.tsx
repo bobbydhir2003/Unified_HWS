@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Maximize2, Minimize2, Radio, Search } from "lucide-react";
 import * as React from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { EmptyState, ErrorState, LoadingRows, PageHeader } from "@/components/common";
+import { EmptyState, ErrorState, LoadingRows, PageHeader, toastError } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input, NativeSelect } from "@/components/ui/input";
 import { get } from "@/lib/api";
 import { fmtTime, fromNow } from "@/lib/format";
@@ -15,7 +16,10 @@ import { useFacilities } from "../admin/FacilitiesPage";
 import { CaseDrawer, CaseRow, type CaseT, CATEGORY_LABEL, type Severity } from "../ops/ops";
 
 type Tile = { key: string; label: string; value: number | string; link: string | null; tone: string; sub: string | null; source: string | null };
+type Hosp = { available: boolean; tiles?: Tile[]; occupancy_by_department?: { department: string; kind: string; available: number; occupied: number; cleaning: number; blocked: number; occupancy_pct: number | null }[] };
+type Handoff = { narrative: string; narrative_source: string; sections: Record<string, { ref: string; case_id: string; title: string; severity: string; overdue: boolean; escalated: boolean }[]>; open_cases: number; generated_at: string };
 type Summary = {
+  hospital?: Hosp;
   generated_at: string; date: string; tiles: Tile[]; cases_by_category: { category: string; severity: Severity; count: number }[];
   top_cases: CaseT[]; worklists: { queue: string; open: number; overdue: number }[]; appointments_by_status: Record<string, number>;
   engine: { status: string; pending_events: number; processed_24h: number; monitor_failures_24h: number; notification_failures_24h: number };
@@ -34,11 +38,14 @@ export function CommandCenter() {
   const [q, setQ] = React.useState("");
   const [openCase, setOpenCase] = React.useState<string | null>(null);
   const facility = params.get("facility") ?? "";
+  const department = params.get("department") ?? "";
+  const [handoff, setHandoff] = React.useState<Handoff | null>(null);
+  const depts = useQuery({ queryKey: ["departments", "cc"], queryFn: () => get<{ id: string; name: string }[]>("/departments") });
   const severity = params.get("severity") ?? "";
   const category = params.get("category") ?? "";
   const overdue = params.get("overdue") === "1";
   const set = (k: string, v: string | null) => { const n = new URLSearchParams(params); if (v) n.set(k, v); else n.delete(k); setParams(n, { replace: true }); };
-  const s = useQuery({ queryKey: ["command", facility], queryFn: () => get<Summary>("/command/summary", { facility_id: facility || undefined }), refetchInterval: 60_000 });
+  const s = useQuery({ queryKey: ["command", facility, department], queryFn: () => get<Summary>("/command/summary", { facility_id: facility || undefined, department_id: department || undefined }), refetchInterval: 60_000 });
   const filtered = severity || category || overdue || q;
   const cases = useQuery({
     queryKey: ["cases", "command", facility, severity, category, overdue, q],
@@ -68,10 +75,15 @@ export function CommandCenter() {
           <NativeSelect className="w-52" aria-label="Facility" value={facility} onChange={(e) => set("facility", e.target.value || null)}>
             <option value="">All my facilities</option>{facs.data?.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
           </NativeSelect>
+          <NativeSelect className="w-44" aria-label="Department" value={department} onChange={(e) => set("department", e.target.value || null)}>
+            <option value="">All departments</option>{depts.data?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </NativeSelect>
+          <Button variant="outline" size="sm" onClick={async () => { try { setHandoff(await get<Handoff>("/command/handoff", { facility_id: facility || undefined })); } catch (e) { toastError(e); } }}>Shift handoff</Button>
           <Button variant="outline" size="sm" onClick={() => { if (wall) document.exitFullscreen?.().catch(() => {}); setWall(!wall); }}>{wall ? <Minimize2 /> : <Maximize2 />}{wall ? "Exit wall display" : "Wall display"}</Button>
         </div>} />
       {s.isError ? <ErrorState error={s.error} retry={s.refetch} /> : !s.data ? <LoadingRows rows={6} /> : (
         <>
+          {s.data.hospital?.available && <HospitalStrip h={s.data.hospital} wall={wall} />}
           <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">{s.data.tiles.map((t) => (
             <button key={t.key} onClick={() => t.link && navigate(t.link)} title={t.source ? `Source: ${t.source}` : undefined}
               className={cn("rounded-xl border bg-card p-4 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary", TONE[t.tone])}>
@@ -127,6 +139,37 @@ export function CommandCenter() {
         </>
       )}
       <CaseDrawer caseId={openCase} onClose={() => setOpenCase(null)} />
+      <Dialog open={!!handoff} onOpenChange={(o) => !o && setHandoff(null)}>
+        <DialogContent size="lg"><DialogHeader><DialogTitle>Shift handoff</DialogTitle><DialogDescription>{handoff?.narrative_source === "ai_cited" ? "Narrative drafted by the Hospital Operations agent; every sentence cites a case." : "Built directly from open cases."}</DialogDescription></DialogHeader>
+          <p className="whitespace-pre-wrap rounded-lg border bg-muted/30 p-3 text-[13px]">{handoff?.narrative}</p>
+          <div className="max-h-72 space-y-3 overflow-auto">{Object.entries(handoff?.sections ?? {}).map(([cat, items]) => (
+            <div key={cat}><p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{CATEGORY_LABEL[cat] ?? cat}</p>
+              <ul className="space-y-1">{items.map((i) => <li key={i.ref}><button className="text-left text-[13px] hover:underline" onClick={() => { setHandoff(null); setOpenCase(i.case_id); }}><span className="font-mono text-xs text-muted-foreground">[{i.ref}]</span> {i.title}{i.overdue ? " · overdue" : ""}{i.escalated ? " · escalated" : ""}</button></li>)}</ul></div>))}</div>
+          <DialogFooter><Button variant="outline" onClick={() => setHandoff(null)}>Close</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function HospitalStrip({ h, wall }: { h: Hosp; wall: boolean }) {
+  const navigate = useNavigate();
+  return (
+    <div className="mb-5 space-y-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">{(h.tiles ?? []).map((t) => (
+        <button key={t.key} onClick={() => t.link && navigate(t.link)} title={t.source ? `Source: ${t.source}` : undefined}
+          className={cn("rounded-xl border bg-card p-3 text-left transition hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary", TONE[t.tone])}>
+          <p className="text-xs font-medium text-muted-foreground">{t.label}</p>
+          <p className={cn("font-semibold tabular", wall ? "text-3xl" : "text-xl")}>{t.value}</p>
+          {t.sub && <p className="text-[11px] text-muted-foreground">{t.sub}</p>}
+        </button>))}</div>
+      {!!h.occupancy_by_department?.length && (
+        <Card className="overflow-x-auto"><table className="w-full text-[13px]"><thead className="text-xs text-muted-foreground"><tr><th className="px-4 py-2 text-left">Department</th><th>Occupied</th><th>Available</th><th>Cleaning</th><th>Blocked</th><th className="pr-4 text-right">Occupancy</th></tr></thead>
+          <tbody>{h.occupancy_by_department.map((d) => (
+            <tr key={d.department} className="border-t"><td className="px-4 py-1.5 font-medium">{d.department}</td><td className="text-center tabular">{d.occupied}</td><td className="text-center tabular">{d.available}</td>
+              <td className="text-center tabular">{d.cleaning}</td><td className="text-center tabular">{d.blocked}</td>
+              <td className="pr-4 text-right"><span className="inline-flex items-center gap-2"><span className="h-1.5 w-20 overflow-hidden rounded-full bg-muted"><span className={cn("block h-full", (d.occupancy_pct ?? 0) > 90 ? "bg-destructive" : (d.occupancy_pct ?? 0) > 75 ? "bg-warning" : "bg-success")} style={{ width: `${d.occupancy_pct ?? 0}%` }} /></span><span className="tabular">{d.occupancy_pct ?? "—"}%</span></span></td></tr>))}</tbody></table></Card>
+      )}
     </div>
   );
 }

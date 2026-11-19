@@ -39,7 +39,12 @@ All work is local on branch `dev` (never pushed). Synthetic data only. Not HIPAA
 B1 inpatient/ADT → B2 bed board → B3 ED → B4 nursing → B5 discharge agent → B6 pharmacy + Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims → B11 OR + rostering → B12 portal.
 Foundations already in place: locations with `bed_status`, hospital seed (Harborview General: ED 12 bays, 4B/4C/ICU beds, 4 ORs, pharmacy storage), department-scoped staff, engine + monitors.
 
-## Milestone C — Intelligent Operations: not started
+## Milestone C — Intelligent Operations (in progress)
+
+| Package | Status | Commit |
+|---|---|---|
+| C1 Complete Command Center: hospital tiles (inpatients, available beds/occupancy, ED waiting/boarding, awaiting bed, discharges ordered, pharmacy/supply, lab/imaging, staffing gaps, OR today, claims held/blockers/prior auths, equipment, AI activity) each with source + drill-down; occupancy by department; department + facility + severity filters; shift handoff (deterministic, every line cites a case; optional AI narrative keeps only cited sentences); live + wall display | ✅ | (C1 commit) |
+| C2 Agent Studio, C3 remaining automations, C4 forecasting, C5 patient journey, C6 admin AI reports, C7 governance, C8 performance, final demo | ⏳ | |
 
 ## Copyright attribution (owner request, 2026-11-19)
 - Notice **© 2026 Sidra Riaz Awan. All rights reserved.** shown in the staff app footer, patient portal footer, sign-in page, user menu → **About & legal** page (`/about`, public), and in OpenAPI metadata.
@@ -55,7 +60,7 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - Fixed during validation: outpatient charge-capture queue now excludes inpatient/ED encounters (they're coded in Revenue › Coding queue); billing E2E selects a visit whose coverage isn't payer-inactive (those claims are now correctly held).
 
 ## Tests actually executed (2026-11-19)
-- Backend (latest): **116 passed** (adds test_equipment). After B12: 114. After B11: 112. After B10: 109. After B8: 105. After B7: 104. After B6: 102. After A4b: 98. After B3: 97; after B5: 95. Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
+- Backend (latest): **117 passed** (C1 handoff/hospital test). After B9: 116. After B12: 114. After B11: 112. After B10: 109. After B8: 105. After B7: 104. After B6: 102. After A4b: 98. After B3: 97; after B5: 95. Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
 - Frontend: `npm run typecheck` and `npm run build` pass.
 - Browser (local dev, fresh seed, Chrome): api_smoke (no 4xx/5xx for any role) + all 8 original flows + `insurance_guardian_flow` + `command_center_flow` passed at Milestone A completion; `adt_flow` passed after B5 and again at the B3 checkpoint; api_smoke clean (no 4xx/5xx) at checkpoint.
 - OpenAI: NOT validated against the live API (no key). Simulated provider used in every run above. To validate: Super Admin → AI settings → enter key → Test connection.
@@ -69,7 +74,7 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - Header still says "clinic" switcher; facility switcher UI to be finished with Command Center.
 
 ## Next actions (exact resume point)
-1. ~~B3 UI~~, ~~A4b AI Settings~~, ~~B6~~ done. ~~B7~~, ~~B8~~, ~~B10~~ done. **Next: Milestone B validation** (full backend suite + all browser flows on the dev stack) → Milestone C: C1 complete Command Center (hospital tiles: census, ED, discharges, pharmacy, lab, staffing, OR, revenue, agents; facility/department/severity filters; handoff summary), C2 Agent Studio, C3 cross-department automations (most monitors exist), C4 forecasting baselines (labeled unvalidated), C5 patient journey timeline, C6 admin AI summaries with sources, C7 AI governance, C8 performance, final demo. (Former B3 note:) `frontend/src/features/ed/EdBoard.tsx` — tracking board from `GET /api/v1/ed/board` (visits sorted by ESI, timers, bays, metrics), quick-registration dialog (`POST /ed/arrivals`, incl. "unidentified"), triage dialog (`POST /ed/visits/{id}/triage`), room (`/room`), "Assign me" (`/assign`), disposition (`/disposition`, admit → boarding), reconcile identity (`/reconcile`, attestation); route `/ed` (perm `adt:read`), nav item in "Hospital"; E2E `e2e/ed_flow.py`; add to CI list.
+1. ~~B3 UI~~, ~~A4b AI Settings~~, ~~B6~~ done. ~~B7~~, ~~B8~~, ~~B10~~ done. **Next: C2 Agent Studio** (agent configs with tools/limits/approvals/versions, backend tool registry with permission checks, run log; rule-based fallback runner when no key), C3 cross-department automations (most monitors exist), C4 forecasting baselines (labeled unvalidated), C5 patient journey timeline, C6 admin AI summaries with sources, C7 AI governance, C8 performance, final demo. (Former B3 note:) `frontend/src/features/ed/EdBoard.tsx` — tracking board from `GET /api/v1/ed/board` (visits sorted by ESI, timers, bays, metrics), quick-registration dialog (`POST /ed/arrivals`, incl. "unidentified"), triage dialog (`POST /ed/visits/{id}/triage`), room (`/room`), "Assign me" (`/assign`), disposition (`/disposition`, admit → boarding), reconcile identity (`/reconcile`, attestation); route `/ed` (perm `adt:read`), nav item in "Hospital"; E2E `e2e/ed_flow.py`; add to CI list.
 2. B6 pharmacy & inventory + Pharmacy Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims expansion → B11 OR + rostering (OR-Tools) → B12 portal (discharge instructions/summary, inpatient follow-ups).
 3. Milestone B end-to-end validation: the five B workflows + full regression; then Milestone C (complete Command Center, Agent Studio, cross-department automation, forecasting foundation, patient journey, AI governance, performance/accessibility).
 4. OpenAI live validation when a key is provided (see AI workspace → Check provider connection).
