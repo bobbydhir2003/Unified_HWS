@@ -588,6 +588,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/realtime/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Realtime Session
+         * @description Mint a short-lived browser credential for one voice session. The permanent key is never returned.
+         */
+        post: operations["realtime_session_api_v1_ai_realtime_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/realtime/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Realtime Status */
+        get: operations["realtime_status_api_v1_ai_realtime_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/allergies/{item_id}": {
         parameters: {
             query?: never;
@@ -8728,6 +8765,21 @@ export interface components {
              */
             user_id: string;
         };
+        /** RealtimeIn */
+        RealtimeIn: {
+            /**
+             * Purpose
+             * @default receptionist_practice
+             * @constant
+             */
+            purpose: "receptionist_practice";
+            /**
+             * Voice
+             * @default marin
+             * @enum {string}
+             */
+            voice: "marin" | "cedar" | "alloy" | "verse";
+        };
         /** ReasonIn */
         ReasonIn: {
             /** Reason */
@@ -11117,6 +11169,72 @@ export interface operations {
         };
     };
     ai_provider_health_api_v1_ai_provider_health_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    realtime_session_api_v1_ai_realtime_session_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RealtimeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    realtime_status_api_v1_ai_realtime_status_get: {
         parameters: {
             query?: never;
             header?: {

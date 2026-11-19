@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, CheckCircle2, CircleSlash, ListChecks, Phone, PhoneOff, Plus, RotateCcw, Send, ShieldCheck, Workflow, XCircle } from "lucide-react";
 import * as React from "react";
+import { RealtimeVoicePanel } from "./RealtimeVoice";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { EmptyState, LoadingRows, PageHeader, SimulatedBadge, Stat, toastError } from "@/components/common";
@@ -189,6 +190,7 @@ export function ReceptionistPage() {
   return (
     <>
       <PageHeader title="AI receptionist" description="Sandbox for the phone assistant: test conversations as a caller. Telephony is not connected." actions={<SimulatedBadge label="Sandbox — no real calls" />} />
+      <RealtimeVoicePanel />
       <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <Card className="flex h-[calc(100dvh-220px)] min-h-[480px] flex-col">
           <CardHeader className="border-b pb-3">

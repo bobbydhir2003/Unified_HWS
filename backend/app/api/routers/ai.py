@@ -416,3 +416,52 @@ def ai_provider_health(ctx: TenantContext = Depends(require(P.CLINIC_MANAGE))):
     ctx.audit("ai.provider_health", details={"ok": r.get("ok")})
     ctx.db.commit()
     return r
+
+
+# ---------------------------------------------------------------------------------------------- Realtime Voice
+
+
+@router.get("/ai/realtime/status")
+def realtime_status(ctx: TenantContext = Depends(require(P.AI_USE))):
+    from app.ai.realtime import realtime_status as status
+
+    return status()
+
+
+class RealtimeIn(BaseModel):
+    purpose: Literal["receptionist_practice"] = "receptionist_practice"
+    voice: Literal["marin", "cedar", "alloy", "verse"] = "marin"
+
+
+@router.post("/ai/realtime/session")
+def realtime_session(body: RealtimeIn, ctx: TenantContext = Depends(require(P.AI_USE))):
+    """Mint a short-lived browser credential for one voice session. The permanent key is never returned."""
+    from app.ai.policy import contains_phi
+    from app.ai.provider import AIPolicyError
+    from app.ai.realtime import mint_client_secret
+    from app.ai.realtime import realtime_status as status
+
+    ctx.require(P.SCHEDULE_WRITE)  # front-desk feature
+    st = status()
+    if st["mode"] != "openai":
+        return {"mode": "simulated", "reason": st["reason"], "model": st["model"]}
+    job = AIJob(organization_id=ctx.org_id, kind="realtime_session", provider="openai", model=st["model"], status="running",
+                created_by_id=ctx.user.id)
+    ctx.db.add(job)
+    try:
+        out = mint_client_secret(org_id=ctx.org_id, user_id=ctx.user.id, contains_phi=contains_phi(ctx.db, ctx.org_id), voice=body.voice)
+        job.status = "succeeded"
+    except AIPolicyError as e:
+        job.status, job.error, job.finished_at = "failed", "policy", now()
+        ctx.audit("ai.realtime_session", outcome="denied", details={"reason": "phi_policy"})
+        ctx.db.commit()
+        raise HTTPException(403, str(e)) from None
+    except AIError as e:
+        job.status, job.error, job.finished_at = "failed", str(e)[:300], now()
+        ctx.audit("ai.realtime_session", outcome="error", details={"model": st["model"]})
+        ctx.db.commit()
+        raise HTTPException(502, str(e)) from None
+    job.finished_at = now()
+    ctx.audit("ai.realtime_session", details={"model": out["model"], "purpose": body.purpose})
+    ctx.db.commit()
+    return {"mode": "openai", **out}

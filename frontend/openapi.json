@@ -9261,6 +9261,29 @@
     "title": "ProviderOut",
     "type": "object"
    },
+   "RealtimeIn": {
+    "properties": {
+     "purpose": {
+      "const": "receptionist_practice",
+      "default": "receptionist_practice",
+      "title": "Purpose",
+      "type": "string"
+     },
+     "voice": {
+      "default": "marin",
+      "enum": [
+       "marin",
+       "cedar",
+       "alloy",
+       "verse"
+      ],
+      "title": "Voice",
+      "type": "string"
+     }
+    },
+    "title": "RealtimeIn",
+    "type": "object"
+   },
    "ReasonIn": {
     "properties": {
      "reason": {
@@ -15142,6 +15165,121 @@
      }
     ],
     "summary": "Ai Provider Health",
+    "tags": [
+     "ai"
+    ]
+   }
+  },
+  "/api/v1/ai/realtime/session": {
+   "post": {
+    "description": "Mint a short-lived browser credential for one voice session. The permanent key is never returned.",
+    "operationId": "realtime_session_api_v1_ai_realtime_session_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RealtimeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Realtime Session",
+    "tags": [
+     "ai"
+    ]
+   }
+  },
+  "/api/v1/ai/realtime/status": {
+   "get": {
+    "operationId": "realtime_status_api_v1_ai_realtime_status_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Realtime Status",
     "tags": [
      "ai"
     ]
