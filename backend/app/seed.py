@@ -497,6 +497,9 @@ def seed(reset: bool = False) -> None:
             chart(db, org2, p, lake_u)
         org2.settings = {**org2.settings, "mrn_seq": 500008}
 
+        from app.seed_extend import extend
+
+        extend(db)
         db.commit()
         # Initial automation pass so dashboards/worklists start with live cases (beat re-runs every 5 minutes).
         from app.engine.events import dispatch_pending

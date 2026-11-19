@@ -55,6 +55,15 @@ from app.models.inpatient import (
     InpatientStay,
 )
 from app.models.insurance import CoverageUpdateRequest, EligibilityCheck
+from app.models.inventory import (
+    InventoryItem,
+    InventoryLot,
+    MedicationVerification,
+    PurchaseRequest,
+    StockBalance,
+    StockMovement,
+    Supplier,
+)
 from app.models.orders import LabResult, Order
 from app.models.patients import Patient, PatientAccessGrant, PatientInsurance, PatientNote
 from app.models.portal import (
@@ -68,6 +77,13 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "InventoryItem",
+    "InventoryLot",
+    "MedicationVerification",
+    "PurchaseRequest",
+    "StockBalance",
+    "StockMovement",
+    "Supplier",
     "AIProviderSettings",
     "EdVisit",
     "TriageAssessment",
