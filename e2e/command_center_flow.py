@@ -5,12 +5,12 @@ import sys
 from playwright.sync_api import expect, sync_playwright
 
 BASE = os.environ.get("WEB", "http://localhost:5173")
-SHOTS = os.environ.get("SHOTS", "shots")
+SHOTS = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("SHOTS", "shots")
 os.makedirs(SHOTS, exist_ok=True)
 errors: list[str] = []
 
 with sync_playwright() as p:
-    b = p.chromium.launch(channel="chrome", headless=True)
+    b = p.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True)
     pg = b.new_page(viewport={"width": 1440, "height": 950})
     pg.on("pageerror", lambda e: errors.append(str(e)))
     pg.goto(f"{BASE}/login")
