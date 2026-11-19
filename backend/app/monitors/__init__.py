@@ -4,6 +4,7 @@ from app.monitors import (
     ed,  # noqa: F401
     equipment,  # noqa: F401
     insurance,  # noqa: F401
+    journey,  # noqa: F401
     lab,  # noqa: F401
     pharmacy,  # noqa: F401
     radiology,  # noqa: F401
