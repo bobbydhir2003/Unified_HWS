@@ -1,14 +1,26 @@
-export type Role = "super_admin" | "clinic_admin" | "doctor" | "nurse" | "receptionist" | "billing" | "patient";
+export type Role =
+  | "super_admin" | "hospital_admin" | "clinic_admin" | "doctor" | "nurse" | "receptionist" | "billing" | "insurance_specialist"
+  | "pharmacist" | "lab_tech" | "radiology_tech" | "radiologist" | "bed_manager" | "patient";
 
 export const ROLE_LABELS: Record<Role, string> = {
   super_admin: "Super Admin",
-  clinic_admin: "Clinic Admin",
+  hospital_admin: "Hospital Administrator",
+  clinic_admin: "Facility Admin",
   doctor: "Doctor",
   nurse: "Nurse / MA",
   receptionist: "Receptionist",
   billing: "Billing Specialist",
+  insurance_specialist: "Insurance Specialist",
+  pharmacist: "Pharmacist",
+  lab_tech: "Laboratory Technologist",
+  radiology_tech: "Radiology Technologist",
+  radiologist: "Radiologist",
+  bed_manager: "Bed Manager",
   patient: "Patient",
 };
+
+export const STAFF_ROLES: Role[] = ["hospital_admin", "clinic_admin", "doctor", "nurse", "receptionist", "billing", "insurance_specialist",
+  "pharmacist", "lab_tech", "radiology_tech", "radiologist", "bed_manager"];
 
 export type ClinicBrief = { id: string; name: string; code: string; timezone: string };
 

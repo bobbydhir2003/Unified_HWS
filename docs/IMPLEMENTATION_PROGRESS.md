@@ -2,6 +2,51 @@
 
 _Last updated: 2026-11-19_
 
+# Undeclared HMS expansion — Milestones A, B, C
+
+All work is local on branch `dev` (never pushed). Synthetic data only. Not HIPAA-certified or clinically validated.
+
+## Milestone A — Intelligent EHR (in progress)
+
+| Package | Status | Commit |
+|---|---|---|
+| A1.1 `/api/v1` (legacy `/api` alias), OpenAPI → TS types (`npm run gen:api`), CI drift check | ✅ | dd4d193 |
+| A1.2–A1.5 Facility → department → unit/room/bed hierarchy, 7 new roles + department scope, PostgreSQL RLS (`undeclared_app` role), SSE live updates over LISTEN/NOTIFY | ✅ | a13e86c |
+| A2 Durable automation engine: outbox + idempotent dispatcher, cases (dedupe, SLA, escalation, snooze w/ reason), monitors (auto-verify/close), notification deliveries (dedupe, caps, prefs), approval gate, operations API, Celery queues/beat, in-process dev scheduler | ✅ | 8366e46 |
+| A3 Insurance Guardian backend: eligibility history (simulated 270/271), coverage state per date of service, visit-readiness + renewal monitors, portal card upload → AI draft → staff confirm → re-verify, visit overrides, dashboard | ✅ | b657cd4 |
+| A3 UI: My work, case drawer, Monitors & rules, Insurance Guardian (dashboard, cases, card review, patient lookup), portal Insurance page, chart coverage panel, Facilities admin, nav restructure; E2E `e2e/insurance_guardian_flow.py` | ✅ | (this commit) |
+| A4 OpenAI provider (structured outputs, tool calling, cost tracking, health, fallback) | ⏳ next | |
+| A5 Scribe transcription / Document AI vision / chart assistant via provider; Clinical AI workspace; agent activity | ⏳ | |
+| A6 Early Command Center (DB-derived metrics) | ⏳ | |
+| A-demo full outpatient journey + insurance issue resolution | ⏳ | |
+
+## Milestone B — Unified Hospital: not started
+B1 inpatient/ADT → B2 bed board → B3 ED → B4 nursing → B5 discharge agent → B6 pharmacy + Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims → B11 OR + rostering → B12 portal.
+Foundations already in place: locations with `bed_status`, hospital seed (Harborview General: ED 12 bays, 4B/4C/ICU beds, 4 ORs, pharmacy storage), department-scoped staff, engine + monitors.
+
+## Milestone C — Intelligent Operations: not started
+
+## Tests actually executed (2026-11-19)
+- Backend: `uv run pytest -q` → **81 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian). `ruff` clean. `alembic upgrade/downgrade/check` round-trip clean for 0009–0012.
+- Frontend: `npm run typecheck` and `npm run build` pass.
+- Browser: `e2e/insurance_guardian_flow.py` passed against local dev servers (fresh seed). Older 8 flows not re-run since A1 (API moved to `/api/v1`; legacy alias kept).
+
+## Known issues / notes
+- Local Postgres user `undeclared` isn't superuser: role `undeclared_app` was created once by the local admin (`CREATE ROLE undeclared_app NOLOGIN; GRANT undeclared_app TO undeclared`). Migration 0010 raises a clear error if missing. Docker/CI users are superusers (auto-created).
+- Refresh cookie path widened from `/api/auth` to `/api` (so v1 and legacy paths both work).
+- Eligibility, email/SMS are simulated (labeled). Card images need a vision AI provider; in simulated mode only text PDFs (synthetic sample card) are extracted.
+- Monitors run org-wide each time an insurance event fires (fine at demo scale; scope per patient before large pilots).
+- Header still says "clinic" switcher; facility switcher UI to be finished with Command Center.
+
+## Next actions
+1. A4 OpenAI provider (inspect installed SDK first; `uv add openai`), key from `OPENAI_API_KEY`, never in frontend.
+2. A5/A6, then A-demo E2E; commit "Milestone A".
+3. Milestone B in order above.
+
+---
+
+# Original 12-phase build (complete)
+
 ## Status
 
 | Phase | Status |

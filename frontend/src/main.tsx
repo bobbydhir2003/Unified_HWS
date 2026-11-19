@@ -31,6 +31,10 @@ const BillingPage = lazy(() => import("@/features/billing/BillingPage").then((m)
 const AIMonitoringPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AIMonitoringPage })));
 const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AutomationPage })));
 const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
+const WorklistPage = lazy(() => import("@/features/ops/WorklistPage").then((m) => ({ default: m.WorklistPage })));
+const MonitorsPage = lazy(() => import("@/features/ops/MonitorsPage").then((m) => ({ default: m.MonitorsPage })));
+const InsuranceGuardianPage = lazy(() => import("@/features/insurance/InsuranceGuardian").then((m) => ({ default: m.InsuranceGuardianPage })));
+const FacilitiesPage = lazy(() => import("@/features/admin/FacilitiesPage").then((m) => ({ default: m.FacilitiesPage })));
 const TasksPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.TasksPage })));
 const AnalyticsPage = lazy(() => import("@/features/analytics/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })));
 const EncounterPage = lazy(() => import("@/features/encounters/EncounterPage").then((m) => ({ default: m.EncounterPage })));
@@ -137,6 +141,10 @@ const router = createBrowserRouter([
               { path: "messages", element: <Perm perm="messages:use"><MessagesPage /></Perm>, handle: { crumb: "Messages" } },
               { path: "telehealth/:appointmentId", element: <Perm perm="clinical:read"><VideoVisit /></Perm>, handle: { crumb: "Video visit" } },
               { path: "analytics", element: <Perm perm="analytics:read"><AnalyticsPage /></Perm>, handle: { crumb: "Analytics" } },
+              { path: "worklist", element: <Perm perm="cases:read"><WorklistPage /></Perm>, handle: { crumb: "My work" } },
+              { path: "insurance", element: <Perm perm="cases:read"><InsuranceGuardianPage /></Perm>, handle: { crumb: "Insurance Guardian" } },
+              { path: "automation/monitors", element: <Perm perm="cases:read"><MonitorsPage /></Perm>, handle: { crumb: "Monitors & rules" } },
+              { path: "admin/facilities", element: <Perm perm="clinic:manage"><FacilitiesPage /></Perm>, handle: { crumb: "Facilities" } },
               { path: "tasks", element: <Perm perm="patients:read"><TasksPage /></Perm>, handle: { crumb: "Tasks" } },
               { path: "automation", element: <Perm perm="messages:use"><AutomationPage /></Perm>, handle: { crumb: "Automation studio" } },
               { path: "receptionist", element: <Perm perm="schedule:write"><ReceptionistPage /></Perm>, handle: { crumb: "AI receptionist" } },

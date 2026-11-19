@@ -25,6 +25,7 @@ import { AppointmentDialog } from "@/features/schedule/AppointmentDialog";
 import { ApiError, del, get, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtDob, sexShort } from "@/lib/format";
+import { CoveragePanel } from "@/features/insurance/InsuranceGuardian";
 import type { Allergy, Appointment, Encounter, Insurance, Medication, Patient, Problem, Vitals } from "@/lib/types";
 import { cn, titleCase } from "@/lib/utils";
 import { AllergiesTab, HistoryTab, MedicationsTab, ProblemsTab, SEVERITY_VARIANT } from "./ClinicalLists";
@@ -463,6 +464,7 @@ function DemographicsTab({ p }: { p: Patient }) {
           ))}
         </CardContent>
       </Card>
+      {can("cases:read") && <div className="lg:col-span-2"><CoveragePanel patientId={p.id} /></div>}
       <FormDialog
         open={!!insEdit} onOpenChange={(o) => !o && setInsEdit(null)} title={insEdit === "new" ? "Add coverage" : "Edit coverage"}
         fields={[

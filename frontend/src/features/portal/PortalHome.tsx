@@ -1,10 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, FileHeart, FlaskConical, HeartPulse, Home, LogOut, Mail, MessageSquare, Pill, Send,
-  ShieldCheck, UserRound, Video,
-} from "lucide-react";
+import { CalendarDays, CalendarPlus, CircleAlert, ClipboardCheck, CreditCard, FileHeart, FlaskConical, HeartPulse, Home, LogOut, Mail, MessageSquare, Pill, Send, ShieldCheck, UserRound, Video } from "lucide-react";
 import * as React from "react";
 import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { PortalInsurance, usePortalInsurance } from "./PortalInsurance";
 import { toast } from "sonner";
 import { AppointmentStatusBadge, EmptyState, ErrorState, LoadingRows, toastError, useConfirm } from "@/components/common";
 import { Notifications } from "@/components/layout/AppShell";
@@ -48,6 +46,7 @@ const NAV = [
   { to: "/portal/visits", label: "Visit summaries", icon: FileHeart },
   { to: "/portal/results", label: "Test results", icon: FlaskConical },
   { to: "/portal/health", label: "Health record", icon: HeartPulse },
+  { to: "/portal/insurance", label: "Insurance", icon: ShieldCheck },
   { to: "/portal/billing", label: "Billing", icon: CreditCard },
   { to: "/portal/account", label: "Account", icon: UserRound },
 ];
@@ -90,6 +89,7 @@ export function PortalHome() {
           <Route path="results" element={<PortalResults />} />
           <Route path="health" element={<HealthRecord />} />
           <Route path="billing" element={<PortalBilling />} />
+          <Route path="insurance" element={<PortalInsurance />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="*" element={<EmptyState title="Page not found" />} />
         </Routes>
@@ -141,6 +141,7 @@ function PortalDashboard() {
   const unread = (threads.data ?? []).reduce((n, t) => n + t.unread, 0);
   return (
     <div className="space-y-6">
+      <InsurancePrompt />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div><h1 className="text-2xl font-semibold tracking-tight">Hello, {q.data.patient.first_name}</h1><p className="text-[13.5px] text-muted-foreground">Here's what's coming up.</p></div>
         <Button asChild><Link to="/portal/book"><CalendarPlus />Book an appointment</Link></Button>
@@ -529,5 +530,17 @@ function PortalBilling() {
         </CardContent></Card>
       )}
     </div>
+  );
+}
+
+function InsurancePrompt() {
+  const q = usePortalInsurance();
+  const req = q.data?.requests.find((r) => r.status === "requested");
+  if (!req) return null;
+  return (
+    <Link to="/portal/insurance" className="flex items-start gap-3 rounded-xl border border-warning/50 bg-warning-soft/40 p-4 hover:bg-warning-soft/60">
+      <CircleAlert className="mt-0.5 size-5 shrink-0 text-warning" />
+      <div className="text-[13.5px]"><p className="font-medium">Please confirm your insurance</p><p className="text-muted-foreground">{req.reason} It takes about a minute.</p></div>
+    </Link>
   );
 }

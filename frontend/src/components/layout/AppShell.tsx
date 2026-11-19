@@ -70,7 +70,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   return (
     <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-2 scrollbar-thin" aria-label="Main">
       {NAV.map((section, i) => {
-        const items = section.items.filter((it) => (!it.perm || can(it.perm)) && (!it.providerOnly || membership?.provider_id));
+        const items = section.items.filter((it) => (!it.perm || can(it.perm)) && (!it.any || it.any.some((p) => can(p))) && (!it.providerOnly || membership?.provider_id));
         if (!items.length) return null;
         return (
           <div key={i}>
