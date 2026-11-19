@@ -28,7 +28,7 @@ services:
   worker:
     build: ./backend
     env_file: [.env.docker]
-    command: ["celery", "-A", "app.worker", "worker", "-B", "-s", "/tmp/celerybeat-schedule", "-l", "info", "--concurrency", "2"]
+    command: ["celery", "-A", "app.worker", "worker", "-B", "-s", "/tmp/celerybeat-schedule", "-Q", "default,engine,ai", "-l", "info", "--concurrency", "2"]
     healthcheck:
       test: ["CMD-SHELL", "celery -A app.worker inspect ping -t 5 | grep -q pong"]
       interval: 30s

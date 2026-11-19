@@ -1,0 +1,87 @@
+# Undeclared HMS — single-host deployment for a small EC2 instance (t3.small, 2 GB RAM).
+# Images are built off-host (see deploy/ec2/deploy.sh) and loaded with `docker load`; nothing is built on the server.
+# Only the edge proxy (Caddy, profile "https") publishes ports 80/443. Until HTTPS is enabled, the web container is bound
+# to 127.0.0.1:8080 and reached through an SSH tunnel. PostgreSQL, Redis, the API and Celery are never published.
+name: undeclared
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+x-backend: &backend
+  image: undeclared-api:${RELEASE:?set RELEASE in .env}
+  env_file: [.env]
+  restart: unless-stopped
+  logging: *logging
+  volumes: [storage:/app/var/storage]
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: undeclared
+      POSTGRES_DB: undeclared
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=40", "-c", "work_mem=4MB", "-c", "effective_cache_size=384MB"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U undeclared"], interval: 10s, retries: 10 }
+    mem_limit: 384m
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging: *logging
+    command: ["redis-server", "--maxmemory", "64mb", "--maxmemory-policy", "noeviction", "--save", "", "--appendonly", "no"]
+    healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 10s }
+    mem_limit: 96m
+
+  api:
+    <<: *backend
+    # One uvicorn process (2 GB host). Migrations run on every start; seeding is a separate, explicit step.
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    mem_limit: 640m
+
+  worker:
+    <<: *backend
+    # Worker + beat in one process, concurrency 1, all queues (default, engine, ai).
+    command: ["celery", "-A", "app.worker", "worker", "-B", "-s", "/tmp/celerybeat-schedule", "-Q", "default,engine,ai", "--concurrency", "1", "-l", "info"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker inspect ping -t 10 | grep -q pong"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+    depends_on:
+      api: { condition: service_healthy }
+    mem_limit: 512m
+
+  web:
+    image: undeclared-web:${RELEASE}
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      api: { condition: service_healthy }
+    ports: ["127.0.0.1:8080:80"]   # SSH tunnel only; public traffic goes through Caddy
+    mem_limit: 64m
+
+  caddy:
+    profiles: ["https"]
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}   # hostname that resolves to this server
+    ports: ["80:80", "443:443"]
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro", "caddy_data:/data", "caddy_config:/config"]
+    depends_on: [web]
+    mem_limit: 128m
+
+volumes:
+  pgdata:
+  storage:
+  caddy_data:
+  caddy_config:

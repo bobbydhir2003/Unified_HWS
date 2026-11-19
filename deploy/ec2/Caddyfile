@@ -1,0 +1,7 @@
+# TLS edge for the EC2 deployment. Caddy obtains and renews a Let's Encrypt certificate for SITE_ADDRESS automatically
+# (needs inbound 80 and 443 open in the security group) and redirects HTTP to HTTPS.
+{$SITE_ADDRESS} {
+	encode gzip
+	# Caddy replaces any client-supplied X-Forwarded-For with the real client address before proxying.
+	reverse_proxy web:80
+}
