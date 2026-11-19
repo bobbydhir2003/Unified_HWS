@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LegalFooter } from "@/components/common/LegalFooter";
 import { useLiveConnection } from "@/lib/live";
-import { Bell, Building, Check, ChevronRight, ChevronsLeft, ChevronsUpDown, FlaskConical, Info, LogOut, Menu, Monitor, Moon, Search, Sun, UserRound } from "lucide-react";
+import { Bell, Building, Check, ChevronRight, ChevronsLeft, ChevronsUpDown, FlaskConical, Info, LifeBuoy, LogOut, Menu, Monitor, Moon, Search, Sun, UserRound } from "lucide-react";
 import * as React from "react";
 import { Link, NavLink, Outlet, useLocation, useMatches, useNavigate } from "react-router-dom";
 import { Dialog, SheetContent } from "@/components/ui/dialog";
@@ -227,7 +227,8 @@ function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => navigate("/account")}><UserRound />Account & security</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => navigate("/about")}><Info />About & legal</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => navigate("/help")}><LifeBuoy />Help & About</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => navigate("/about")}><Info />Legal notices</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Theme</DropdownMenuLabel>
         {([["light", Sun, "Light"], ["dark", Moon, "Dark"], ["system", Monitor, "System"]] as const).map(([t, Icon, label]) => (

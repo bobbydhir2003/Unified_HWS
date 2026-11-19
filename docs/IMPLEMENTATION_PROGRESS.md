@@ -59,6 +59,13 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - **Final role-based UI/UX refinement pass** across the 11 roles (layout/accessibility audit, dark mode review, empty states) — not done as a dedicated pass.
 - **OpenAI live validation:** pending — no key configured; every AI path above ran on the simulated/rule-based provider (labeled in the UI).
 
+## Help & About (in-app user guide, 2026-11-19) ✅
+- Route **`/help`** (staff, every role; sidebar → Support → *Help & About*, and user menu → *Help & About*). Patients: **`/portal/help`** (portal nav → *Help & About*). `/about` remains the public legal-notices page (user menu → *Legal notices*).
+- Sections: Overview (plain-language description + 9-stage patient journey linking to each topic), Getting started (8 steps with links the user can open), Features (19 module articles: what / who / when / steps / example / simulated note / links — step-by-step only for areas the role can use; other areas show a short non-sensitive summary marked "not part of your role"), Role guides (Doctor, Nurse, Receptionist, Billing & insurance, Pharmacist, Laboratory, Radiology, Bed manager, Hospital administrator, Super Admin — users see their own; administrators can browse all), AI & automation (10 plain-English topics, "AI assists hospital staff. It does not replace professional clinical judgment."), FAQ (12 staff / 8 patient, accordion), About (version from package metadata, modules, plain architecture, privacy/limitations, demo status, copyright from `lib/legal.ts`).
+- Client-side search across all visible content (results jump to and open the topic). Native `<details>` accordions (keyboard + screen-reader friendly), focus rings, dark mode, mobile (no horizontal scroll, verified at 390 px).
+- Content is typed data in `frontend/src/features/help/content.ts`; every button label/route was taken from the current screens. No backend changes, no new dependencies.
+- Verified: typecheck, lint, build (copyright banner still on all 93 chunks); `e2e/help_flow.py` — all 10 staff role accounts + patient open it, role guide and allowed/locked modules correct, search → topic → real screen link, About shows version + "© 2026 Sidra Riaz Awan. All rights reserved.", mobile layout.
+
 ## Copyright attribution (owner request, 2026-11-19)
 - Notice **© 2026 Sidra Riaz Awan. All rights reserved.** shown in the staff app footer, patient portal footer, sign-in page, user menu → **About & legal** page (`/about`, public), and in OpenAPI metadata.
 - Single source: `frontend/src/lib/legal.ts` (holder, year, notice, third-party + code-set notices) and `backend/app/core/legal.py`.

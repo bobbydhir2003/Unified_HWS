@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellRing, CalendarDays, CalendarPlus, CircleAlert, ClipboardCheck, CreditCard, FileHeart, FileUp, FlaskConical, HeartPulse, Home, Hospital, LogOut, Mail, MessageSquare, Pill, Send, ShieldCheck, UserRound, Video } from "lucide-react";
+import { BellRing, CalendarDays, CalendarPlus, CircleAlert, ClipboardCheck, CreditCard, FileHeart, FileUp, FlaskConical, HeartPulse, Home, Hospital, LifeBuoy, LogOut, Mail, MessageSquare, Pill, Send, ShieldCheck, UserRound, Video } from "lucide-react";
 import * as React from "react";
 import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { PortalDocuments, PortalNotifications, PortalStays, ReadinessCard } from "./PortalExt";
@@ -18,6 +18,7 @@ import { AccountPage } from "@/features/account/AccountPage";
 import { flagClass, flagLabel } from "@/features/orders/shared";
 import type { Summary } from "@/features/patients/PatientChart";
 import { VideoVisit } from "@/features/telehealth/VideoVisit";
+import { PatientHelp } from "@/features/help/HelpPage";
 import { get, post } from "@/lib/api";
 import { fmtMoney, newIdempotencyKey } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
@@ -54,6 +55,7 @@ const NAV = [
   { to: "/portal/notifications", label: "Notifications", icon: BellRing },
   { to: "/portal/billing", label: "Billing", icon: CreditCard },
   { to: "/portal/account", label: "Account", icon: UserRound },
+  { to: "/portal/help", label: "Help & About", icon: LifeBuoy },
 ];
 
 export function PortalHome() {
@@ -99,6 +101,7 @@ export function PortalHome() {
           <Route path="documents" element={<PortalDocuments />} />
           <Route path="notifications" element={<PortalNotifications />} />
           <Route path="account" element={<AccountPage />} />
+          <Route path="help" element={<PatientHelp />} />
           <Route path="*" element={<EmptyState title="Page not found" />} />
         </Routes>
       </main>

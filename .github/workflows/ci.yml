@@ -89,7 +89,7 @@ jobs:
       - name: E2E flows
         run: |
           mkdir -p shots
-          for f in insurance_guardian_flow clinical_flow documents_flow scribe_flow orders_flow portal_telehealth_flow billing_flow ai_flow analytics_flow command_center_flow adt_flow ed_flow pharmacy_flow lab_flow radiology_flow insights_flow; do
+          for f in insurance_guardian_flow clinical_flow documents_flow scribe_flow orders_flow portal_telehealth_flow billing_flow ai_flow analytics_flow command_center_flow adt_flow ed_flow pharmacy_flow lab_flow radiology_flow insights_flow help_flow; do
             echo "== $f"; e2e/.venv/bin/python e2e/$f.py shots
           done
           e2e/.venv/bin/python e2e/api_smoke.py

@@ -35,6 +35,7 @@ const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({
 const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
 const CommandCenter = lazy(() => import("@/features/command/CommandCenter").then((m) => ({ default: m.CommandCenter })));
 const AgentStudio = lazy(() => import("@/features/ai/AgentStudio").then((m) => ({ default: m.AgentStudio })));
+const HelpPage = lazy(() => import("@/features/help/HelpPage").then((m) => ({ default: m.HelpPage })));
 const InsightsPage = lazy(() => import("@/features/insights/InsightsPages").then((m) => ({ default: m.InsightsPage })));
 const AIGovernancePage = lazy(() => import("@/features/ai/AgentStudio").then((m) => ({ default: m.AIGovernancePage })));
 const AIWorkspace = lazy(() => import("@/features/ai/AIWorkspace").then((m) => ({ default: m.AIWorkspace })));
@@ -163,6 +164,7 @@ const router = createBrowserRouter([
               { path: "telehealth/:appointmentId", element: <Perm perm="clinical:read"><VideoVisit /></Perm>, handle: { crumb: "Video visit" } },
               { path: "analytics", element: <Perm perm="analytics:read"><AnalyticsPage /></Perm>, handle: { crumb: "Analytics" } },
               { path: "command", element: <Perm perm="cases:read"><CommandCenter /></Perm>, handle: { crumb: "Command Center" } },
+              { path: "help", element: <HelpPage />, handle: { crumb: "Help & About" } },
               { path: "insights", element: <Perm perm="analytics:read"><InsightsPage /></Perm>, handle: { crumb: "Insights" } },
               { path: "agents", element: <Perm perm="ai:use"><AgentStudio /></Perm>, handle: { crumb: "Agent Studio" } },
               { path: "admin/ai-governance", element: <Perm perm="ai:manage"><AIGovernancePage /></Perm>, handle: { crumb: "AI governance" } },
