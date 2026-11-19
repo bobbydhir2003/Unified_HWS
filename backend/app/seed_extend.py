@@ -3,7 +3,7 @@ absent (never deletes or resets). Usage: `uv run python -m app.seed_extend`. Als
 
 import random
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlalchemy import select
 
@@ -233,6 +233,68 @@ def seed_imaging_orders(db, org: Organization) -> int:
     return n
 
 
+def seed_roster(db, org: Organization, hosp: Clinic) -> int:
+    """Synthetic staff + 3 days of shifts meeting minimums (one deliberate gap), skills, and OR cases tomorrow."""
+    from app.models import Department, Patient, Shift, StaffSkill, SurgicalCase, User
+    from app.services import rostering as RS
+
+    if db.scalar(select(Shift.id).where(Shift.organization_id == org.id).limit(1)):
+        return 0
+    people = {"MS": [("Ana", "Lopez"), ("Ben", "Ortiz"), ("Cara", "Singh"), ("Dev", "Rao"), ("Eli", "Moss"), ("Fay", "Chu"), ("Gus", "Hale")],
+              "ICU": [("Hana", "Ito"), ("Ivan", "Petrov"), ("Jade", "Kerr"), ("Kai", "Lund"), ("Lea", "Voss")],
+              "ED": [("Mia", "Dorsey"), ("Nils", "Berg"), ("Oona", "Pike"), ("Pia", "Ruiz"), ("Quinn", "Shaw")]}
+    for code, names in people.items():
+        for first, last in names:
+            _staff(db, org, hosp, f"rn.{first.lower()}.{last.lower()}@harborview.dev", first, last, "RN", "nurse", code)
+    db.flush()
+    for u in db.scalars(select(User).where(User.email.like("rn.%@harborview.dev"))):
+        db.add(StaffSkill(organization_id=org.id, user_id=u.id, skill="BLS", expires_on=date.today() + timedelta(days=400)))
+        if u.last_name in ("Ito", "Petrov", "Kerr", "Lund", "Voss", "Dorsey", "Berg"):
+            db.add(StaffSkill(organization_id=org.id, user_id=u.id, skill="ACLS", expires_on=date.today() + timedelta(days=300)))
+    depts = {d.code: d for d in db.scalars(select(Department).where(Department.facility_id == hosp.id))}
+    today = now().astimezone(__import__("zoneinfo").ZoneInfo(hosp.timezone)).date()
+    n = 0
+    for d in range(0, 3):
+        for name in ("day", "night"):
+            for code in ("MS", "ICU", "ED"):
+                dept = depts[code]
+                start, end = RS.window(hosp, today + timedelta(days=d), name)
+                need = RS.requirements(dept).get("nurse", {}).get(name, 0)
+                if code == "MS" and d == 1 and name == "night":
+                    need -= 1  # deliberate coverage gap for the staffing monitor demo
+                for c in RS.suggest(db, org.id, dept, "nurse", start, end, limit=need):
+                    db.add(Shift(organization_id=org.id, facility_id=hosp.id, department_id=dept.id, user_id=c["user_id"], role="nurse", start_at=start, end_at=end))
+                    db.flush()
+                    n += 1
+    # ED physician coverage (day/night) with the two ED-capable doctors
+    docs = [u for u in db.scalars(select(User).where(User.email.in_(("dr.santos@harborview.dev", "dr.okafor@harborview.dev"))))]
+    for d in range(0, 3):
+        for i, name in enumerate(("day", "night")):
+            start, end = RS.window(hosp, today + timedelta(days=d), name)
+            u = docs[i % len(docs)]
+            ok, _r, _ = RS.check_candidate(db, u.id, start, end)
+            if ok:
+                db.add(Shift(organization_id=org.id, facility_id=hosp.id, department_id=depts["ED"].id, user_id=u.id, role="doctor", start_at=start, end_at=end))
+                db.flush()
+                n += 1
+    # OR cases tomorrow
+    rooms = db.scalars(select(Location).where(Location.facility_id == hosp.id, Location.kind == "or_room").order_by(Location.sort_order)).all()
+    surgeon = db.scalar(select(ProviderProfile).join(User).where(User.email == "dr.okafor@harborview.dev"))
+    pts = db.scalars(select(Patient).where(Patient.organization_id == org.id, Patient.is_temporary.is_(False), Patient.is_restricted.is_(False)).limit(3)).all()
+    base = datetime.combine(today + timedelta(days=1), time(7, 30), __import__("zoneinfo").ZoneInfo(hosp.timezone))
+    for i, (proc, code, mins) in enumerate([("Laparoscopic cholecystectomy", "47562", 90), ("Total knee arthroplasty", "27447", 150),
+                                            ("Inguinal hernia repair", "49505", 75)]):
+        if i >= len(pts) or not rooms or not surgeon:
+            break
+        start = base + timedelta(minutes=(mins + 30) * i) if i < 2 else base
+        room = rooms[0] if i < 2 else rooms[1]
+        sur = surgeon if i < 2 else db.scalar(select(ProviderProfile).join(User).where(User.email == "dr.chen@harborview.dev"))
+        db.add(SurgicalCase(organization_id=org.id, facility_id=hosp.id, or_room_id=room.id, patient_id=pts[i].id, surgeon_provider_id=sur.id, procedure=proc,
+                            procedure_code=code, start_at=start, end_at=start + timedelta(minutes=mins), blocked_until=start + timedelta(minutes=mins + 30)))
+        db.flush()
+    return n
+
+
 def extend(db) -> list[str]:
     done = []
     for org in db.scalars(select(Organization).where(Organization.slug == "harborview")):
@@ -249,6 +311,8 @@ def extend(db) -> list[str]:
             done.append("lab orders")
         if seed_imaging_orders(db, org):
             done.append("imaging orders")
+        if seed_roster(db, org, hosp):
+            done.append("roster + OR cases")
     return done
 
 

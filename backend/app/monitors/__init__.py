@@ -7,4 +7,5 @@ from app.monitors import (
     pharmacy,  # noqa: F401
     radiology,  # noqa: F401
     revenue,  # noqa: F401
+    staffing,  # noqa: F401
 )

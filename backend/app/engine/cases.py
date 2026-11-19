@@ -116,6 +116,8 @@ def refresh_case(db: Session, case: Case, f: Finding) -> bool:
     """Monitor re-detected an open case: refresh evidence; raise severity if it worsened. Returns True if severity rose."""
     case.last_detected_at = now()
     case.evidence = f.evidence
+    if f.title and f.title[:250] != case.title:  # keep the headline in step with current evidence (e.g. "2 short" → "1 short")
+        case.title = f.title[:250]
     if f.summary:
         case.summary = f.summary
     rose = SEVERITY_RANK.get(f.severity, 0) > SEVERITY_RANK.get(case.severity, 0)

@@ -77,9 +77,15 @@ from app.models.portal import (
 from app.models.radiology import ImagingStudy
 from app.models.revenue import ClaimFinding, PriorAuthorization
 from app.models.scheduling import Appointment, AppointmentType, ProviderAvailability
+from app.models.scheduling_ops import Shift, StaffSkill, SurgicalCase, SwapRequest, TimeOff
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "Shift",
+    "StaffSkill",
+    "SurgicalCase",
+    "SwapRequest",
+    "TimeOff",
     "ClaimFinding",
     "PriorAuthorization",
     "ImagingStudy",
