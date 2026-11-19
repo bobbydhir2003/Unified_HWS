@@ -46,6 +46,7 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - OpenAI: NOT validated against the live API (no key). Simulated provider used in every run above. To validate: Super Admin → AI settings → enter key → Test connection.
 
 ## Known issues / notes
+- `PATCH /organization` replaces the whole `settings` JSON; an admin saving a stale copy could roll back counters (e.g. `mrn_seq`) → duplicate MRN conflicts. Fix planned: move counters to DB sequences or merge settings server-side.
 - Local Postgres user `undeclared` isn't superuser: role `undeclared_app` was created once by the local admin (`CREATE ROLE undeclared_app NOLOGIN; GRANT undeclared_app TO undeclared`). Migration 0010 raises a clear error if missing. Docker/CI users are superusers (auto-created).
 - Refresh cookie path widened from `/api/auth` to `/api` (so v1 and legacy paths both work).
 - Eligibility, email/SMS are simulated (labeled). Card images need a vision AI provider; in simulated mode only text PDFs (synthetic sample card) are extracted.

@@ -96,6 +96,11 @@ def test_portal_patient_pays_own_bill(as_user):
     r = bill.post("/claims", json={"encounter_id": eid})
     if r.status_code == 409:  # no insurance → self-pay invoice
         bill.post(f"/encounters/{eid}/self-pay-invoice")
+    elif r.json()["status"] == "draft":  # e.g. payer reported coverage inactive → hold the claim and bill the patient
+        c = r.json()
+        assert any("inactive" in e or "eligibility" in e for e in c["scrub_errors"]), c["scrub_errors"]
+        bill.post(f"/claims/{c['id']}/void", json={"reason": "Coverage inactive per payer; billing patient"})
+        bill.post(f"/encounters/{eid}/self-pay-invoice")
     else:
         c = r.json()
         bill.post("/claims/{}/rescrub".format(c["id"]))

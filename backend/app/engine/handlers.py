@@ -14,3 +14,4 @@ def template_workflows(db: Session, ev: DomainEvent) -> None:
 import app.services.discharge  # noqa: E402,F401  (registers discharge_coordinator handler)
 import app.services.ed  # noqa: E402,F401  (registers ed_boarding_release handler)
 import app.services.inventory  # noqa: E402,F401  (registers inventory.removal approval executor)
+import app.services.revenue  # noqa: E402,F401  (registers facility_charges handler)

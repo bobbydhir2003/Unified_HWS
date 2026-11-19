@@ -280,8 +280,21 @@ def _scrub(ctx: TenantContext, c: Claim, charges: list[Charge]) -> list[str]:
         errs.append("Rendering provider NPI missing")
     if not ins or not ins.member_id:
         errs.append("Primary insurance member ID missing")
-    elif ins.termination_date and ins.termination_date < c.service_date:
-        errs.append("Coverage terminated before the date of service")
+    else:
+        # A stored end date is not proof of termination (Insurance Guardian rule): only the payer's response decides.
+        from app.services.insurance import coverage_state
+
+        st = coverage_state(ctx.db, c.patient_id, c.service_date, fresh_days=30)
+        if st.state == "verified_inactive":
+            errs.append("Payer reported coverage inactive — verify eligibility for the date of service")
+        elif ins.termination_date and ins.termination_date < c.service_date and st.state != "verified_active":
+            errs.append("Stored plan end date precedes the date of service — run an eligibility check before submitting")
+    from app.services.revenue import approved_auth, pa_codes
+
+    codes = pa_codes(ctx.db, c.organization_id)
+    for ch in charges:
+        if ch.code in codes and not approved_auth(ctx.db, c.patient_id, ch.code, c.service_date):
+            errs.append(f"{ch.code} requires an approved prior authorization")
     if not (p.address_line1 and p.city and p.postal_code):
         errs.append("Patient address incomplete")
     return errs
@@ -384,6 +397,10 @@ def submit_claim(cid: uuid.UUID, idempotency_key: str | None = Header(default=No
         c.scrub_errors, c.status = errs, "draft"
         ctx.db.commit()
         raise HTTPException(422, {"code": "scrub_failed", "message": "Fix claim errors before submitting", "errors": errs})
+    from app.services.revenue import open_blockers
+
+    if open_blockers(ctx.db, c.id):
+        raise HTTPException(422, {"code": "review_blockers", "message": "Resolve claim review blockers before submitting"})
     ref = adapters.clearinghouse().submit(c.id, key)
     c.status, c.clearinghouse_ref, c.submitted_at = "accepted", ref, now()  # mock clearinghouse accepts immediately (277CA)
     c.submission_count += 1

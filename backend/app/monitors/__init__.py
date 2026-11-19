@@ -6,4 +6,5 @@ from app.monitors import (
     lab,  # noqa: F401
     pharmacy,  # noqa: F401
     radiology,  # noqa: F401
+    revenue,  # noqa: F401
 )
