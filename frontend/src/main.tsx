@@ -33,6 +33,7 @@ const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({
 const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
 const CommandCenter = lazy(() => import("@/features/command/CommandCenter").then((m) => ({ default: m.CommandCenter })));
 const AIWorkspace = lazy(() => import("@/features/ai/AIWorkspace").then((m) => ({ default: m.AIWorkspace })));
+const RadiologyPage = lazy(() => import("@/features/radiology/RadiologyPage").then((m) => ({ default: m.RadiologyPage })));
 const LabPage = lazy(() => import("@/features/lab/LabPage").then((m) => ({ default: m.LabPage })));
 const PharmacyPage = lazy(() => import("@/features/pharmacy/PharmacyPage").then((m) => ({ default: m.PharmacyPage })));
 const EdBoard = lazy(() => import("@/features/ed/EdBoard").then((m) => ({ default: m.EdBoard })));
@@ -153,6 +154,7 @@ const router = createBrowserRouter([
               { path: "analytics", element: <Perm perm="analytics:read"><AnalyticsPage /></Perm>, handle: { crumb: "Analytics" } },
               { path: "command", element: <Perm perm="cases:read"><CommandCenter /></Perm>, handle: { crumb: "Command Center" } },
               { path: "ai", element: <Perm perm="ai:use"><AIWorkspace /></Perm>, handle: { crumb: "AI workspace" } },
+              { path: "radiology", element: <Perm perm="radiology:work"><RadiologyPage /></Perm>, handle: { crumb: "Radiology" } },
               { path: "lab", element: <Perm perm="clinical:read"><LabPage /></Perm>, handle: { crumb: "Laboratory" } },
               { path: "pharmacy", element: <Perm perm="inventory:read"><PharmacyPage /></Perm>, handle: { crumb: "Pharmacy & inventory" } },
               { path: "ed", element: <Perm perm="adt:read"><EdBoard /></Perm>, handle: { crumb: "Emergency" } },
