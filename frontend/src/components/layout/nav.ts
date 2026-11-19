@@ -1,5 +1,5 @@
 import {
-  Activity, BedDouble, FlaskConical, ScanLine, KeyRound, Pill, Siren, HeartHandshake, Hospital, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
+  Activity, BedDouble, FileCheck2, FlaskConical, ScanLine, KeyRound, Pill, Siren, HeartHandshake, Hospital, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
   type LucideIcon, Mail, MessageSquare, PhoneCall, Receipt, ScrollText, ServerCog, Settings2, ShieldCheck, Stethoscope, Users, UsersRound, Workflow,
 } from "lucide-react";
 
@@ -40,6 +40,7 @@ export const NAV: NavSection[] = [
     items: [
       { to: "/insurance", label: "Insurance Guardian", icon: ShieldCheck, any: ["insurance:write", "automation:manage"] },
       { to: "/billing", label: "Billing", icon: Receipt, perm: "billing:read" },
+      { to: "/revenue", label: "Revenue integrity", icon: FileCheck2, any: ["billing:read", "insurance:write"] },
       { to: "/analytics", label: "Analytics", icon: BarChart3, perm: "analytics:read" },
     ],
   },
