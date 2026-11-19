@@ -295,6 +295,29 @@ def seed_roster(db, org: Organization, hosp: Clinic) -> int:
     return n
 
 
+def seed_equipment(db, org: Organization, hosp: Clinic) -> int:
+    from app.models import Equipment, InventoryItem, StockPar
+
+    if db.scalar(select(Equipment.id).where(Equipment.organization_id == org.id).limit(1)):
+        return 0
+    locs = {x.code: x for x in db.scalars(select(Location).where(Location.facility_id == hosp.id))}
+    today = date.today()
+    rows = [("Infusion pump", "IP-0412", "4B", 180, 170), ("Infusion pump", "IP-0413", "4B", 180, 20), ("Defibrillator", "DF-0101", "ED", 90, 95),
+            ("Ventilator", "VT-0301", "ICU", 180, 60), ("Patient monitor", "PM-0307", "ICU", 365, 400), ("Anesthesia machine", "AM-0001", "OR", 180, 176),
+            ("Portable X-ray", "XR-0002", "RAD-IMG", 365, 30)]
+    for name, tag, loc, interval, days_since in rows:
+        last = today - timedelta(days=days_since)
+        db.add(Equipment(organization_id=org.id, facility_id=hosp.id, location_id=locs[loc].id if loc in locs else None, name=name, asset_tag=tag,
+                         manufacturer="Synthetic Medical Co.", maintenance_interval_days=interval, last_maintenance_on=last,
+                         next_maintenance_due=last + timedelta(days=interval)))
+    items = {i.sku: i for i in db.scalars(select(InventoryItem).where(InventoryItem.organization_id == org.id))}
+    for code, sku, par in [("RX-4B", "RX-ONDA4", 40), ("RX-ICU", "RX-HEP5K", 20), ("RX-ED", "RX-MORPH2", 30), ("RX-ED", "RX-APAP500", 100)]:
+        if code in locs and sku in items:
+            db.add(StockPar(organization_id=org.id, location_id=locs[code].id, item_id=items[sku].id, par_level=par))
+    db.flush()
+    return len(rows)
+
+
 def extend(db) -> list[str]:
     done = []
     for org in db.scalars(select(Organization).where(Organization.slug == "harborview")):
@@ -313,6 +336,8 @@ def extend(db) -> list[str]:
             done.append("imaging orders")
         if seed_roster(db, org, hosp):
             done.append("roster + OR cases")
+        if seed_equipment(db, org, hosp):
+            done.append("equipment + par levels")
     return done
 
 

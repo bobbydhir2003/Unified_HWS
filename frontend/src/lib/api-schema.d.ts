@@ -2129,6 +2129,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Equipment */
+        get: operations["list_equipment_api_v1_equipment_get"];
+        put?: never;
+        /** Create Equipment */
+        post: operations["create_equipment_api_v1_equipment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/equipment/{eid}/maintenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Maintenance History */
+        get: operations["maintenance_history_api_v1_equipment__eid__maintenance_get"];
+        put?: never;
+        /** Log Maintenance */
+        post: operations["log_maintenance_api_v1_equipment__eid__maintenance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/equipment/{eid}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Status */
+        post: operations["set_status_api_v1_equipment__eid__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/facilities": {
         parameters: {
             query?: never;
@@ -2616,6 +2669,24 @@ export interface paths {
         /** Stock Locations */
         get: operations["stock_locations_api_v1_inventory_locations_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/pars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Pars */
+        get: operations["list_pars_api_v1_inventory_pars_get"];
+        /** Set Par */
+        put: operations["set_par_api_v1_inventory_pars_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4143,6 +4214,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portal/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Documents */
+        get: operations["my_documents_api_v1_portal_documents_get"];
+        put?: never;
+        /**
+         * Upload Document
+         * @description Outside records (e.g. results from another hospital). Staff confirm identity and file them; nothing is auto-filed.
+         */
+        post: operations["upload_document_api_v1_portal_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portal/home": {
         parameters: {
             query?: never;
@@ -4243,6 +4335,61 @@ export interface paths {
         put?: never;
         /** Patient Reply */
         post: operations["patient_reply_api_v1_portal_messages__tid__reply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/notification-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Prefs */
+        get: operations["get_prefs_api_v1_portal_notification_preferences_get"];
+        /** Set Pref */
+        put: operations["set_pref_api_v1_portal_notification_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Readiness
+         * @description What's left before each upcoming visit. Insurance status comes from payer-verified eligibility, not stored dates.
+         */
+        get: operations["readiness_api_v1_portal_readiness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/stays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stays */
+        get: operations["stays_api_v1_portal_stays_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5753,6 +5900,11 @@ export interface components {
              */
             source: "upload" | "scan";
         };
+        /** Body_upload_document_api_v1_portal_documents_post */
+        Body_upload_document_api_v1_portal_documents_post: {
+            /** File */
+            file: string;
+        };
         /** BookIn */
         BookIn: {
             /**
@@ -6663,6 +6815,38 @@ export interface components {
             /** Follow Up */
             follow_up?: string | null;
         };
+        /** EquipmentIn */
+        EquipmentIn: {
+            /** Asset Tag */
+            asset_tag: string;
+            /**
+             * Category
+             * @default clinical
+             */
+            category: string;
+            /**
+             * Facility Id
+             * Format: uuid
+             */
+            facility_id: string;
+            /** Last Maintenance On */
+            last_maintenance_on?: string | null;
+            /** Location Id */
+            location_id?: string | null;
+            /**
+             * Maintenance Interval Days
+             * @default 180
+             */
+            maintenance_interval_days: number;
+            /** Manufacturer */
+            manufacturer?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Name */
+            name: string;
+            /** Serial Number */
+            serial_number?: string | null;
+        };
         /** FacilityOut */
         FacilityOut: {
             /**
@@ -7126,6 +7310,25 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** MaintIn */
+        MaintIn: {
+            /**
+             * Kind
+             * @default preventive
+             * @enum {string}
+             */
+            kind: "preventive" | "repair" | "inspection" | "calibration";
+            /** Notes */
+            notes?: string | null;
+            /** Performed On */
+            performed_on?: string | null;
+            /**
+             * Result
+             * @default passed
+             * @enum {string}
+             */
+            result: "passed" | "failed" | "repaired";
         };
         /** MeOut */
         MeOut: {
@@ -7739,6 +7942,21 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** ParIn */
+        ParIn: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Location Id
+             * Format: uuid
+             */
+            location_id: string;
+            /** Par Level */
+            par_level: number;
+        };
         /** PatientCreate */
         PatientCreate: {
             /** Address Line1 */
@@ -8054,34 +8272,6 @@ export interface components {
         PortalPayIn: {
             /** Amount Cents */
             amount_cents: number;
-        };
-        /** PrefIn */
-        PrefIn: {
-            /**
-             * Category
-             * @default *
-             */
-            category: string;
-            /**
-             * Email
-             * @default true
-             */
-            email: boolean;
-            /**
-             * In App
-             * @default true
-             */
-            in_app: boolean;
-            /**
-             * Portal
-             * @default true
-             */
-            portal: boolean;
-            /**
-             * Sms
-             * @default false
-             */
-            sms: boolean;
         };
         /** ProblemIn */
         ProblemIn: {
@@ -8720,16 +8910,6 @@ export interface components {
             /** Room */
             room?: string | null;
         };
-        /** StatusIn */
-        StatusIn: {
-            /** Note */
-            note?: string | null;
-            /**
-             * To
-             * @enum {string}
-             */
-            to: "arrived" | "in_progress" | "completed" | "cancelled";
-        };
         /** SupplierIn */
         SupplierIn: {
             /** Contact Name */
@@ -9070,6 +9250,16 @@ export interface components {
             /** Provider Id */
             provider_id?: string | null;
         };
+        /** StatusIn */
+        app__api__routers__equipment__StatusIn: {
+            /** Note */
+            note?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_service" | "out_of_service" | "maintenance" | "retired";
+        };
         /** ItemIn */
         app__api__routers__inpatient_care__ItemIn: {
             /** Note */
@@ -9134,6 +9324,34 @@ export interface components {
             approve: boolean;
             /** Note */
             note?: string | null;
+        };
+        /** PrefIn */
+        app__api__routers__operations__PrefIn: {
+            /**
+             * Category
+             * @default *
+             */
+            category: string;
+            /**
+             * Email
+             * @default true
+             */
+            email: boolean;
+            /**
+             * In App
+             * @default true
+             */
+            in_app: boolean;
+            /**
+             * Portal
+             * @default true
+             */
+            portal: boolean;
+            /**
+             * Sms
+             * @default false
+             */
+            sms: boolean;
         };
         /** CaseIn */
         app__api__routers__or_roster__CaseIn: {
@@ -9244,10 +9462,43 @@ export interface components {
              */
             unit_cost_cents: number;
         };
+        /** PrefIn */
+        app__api__routers__portal_ext__PrefIn: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "appointments" | "insurance" | "discharge" | "billing" | "results" | "general";
+            /**
+             * Email
+             * @default true
+             */
+            email: boolean;
+            /**
+             * Portal
+             * @default true
+             */
+            portal: boolean;
+            /**
+             * Sms
+             * @default false
+             */
+            sms: boolean;
+        };
         /** AddendumIn */
         app__api__routers__radiology__AddendumIn: {
             /** Text */
             text: string;
+        };
+        /** StatusIn */
+        app__api__routers__radiology__StatusIn: {
+            /** Note */
+            note?: string | null;
+            /**
+             * To
+             * @enum {string}
+             */
+            to: "arrived" | "in_progress" | "completed" | "cancelled";
         };
         /** AddendumIn */
         app__schemas__clinical__AddendumIn: {
@@ -14134,6 +14385,181 @@ export interface operations {
             };
         };
     };
+    list_equipment_api_v1_equipment_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_equipment_api_v1_equipment_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    maintenance_history_api_v1_equipment__eid__maintenance_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                eid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_maintenance_api_v1_equipment__eid__maintenance_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                eid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaintIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_status_api_v1_equipment__eid__status_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                eid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__routers__equipment__StatusIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_facilities_api_v1_facilities_get: {
         parameters: {
             query?: never;
@@ -15103,6 +15529,74 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_pars_api_v1_inventory_pars_get: {
+        parameters: {
+            query?: {
+                item_id?: string | null;
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_par_api_v1_inventory_pars_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -16382,7 +16876,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PrefIn"];
+                "application/json": components["schemas"]["app__api__routers__operations__PrefIn"];
             };
         };
         responses: {
@@ -18818,6 +19312,72 @@ export interface operations {
             };
         };
     };
+    my_documents_api_v1_portal_documents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_document_api_v1_portal_documents_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_document_api_v1_portal_documents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     home_api_v1_portal_home_get: {
         parameters: {
             query?: never;
@@ -19030,6 +19590,134 @@ export interface operations {
                 "application/json": components["schemas"]["Reply"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_prefs_api_v1_portal_notification_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_pref_api_v1_portal_notification_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__routers__portal_ext__PrefIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    readiness_api_v1_portal_readiness_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stays_api_v1_portal_stays_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -19758,7 +20446,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["StatusIn"];
+                "application/json": components["schemas"]["app__api__routers__radiology__StatusIn"];
             };
         };
         responses: {

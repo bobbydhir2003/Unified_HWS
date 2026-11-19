@@ -1,5 +1,5 @@
 import {
-  Activity, BedDouble, CalendarClock, Scissors, FileCheck2, FlaskConical, ScanLine, KeyRound, Pill, Siren, HeartHandshake, Hospital, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
+  Activity, BedDouble, Wrench, CalendarClock, Scissors, FileCheck2, FlaskConical, ScanLine, KeyRound, Pill, Siren, HeartHandshake, Hospital, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
   type LucideIcon, Mail, MessageSquare, PhoneCall, Receipt, ScrollText, ServerCog, Settings2, ShieldCheck, Stethoscope, Users, UsersRound, Workflow,
 } from "lucide-react";
 
@@ -31,6 +31,7 @@ export const NAV: NavSection[] = [
       { to: "/inpatients", label: "Inpatients", icon: Hospital, perm: "adt:read" },
       { to: "/nursing", label: "Nursing", icon: HeartHandshake, perm: "nursing:write" },
       { to: "/pharmacy", label: "Pharmacy & inventory", icon: Pill, perm: "inventory:read" },
+      { to: "/equipment", label: "Equipment", icon: Wrench, perm: "inventory:write" },
       { to: "/or", label: "Operating rooms", icon: Scissors, any: ["or:manage", "orders:sign"] },
       { to: "/roster", label: "Staff roster", icon: CalendarClock, perm: "roster:self" },
       { to: "/radiology", label: "Radiology", icon: ScanLine, perm: "radiology:work" },

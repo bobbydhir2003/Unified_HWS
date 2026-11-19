@@ -39,6 +39,7 @@ const OrSchedulePage = lazy(() => import("@/features/ops/OrRosterPages").then((m
 const RosterPage = lazy(() => import("@/features/ops/OrRosterPages").then((m) => ({ default: m.RosterPage })));
 const RevenuePage = lazy(() => import("@/features/revenue/RevenuePage").then((m) => ({ default: m.RevenuePage })));
 const RadiologyPage = lazy(() => import("@/features/radiology/RadiologyPage").then((m) => ({ default: m.RadiologyPage })));
+const EquipmentPage = lazy(() => import("@/features/pharmacy/EquipmentPage").then((m) => ({ default: m.EquipmentPage })));
 const LabPage = lazy(() => import("@/features/lab/LabPage").then((m) => ({ default: m.LabPage })));
 const PharmacyPage = lazy(() => import("@/features/pharmacy/PharmacyPage").then((m) => ({ default: m.PharmacyPage })));
 const EdBoard = lazy(() => import("@/features/ed/EdBoard").then((m) => ({ default: m.EdBoard })));
@@ -164,6 +165,7 @@ const router = createBrowserRouter([
               { path: "roster", element: <Perm perm="roster:self"><RosterPage /></Perm>, handle: { crumb: "Roster" } },
               { path: "revenue", element: <Perm perm="billing:read"><RevenuePage /></Perm>, handle: { crumb: "Revenue integrity" } },
               { path: "radiology", element: <Perm perm="radiology:work"><RadiologyPage /></Perm>, handle: { crumb: "Radiology" } },
+              { path: "equipment", element: <Perm perm="inventory:read"><EquipmentPage /></Perm>, handle: { crumb: "Equipment" } },
               { path: "lab", element: <Perm perm="clinical:read"><LabPage /></Perm>, handle: { crumb: "Laboratory" } },
               { path: "pharmacy", element: <Perm perm="inventory:read"><PharmacyPage /></Perm>, handle: { crumb: "Pharmacy & inventory" } },
               { path: "ed", element: <Perm perm="adt:read"><EdBoard /></Perm>, handle: { crumb: "Emergency" } },

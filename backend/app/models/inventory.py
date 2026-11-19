@@ -156,3 +156,48 @@ class MedicationVerification(UUIDPk, OrgScoped, Base):
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (UniqueConstraint("order_id"), CheckConstraint("status in ('verified','rejected','clarify')", name="status"))
+
+
+class StockPar(UUIDPk, OrgScoped, Base):
+    """Department/location par level: the quantity a location should hold (restocked by transfer from the main store)."""
+
+    __tablename__ = "stock_pars"
+    location_id: Mapped[uuid.UUID] = fk("locations.id")
+    item_id: Mapped[uuid.UUID] = fk("inventory_items.id")
+    par_level: Mapped[int] = mapped_column(Integer)
+
+    __table_args__ = (UniqueConstraint("location_id", "item_id"), CheckConstraint("par_level >= 0", name="par"))
+
+
+class Equipment(UUIDPk, Timestamps, OrgScoped, Base):
+    __tablename__ = "equipment"
+    facility_id: Mapped[uuid.UUID] = fk("clinics.id")
+    location_id: Mapped[uuid.UUID | None] = fk("locations.id", nullable=True, ondelete="SET NULL", index=False)
+    name: Mapped[str] = mapped_column(String(120))
+    asset_tag: Mapped[str] = mapped_column(String(40))
+    category: Mapped[str] = mapped_column(String(40), default="clinical")
+    manufacturer: Mapped[str | None] = mapped_column(String(80))
+    model: Mapped[str | None] = mapped_column(String(80))
+    serial_number: Mapped[str | None] = mapped_column(String(80))
+    status: Mapped[str] = mapped_column(String(15), default="in_service")
+    maintenance_interval_days: Mapped[int] = mapped_column(Integer, default=180)
+    last_maintenance_on: Mapped[date | None] = mapped_column(Date)
+    next_maintenance_due: Mapped[date | None] = mapped_column(Date)
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (UniqueConstraint("organization_id", "asset_tag"),
+                      CheckConstraint("status in ('in_service','out_of_service','maintenance','retired')", name="status"),
+                      CheckConstraint("maintenance_interval_days between 1 and 3650", name="interval"))
+
+
+class MaintenanceLog(UUIDPk, OrgScoped, Base):
+    """Append-only equipment service history."""
+
+    __tablename__ = "maintenance_logs"
+    equipment_id: Mapped[uuid.UUID] = fk("equipment.id")
+    kind: Mapped[str] = mapped_column(String(15))  # preventive | repair | inspection | calibration
+    result: Mapped[str] = mapped_column(String(15), default="passed")  # passed | failed | repaired
+    notes: Mapped[str | None] = mapped_column(Text)
+    performed_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    performed_on: Mapped[date] = mapped_column(Date)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

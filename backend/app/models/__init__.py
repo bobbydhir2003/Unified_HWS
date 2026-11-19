@@ -56,12 +56,15 @@ from app.models.inpatient import (
 )
 from app.models.insurance import CoverageUpdateRequest, EligibilityCheck
 from app.models.inventory import (
+    Equipment,
     InventoryItem,
     InventoryLot,
+    MaintenanceLog,
     MedicationVerification,
     PurchaseRequest,
     StockBalance,
     StockMovement,
+    StockPar,
     Supplier,
 )
 from app.models.lab import CriticalResultAlert, Specimen
@@ -81,6 +84,9 @@ from app.models.scheduling_ops import Shift, StaffSkill, SurgicalCase, SwapReque
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "Equipment",
+    "MaintenanceLog",
+    "StockPar",
     "Shift",
     "StaffSkill",
     "SurgicalCase",

@@ -1569,6 +1569,20 @@
     "title": "Body_upload_document_api_v1_documents_post",
     "type": "object"
    },
+   "Body_upload_document_api_v1_portal_documents_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_upload_document_api_v1_portal_documents_post",
+    "type": "object"
+   },
    "BookIn": {
     "properties": {
      "appointment_type_id": {
@@ -4436,6 +4450,104 @@
     "title": "EncounterUpdate",
     "type": "object"
    },
+   "EquipmentIn": {
+    "properties": {
+     "asset_tag": {
+      "maxLength": 40,
+      "minLength": 2,
+      "title": "Asset Tag",
+      "type": "string"
+     },
+     "category": {
+      "default": "clinical",
+      "maxLength": 40,
+      "title": "Category",
+      "type": "string"
+     },
+     "facility_id": {
+      "format": "uuid",
+      "title": "Facility Id",
+      "type": "string"
+     },
+     "last_maintenance_on": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Maintenance On"
+     },
+     "location_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Location Id"
+     },
+     "maintenance_interval_days": {
+      "default": 180,
+      "maximum": 3650.0,
+      "minimum": 1.0,
+      "title": "Maintenance Interval Days",
+      "type": "integer"
+     },
+     "manufacturer": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manufacturer"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 2,
+      "title": "Name",
+      "type": "string"
+     },
+     "serial_number": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Serial Number"
+     }
+    },
+    "required": [
+     "facility_id",
+     "name",
+     "asset_tag"
+    ],
+    "title": "EquipmentIn",
+    "type": "object"
+   },
    "FacilityOut": {
     "properties": {
      "bed_count": {
@@ -5748,6 +5860,57 @@
      "password"
     ],
     "title": "LoginIn",
+    "type": "object"
+   },
+   "MaintIn": {
+    "properties": {
+     "kind": {
+      "default": "preventive",
+      "enum": [
+       "preventive",
+       "repair",
+       "inspection",
+       "calibration"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 2000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "performed_on": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Performed On"
+     },
+     "result": {
+      "default": "passed",
+      "enum": [
+       "passed",
+       "failed",
+       "repaired"
+      ],
+      "title": "Result",
+      "type": "string"
+     }
+    },
+    "title": "MaintIn",
     "type": "object"
    },
    "MeOut": {
@@ -7389,6 +7552,33 @@
     "title": "Page[PatientListItem]",
     "type": "object"
    },
+   "ParIn": {
+    "properties": {
+     "item_id": {
+      "format": "uuid",
+      "title": "Item Id",
+      "type": "string"
+     },
+     "location_id": {
+      "format": "uuid",
+      "title": "Location Id",
+      "type": "string"
+     },
+     "par_level": {
+      "maximum": 100000.0,
+      "minimum": 0.0,
+      "title": "Par Level",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "location_id",
+     "item_id",
+     "par_level"
+    ],
+    "title": "ParIn",
+    "type": "object"
+   },
    "PatientCreate": {
     "properties": {
      "address_line1": {
@@ -8492,38 +8682,6 @@
      "amount_cents"
     ],
     "title": "PortalPayIn",
-    "type": "object"
-   },
-   "PrefIn": {
-    "properties": {
-     "category": {
-      "default": "*",
-      "maxLength": 40,
-      "title": "Category",
-      "type": "string"
-     },
-     "email": {
-      "default": true,
-      "title": "Email",
-      "type": "boolean"
-     },
-     "in_app": {
-      "default": true,
-      "title": "In App",
-      "type": "boolean"
-     },
-     "portal": {
-      "default": true,
-      "title": "Portal",
-      "type": "boolean"
-     },
-     "sms": {
-      "default": false,
-      "title": "Sms",
-      "type": "boolean"
-     }
-    },
-    "title": "PrefIn",
     "type": "object"
    },
    "ProblemIn": {
@@ -10344,37 +10502,6 @@
     "title": "StatusAction",
     "type": "object"
    },
-   "StatusIn": {
-    "properties": {
-     "note": {
-      "anyOf": [
-       {
-        "maxLength": 1000,
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Note"
-     },
-     "to": {
-      "enum": [
-       "arrived",
-       "in_progress",
-       "completed",
-       "cancelled"
-      ],
-      "title": "To",
-      "type": "string"
-     }
-    },
-    "required": [
-     "to"
-    ],
-    "title": "StatusIn",
-    "type": "object"
-   },
    "SupplierIn": {
     "properties": {
      "contact_name": {
@@ -11578,6 +11705,37 @@
     "title": "AssignIn",
     "type": "object"
    },
+   "app__api__routers__equipment__StatusIn": {
+    "properties": {
+     "note": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "status": {
+      "enum": [
+       "in_service",
+       "out_of_service",
+       "maintenance",
+       "retired"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "status"
+    ],
+    "title": "StatusIn",
+    "type": "object"
+   },
    "app__api__routers__inpatient_care__ItemIn": {
     "properties": {
      "note": {
@@ -11828,6 +11986,38 @@
      "approve"
     ],
     "title": "DecideIn",
+    "type": "object"
+   },
+   "app__api__routers__operations__PrefIn": {
+    "properties": {
+     "category": {
+      "default": "*",
+      "maxLength": 40,
+      "title": "Category",
+      "type": "string"
+     },
+     "email": {
+      "default": true,
+      "title": "Email",
+      "type": "boolean"
+     },
+     "in_app": {
+      "default": true,
+      "title": "In App",
+      "type": "boolean"
+     },
+     "portal": {
+      "default": true,
+      "title": "Portal",
+      "type": "boolean"
+     },
+     "sms": {
+      "default": false,
+      "title": "Sms",
+      "type": "boolean"
+     }
+    },
+    "title": "PrefIn",
     "type": "object"
    },
    "app__api__routers__or_roster__CaseIn": {
@@ -12099,6 +12289,42 @@
     "title": "ItemIn",
     "type": "object"
    },
+   "app__api__routers__portal_ext__PrefIn": {
+    "properties": {
+     "category": {
+      "enum": [
+       "appointments",
+       "insurance",
+       "discharge",
+       "billing",
+       "results",
+       "general"
+      ],
+      "title": "Category",
+      "type": "string"
+     },
+     "email": {
+      "default": true,
+      "title": "Email",
+      "type": "boolean"
+     },
+     "portal": {
+      "default": true,
+      "title": "Portal",
+      "type": "boolean"
+     },
+     "sms": {
+      "default": false,
+      "title": "Sms",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "category"
+    ],
+    "title": "PrefIn",
+    "type": "object"
+   },
    "app__api__routers__radiology__AddendumIn": {
     "properties": {
      "text": {
@@ -12112,6 +12338,37 @@
      "text"
     ],
     "title": "AddendumIn",
+    "type": "object"
+   },
+   "app__api__routers__radiology__StatusIn": {
+    "properties": {
+     "note": {
+      "anyOf": [
+       {
+        "maxLength": 1000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "to": {
+      "enum": [
+       "arrived",
+       "in_progress",
+       "completed",
+       "cancelled"
+      ],
+      "title": "To",
+      "type": "string"
+     }
+    },
+    "required": [
+     "to"
+    ],
+    "title": "StatusIn",
     "type": "object"
    },
    "app__schemas__clinical__AddendumIn": {
@@ -21755,6 +22012,338 @@
     ]
    }
   },
+  "/api/v1/equipment": {
+   "get": {
+    "operationId": "list_equipment_api_v1_equipment_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "List Equipment",
+    "tags": [
+     "equipment"
+    ]
+   },
+   "post": {
+    "operationId": "create_equipment_api_v1_equipment_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EquipmentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Create Equipment",
+    "tags": [
+     "equipment"
+    ]
+   }
+  },
+  "/api/v1/equipment/{eid}/maintenance": {
+   "get": {
+    "operationId": "maintenance_history_api_v1_equipment__eid__maintenance_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "eid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Eid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Maintenance History",
+    "tags": [
+     "equipment"
+    ]
+   },
+   "post": {
+    "operationId": "log_maintenance_api_v1_equipment__eid__maintenance_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "eid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Eid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MaintIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Log Maintenance",
+    "tags": [
+     "equipment"
+    ]
+   }
+  },
+  "/api/v1/equipment/{eid}/status": {
+   "post": {
+    "operationId": "set_status_api_v1_equipment__eid__status_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "eid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Eid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/app__api__routers__equipment__StatusIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Set Status",
+    "tags": [
+     "equipment"
+    ]
+   }
+  },
   "/api/v1/facilities": {
    "get": {
     "operationId": "list_facilities_api_v1_facilities_get",
@@ -23721,6 +24310,135 @@
     "summary": "Stock Locations",
     "tags": [
      "pharmacy"
+    ]
+   }
+  },
+  "/api/v1/inventory/pars": {
+   "get": {
+    "operationId": "list_pars_api_v1_inventory_pars_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "item_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "uuid",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Item Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "List Pars",
+    "tags": [
+     "equipment"
+    ]
+   },
+   "put": {
+    "operationId": "set_par_api_v1_inventory_pars_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ParIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Set Par",
+    "tags": [
+     "equipment"
     ]
    }
   },
@@ -26186,7 +26904,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/PrefIn"
+        "$ref": "#/components/schemas/app__api__routers__operations__PrefIn"
        }
       }
      },
@@ -31125,6 +31843,119 @@
     ]
    }
   },
+  "/api/v1/portal/documents": {
+   "get": {
+    "operationId": "my_documents_api_v1_portal_documents_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "My Documents",
+    "tags": [
+     "portal"
+    ]
+   },
+   "post": {
+    "description": "Outside records (e.g. results from another hospital). Staff confirm identity and file them; nothing is auto-filed.",
+    "operationId": "upload_document_api_v1_portal_documents_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_upload_document_api_v1_portal_documents_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Upload Document",
+    "tags": [
+     "portal"
+    ]
+   }
+  },
   "/api/v1/portal/home": {
    "get": {
     "operationId": "home_api_v1_portal_home_get",
@@ -31534,6 +32365,223 @@
     "summary": "Patient Reply",
     "tags": [
      "messages"
+    ]
+   }
+  },
+  "/api/v1/portal/notification-preferences": {
+   "get": {
+    "operationId": "get_prefs_api_v1_portal_notification_preferences_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Get Prefs",
+    "tags": [
+     "portal"
+    ]
+   },
+   "put": {
+    "operationId": "set_pref_api_v1_portal_notification_preferences_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/app__api__routers__portal_ext__PrefIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Set Pref",
+    "tags": [
+     "portal"
+    ]
+   }
+  },
+  "/api/v1/portal/readiness": {
+   "get": {
+    "description": "What's left before each upcoming visit. Insurance status comes from payer-verified eligibility, not stored dates.",
+    "operationId": "readiness_api_v1_portal_readiness_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Readiness",
+    "tags": [
+     "portal"
+    ]
+   }
+  },
+  "/api/v1/portal/stays": {
+   "get": {
+    "operationId": "stays_api_v1_portal_stays_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Stays",
+    "tags": [
+     "portal"
     ]
    }
   },
@@ -32923,7 +33971,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/StatusIn"
+        "$ref": "#/components/schemas/app__api__routers__radiology__StatusIn"
        }
       }
      },
