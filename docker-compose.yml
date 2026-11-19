@@ -1,0 +1,46 @@
+# Local full stack: http://localhost:8080 (web) · http://localhost:8010/api/docs (API)
+name: undeclared
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: undeclared
+      POSTGRES_PASSWORD: undeclared
+      POSTGRES_DB: undeclared
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U undeclared"]
+      interval: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+  api:
+    build: ./backend
+    env_file: [.env.docker]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports: ["8010:8000"]
+    volumes: [storage:/app/var/storage]
+  worker:
+    build: ./backend
+    env_file: [.env.docker]
+    command: ["celery", "-A", "app.worker", "worker", "-B", "-s", "/tmp/celerybeat-schedule", "-l", "info", "--concurrency", "2"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker inspect ping -t 5 | grep -q pong"]
+      interval: 30s
+      timeout: 10s
+    depends_on:
+      api: { condition: service_healthy }
+    volumes: [storage:/app/var/storage]
+  web:
+    build: ./frontend
+    depends_on:
+      api: { condition: service_healthy }
+    ports: ["8080:80"]
+volumes:
+  pgdata:
+  storage:
