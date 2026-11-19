@@ -1,3 +1,4 @@
+/* © 2026 Sidra Riaz Awan. All rights reserved. Undeclared — unified hospital management system. */
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ShieldAlert } from "lucide-react";
@@ -13,6 +14,7 @@ import { ApiError } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 
 // Feature pages load on demand (route-level code splitting).
+const AboutPage = lazy(() => import("@/features/legal/AboutPage").then((m) => ({ default: m.AboutPage })));
 const AccountPage = lazy(() => import("@/features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
 const AuditPage = lazy(() => import("@/features/admin/AdminPages").then((m) => ({ default: m.AuditPage })));
 const OrganizationsPage = lazy(() => import("@/features/admin/AdminPages").then((m) => ({ default: m.OrganizationsPage })));
@@ -125,6 +127,7 @@ const router = createBrowserRouter([
     ],
   },
   { path: "/reset-password", element: <ResetPasswordPage /> },
+  { path: "/about", element: <Suspense fallback={<Splash />}><AboutPage /></Suspense> },
   { path: "/accept-invite", element: <AcceptInvitePage /> },
   {
     element: <RequireAuth />,

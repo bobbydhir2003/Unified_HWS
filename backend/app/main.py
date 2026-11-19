@@ -1,3 +1,6 @@
+"""Undeclared API — unified hospital management system.
+© 2026 Sidra Riaz Awan. All rights reserved."""
+
 import logging
 import time
 import uuid
@@ -50,6 +53,7 @@ from app.core.hardening import (
     route_template,
     too_many,
 )
+from app.core.legal import COPYRIGHT_NOTICE
 from app.core.logging import configure_logging
 from app.integrations import fhir
 from app.services.audit import client_ip
@@ -71,6 +75,7 @@ metrics = Metrics()
 app = FastAPI(
     title="Undeclared API",
     version="1.0.0",
+    description=f"Unified hospital management system API. {COPYRIGHT_NOTICE}",
     docs_url="/api/v1/docs" if not settings.is_production else None,
     openapi_url="/api/v1/openapi.json" if not settings.is_production else None,
 )

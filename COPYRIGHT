@@ -1,0 +1,10 @@
+Undeclared — unified hospital management system
+
+© 2026 Sidra Riaz Awan. All rights reserved.
+
+This copyright covers the original source code, user interface design and documentation in this repository.
+No license is granted except as agreed in writing with the copyright holder.
+
+Third-party software (npm and Python dependencies, fonts, icons) remains under its own licenses and copyrights;
+see each package's license file. Clinical code sets are owned by their publishers: CPT® © American Medical
+Association (license required for production use); LOINC® © Regenstrief Institute; ICD-10-CM published by NCHS.

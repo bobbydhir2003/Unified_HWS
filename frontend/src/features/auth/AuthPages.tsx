@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LegalFooter } from "@/components/common/LegalFooter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CalendarCheck2, FileCheck2, ShieldCheck, Sparkles } from "lucide-react";
 import * as React from "react";
@@ -46,7 +47,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
         <p className="relative mt-12 text-xs text-sidebar-muted">Development build · synthetic data only · not certified for clinical use</p>
       </aside>
       <main className="flex items-center justify-center px-4 py-10 sm:px-8">
-        <div className="w-full max-w-sm">{children}</div>
+        <div className="w-full max-w-sm">{children}<LegalFooter className="mt-8 px-0" /></div>
       </main>
     </div>
   );

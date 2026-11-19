@@ -1,7 +1,9 @@
 [project]
 name = "undeclared-api"
 version = "0.1.0"
-description = "Undeclared EHR platform API"
+description = "Undeclared unified hospital management system API"
+authors = [{ name = "Sidra Riaz Awan" }]
+classifiers = ["License :: Other/Proprietary License", "Private :: Do Not Upload"]
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115",

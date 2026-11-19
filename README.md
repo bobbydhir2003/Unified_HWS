@@ -84,3 +84,10 @@ cd frontend && npm run typecheck && npm run build
 ## Docs
 
 [Plan](docs/MASTER_IMPLEMENTATION_PLAN.md) · [Progress](docs/IMPLEMENTATION_PROGRESS.md) · [Architecture](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_DESIGN.md) · [UI/UX](docs/UI_UX_SYSTEM.md) · [Security](docs/SECURITY_AND_COMPLIANCE.md) · [Integrations](docs/INTEGRATIONS.md) · [Deployment](docs/DEPLOYMENT.md) · [Operations](docs/OPERATIONS.md) · [Production readiness](docs/PRODUCTION_READINESS.md)
+
+## Copyright
+
+© 2026 Sidra Riaz Awan. All rights reserved. See [COPYRIGHT](COPYRIGHT). Third-party dependencies keep their own licenses.
+The notice text lives in `frontend/src/lib/legal.ts` and `backend/app/core/legal.py` (single source per codebase); the production
+build preserves it (legal-comment banner on every JS chunk and `<meta name="copyright">`).
+

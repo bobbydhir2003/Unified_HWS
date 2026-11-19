@@ -3,6 +3,7 @@ import { CalendarDays, CalendarPlus, CircleAlert, ClipboardCheck, CreditCard, Fi
 import * as React from "react";
 import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { PortalInsurance, usePortalInsurance } from "./PortalInsurance";
+import { LegalFooter } from "@/components/common/LegalFooter";
 import { toast } from "sonner";
 import { AppointmentStatusBadge, EmptyState, ErrorState, LoadingRows, toastError, useConfirm } from "@/components/common";
 import { Notifications } from "@/components/layout/AppShell";
@@ -94,6 +95,7 @@ export function PortalHome() {
           <Route path="*" element={<EmptyState title="Page not found" />} />
         </Routes>
       </main>
+      <LegalFooter />
     </div>
   );
 }
