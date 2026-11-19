@@ -44,6 +44,7 @@ class EdVisit(UUIDPk, Timestamps, OrgScoped, Base):
         CheckConstraint("arrival_mode in ('walk_in','ambulance','police','transfer','other')", name="arrival_mode"),
         CheckConstraint("disposition is null or disposition in (" + ",".join(f"'{s}'" for s in ED_DISPOSITIONS) + ")", name="disposition"),
         CheckConstraint("status <> 'departed' or (disposition is not null and departed_at is not null)", name="departed_complete"),
+        Index("ix_ed_org_arrival", "organization_id", "arrival_at"),  # volume/forecast queries
         # A bay holds one active ED patient; a patient has one active ED visit.
         Index("uq_ed_bay_active", "bed_id", unique=True, postgresql_where=text("status in ('roomed','boarding') and bed_id is not null")),
         Index("uq_ed_patient_active", "patient_id", unique=True, postgresql_where=text("status in ('waiting','triaged','roomed','boarding')")),

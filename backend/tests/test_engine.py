@@ -180,3 +180,33 @@ def test_case_api_requires_snooze_reason_and_scopes(as_user):
     assert as_user("patient@harborview.dev").get(f"/cases/{cid}").status_code == 403
     assert as_user("dr.lake@lakeside.dev", "lakeside").get(f"/cases/{cid}").status_code == 404
     assert REGISTRY  # registry populated
+
+
+def test_persistent_failure_goes_dead_is_visible_and_retryable(db, as_user):
+    """C8 reliability: a handler that keeps failing stops retrying after MAX_ATTEMPTS, shows in engine health, and an
+    automation manager can replay it once the cause is fixed — the effect is applied exactly once."""
+    from app.engine.events import MAX_ATTEMPTS
+
+    org = db.scalar(select(Organization.id).where(Organization.slug == "harborview"))
+    CALLS.clear()
+    FLAKY["fail_next"] = MAX_ATTEMPTS
+    ev = emit(db, org, "test.ping", {"n": "dead"})
+    db.commit()
+    for _ in range(MAX_ATTEMPTS):
+        db.refresh(ev)
+        if ev.status == "dead":
+            break
+        ev.next_attempt_at = now()
+        db.commit()
+        dispatch_pending()
+    db.refresh(ev)
+    assert ev.status == "dead" and ev.attempts == MAX_ATTEMPTS and "transient failure" in ev.last_error and not CALLS
+    admin = as_user("clinicadmin@harborview.dev")
+    h = admin.get("/engine/health").json()
+    assert h["status"] != "ok" and str(ev.id) in {str(e["id"]) for e in h["dead_events"]}
+    assert as_user("dr.chen@harborview.dev").post(f"/engine/events/{ev.id}/retry").status_code == 403
+    FLAKY["fail_next"] = 0  # cause fixed
+    assert admin.post(f"/engine/events/{ev.id}/retry").status_code in (200, 204)
+    dispatch_pending()
+    db.refresh(ev)
+    assert ev.status == "done" and CALLS == [str(ev.id)]

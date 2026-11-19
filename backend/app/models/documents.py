@@ -92,4 +92,5 @@ class AIJob(UUIDPk, OrgScoped, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    __table_args__ = (CheckConstraint("status in ('queued','running','succeeded','failed')", name="status"),)
+    __table_args__ = (CheckConstraint("status in ('queued','running','succeeded','failed')", name="status"),
+                      Index("ix_ai_jobs_org_created", "organization_id", "created_at"))  # governance/usage windows

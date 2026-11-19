@@ -10,7 +10,8 @@ import uuid
 from datetime import date, datetime, time, timedelta
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select, text
+from sqlalchemy.orm import joinedload
 
 from app.api.deps import TenantContext, get_ctx, require
 from app.core.errors import forbidden
@@ -19,7 +20,6 @@ from app.core.security import now
 from app.models import (
     AdtEvent,
     Appointment,
-    BedAssignment,
     Case,
     Claim,
     DischargePlan,
@@ -44,13 +44,16 @@ NURSE_RATIO = {"med_surg": 5, "icu": 2}
 # ======================= C4 Forecasting =======================
 
 def _daily_census(db, org, days: int) -> dict[date, int]:
-    out = {}
-    for d in range(days, 0, -1):
-        day = date.today() - timedelta(days=d)
-        midnight = datetime.combine(day, time(23, 59)).astimezone()
-        out[day] = db.scalar(select(func.count()).select_from(BedAssignment).join(InpatientStay, InpatientStay.id == BedAssignment.stay_id).where(
-            InpatientStay.organization_id == org, BedAssignment.start_at <= midnight, or_(BedAssignment.end_at.is_(None), BedAssignment.end_at > midnight))) or 0
-    return out
+    """Occupied beds at 23:59 (server local) for each of the last `days` days — one query over all cutoffs, not one per day."""
+    day_list = [date.today() - timedelta(days=d) for d in range(days, 0, -1)]
+    cutoffs = [datetime.combine(d, time(23, 59)).astimezone() for d in day_list]
+    rows = dict(db.execute(text("""
+        select c.cutoff, count(ba.id)
+        from unnest(cast(:cutoffs as timestamptz[])) as c(cutoff)
+        left join bed_assignments ba on ba.start_at <= c.cutoff and (ba.end_at is null or ba.end_at > c.cutoff)
+             and ba.stay_id in (select id from inpatient_stays where organization_id = :org)
+        group by c.cutoff"""), {"cutoffs": cutoffs, "org": org}).all())
+    return {d: int(rows.get(c, 0)) for d, c in zip(day_list, cutoffs, strict=True)}
 
 
 def _daily_count(db, col, org_col, org, days: int) -> dict[date, int]:
@@ -85,15 +88,15 @@ def forecasts(days: int = 7, ctx: TenantContext = Depends(require(P.ANALYTICS_RE
         if p.target_date in series:
             p.actual = series[p.target_date]
     out = {}
+    stored = set(db.execute(select(Prediction.target, Prediction.target_date).where(
+        Prediction.organization_id == org, Prediction.generated_on == date.today(), Prediction.model == "seasonal_mean_v1")).all())
     for target, series in hist.items():
         pts = []
         for i in range(1, min(days, 14) + 1):
             t = date.today() + timedelta(days=i)
             v, lo, hi, method = seasonal(series, t)
             pts.append({"date": t, "value": v, "lower": lo, "upper": hi})
-            exists = db.scalar(select(Prediction.id).where(Prediction.organization_id == org, Prediction.target == target, Prediction.target_date == t,
-                                                           Prediction.generated_on == date.today(), Prediction.model == "seasonal_mean_v1"))
-            if not exists:
+            if (target, t) not in stored:
                 db.add(Prediction(organization_id=org, target=target, target_date=t, model="seasonal_mean_v1", value=v, lower=lo, upper=hi,
                                   generated_on=date.today(), inputs={"method": method, "history_days": len(series)}))
         out[target] = {"history": [{"date": d, "value": v} for d, v in series.items()], "forecast": pts, "method": "seasonal_mean_v1"}
@@ -134,7 +137,7 @@ def journey(patient_id: uuid.UUID, ctx: TenantContext = Depends(get_ctx)):
             ev.append({"at": at, "kind": kind, "title": title, "detail": detail, "link": link, "department": dept})
 
     if ctx.can(P.SCHEDULE_READ):
-        for a in db.scalars(select(Appointment).where(Appointment.patient_id == p.id).order_by(Appointment.start_at.desc()).limit(50)):
+        for a in db.scalars(select(Appointment).options(joinedload(Appointment.clinic)).where(Appointment.patient_id == p.id).order_by(Appointment.start_at.desc()).limit(50)):
             add(a.start_at, "appointment", f"Appointment · {a.status.replace('_', ' ')}", a.reason, f"/patients/{p.id}/appointments", a.clinic.name)
     if ctx.can(P.CLINICAL_READ):
         for e in db.scalars(select(Encounter).where(Encounter.patient_id == p.id).order_by(Encounter.started_at.desc()).limit(50)):
@@ -144,7 +147,7 @@ def journey(patient_id: uuid.UUID, ctx: TenantContext = Depends(get_ctx)):
         for r in db.execute(select(func.max(LabResult.verified_at), Order.title, Order.id).join(Order, Order.id == LabResult.order_id)
                             .where(LabResult.patient_id == p.id, LabResult.status == "final").group_by(Order.title, Order.id)).all():
             add(r[0], "result", f"Result verified · {r[1]}", None, f"/patients/{p.id}/results", "Laboratory")
-        for s in db.scalars(select(ImagingStudy).where(ImagingStudy.patient_id == p.id, ImagingStudy.status == "final")):
+        for s in db.scalars(select(ImagingStudy).options(joinedload(ImagingStudy.order)).where(ImagingStudy.patient_id == p.id, ImagingStudy.status == "final")):
             add(s.signed_at, "imaging", f"Imaging report signed · {s.order.title}", (s.impression or "")[:160], None, "Radiology")
     if ctx.can(P.ADT_READ):
         for v in db.scalars(select(EdVisit).where(EdVisit.patient_id == p.id)):

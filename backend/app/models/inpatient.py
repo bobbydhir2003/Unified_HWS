@@ -65,6 +65,8 @@ class InpatientStay(UUIDPk, Timestamps, OrgScoped, Base):
         CheckConstraint("discharge_disposition is null or discharge_disposition in (" + ",".join(f"'{s}'" for s in DISPOSITIONS) + ")",
                         name="disposition"),
         CheckConstraint("status <> 'discharged' or discharged_at is not null", name="discharged_has_time"),
+        Index("ix_stays_org_admitted", "organization_id", "admitted_at"),  # volume/forecast queries
+        Index("ix_stays_org_discharged", "organization_id", "discharged_at"),
         Index("uq_stays_one_active_per_patient", "patient_id", unique=True,
               postgresql_where=text("status in ('pending','admitted','discharge_ordered')")),
         Index("ix_stays_org_fac_status", "organization_id", "facility_id", "status"),
