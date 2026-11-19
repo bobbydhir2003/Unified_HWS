@@ -15,6 +15,7 @@ from app.models.clinical import (
     VitalSigns,
 )
 from app.models.documents import AIJob, Document
+from app.models.ed import EdVisit, TriageAssessment
 from app.models.engine import (
     ApprovalRequest,
     Case,
@@ -66,6 +67,8 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "EdVisit",
+    "TriageAssessment",
     "DischargePlan",
     "DischargePlanItem",
     "HandoffNote",

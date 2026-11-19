@@ -470,6 +470,12 @@ def seed(reset: bool = False) -> None:
 
         ed_doc = db.scalar(select(ProviderProfile).where(ProviderProfile.user_id == ed_doc_u.id))
         seed_inpatients(db, org, hospital["hospital"], [ed_doc, okafor], [x for x in patients[5:] if not x.is_restricted])
+        from app.models import InpatientStay
+        from app.seed_hospital import seed_ed
+
+        in_house = set(db.scalars(select(InpatientStay.patient_id)))
+        seed_ed(db, org, hospital["hospital"], ed_doc, hstaff["nurse_ms"].user_id, [x for x in reversed(patients) if not x.is_restricted
+                                                                                    and x.id not in in_house and x.portal_user_id is None])
         from app.seed_hospital import seed_insurance_scenarios
 
         seed_insurance_scenarios(db, org, downtown, chen, types["Follow-up"], portal_p, patients)

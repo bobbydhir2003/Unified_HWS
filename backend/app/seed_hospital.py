@@ -179,3 +179,67 @@ def seed_inpatients(db, org, hosp, attendings: list, patients: list) -> None:
         db.flush()
         db.add(AdtEvent(organization_id=org.id, stay_id=s.id, patient_id=p.id, kind="admission_requested", at=req, note=reason))
     db.flush()
+
+
+def seed_ed(db, org, hosp, ed_doc, nurse_user_id, patients: list) -> None:
+    """Synthetic ED census: waiting, triaged, roomed (seen), one unidentified trauma, one boarding admission, recent departures."""
+    import random
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from app.core.security import now
+    from app.models import EdVisit, Encounter, InpatientStay, Location, Patient, TriageAssessment
+
+    rng = random.Random(11)
+    bays = db.scalars(select(Location).where(Location.facility_id == hosp.id, Location.code.like("ED-%"), Location.kind == "bed")
+                      .order_by(Location.sort_order)).all()
+    bay_iter = iter(bays)
+    pool = iter(patients)
+
+    def visit(p, minutes_ago, complaint, *, esi=None, roomed=False, seen=False, mode="walk_in"):
+        arr = now() - timedelta(minutes=minutes_ago)
+        v = EdVisit(organization_id=org.id, facility_id=hosp.id, patient_id=p.id, arrival_at=arr, arrival_mode=mode, chief_complaint=complaint,
+                    status="waiting")
+        db.add(v)
+        db.flush()
+        if esi:
+            v.esi_level, v.triaged_at, v.status = esi, arr + timedelta(minutes=rng.randint(3, 12)), "triaged"
+            db.add(TriageAssessment(organization_id=org.id, ed_visit_id=v.id, patient_id=p.id, esi_level=esi, complaint=complaint,
+                                    recorded_by_id=nurse_user_id, at=v.triaged_at))
+        if roomed:
+            bay = next(bay_iter)
+            v.bed_id, v.roomed_at, v.status, v.nurse_user_id = bay.id, arr + timedelta(minutes=20), "roomed", nurse_user_id
+            bay.bed_status, bay.bed_status_changed_at = "occupied", v.roomed_at
+        if seen:
+            v.provider_id, v.provider_seen_at = ed_doc.id, arr + timedelta(minutes=rng.randint(15, 45))
+            e = Encounter(organization_id=org.id, clinic_id=hosp.id, patient_id=p.id, provider_id=ed_doc.id, encounter_type="emergency",
+                          status="in_progress", chief_complaint=complaint, started_at=v.provider_seen_at)
+            db.add(e)
+            db.flush()
+            v.encounter_id = e.id
+        return v
+
+    visit(next(pool), 8, "Ankle injury after fall")
+    visit(next(pool), 35, "Abdominal pain, vomiting", esi=3)
+    visit(next(pool), 25, "Laceration to hand", esi=4)
+    visit(next(pool), 70, "Chest pain radiating to left arm", esi=2, roomed=True, seen=True, mode="ambulance")
+    visit(next(pool), 50, "Shortness of breath", esi=3, roomed=True)
+    # Unidentified trauma patient (temporary identity until reconciled).
+    tmp = Patient(organization_id=org.id, mrn="UD199901", first_name="Unidentified", last_name="Male 1119-TRMA", date_of_birth=__import__("datetime").date(1985, 1, 1),
+                  sex_at_birth="male", is_temporary=True)
+    db.add(tmp)
+    db.flush()
+    visit(tmp, 40, "Motor vehicle collision, unresponsive at scene", esi=1, roomed=True, seen=True, mode="ambulance")
+    # Link the oldest pending admission to an ED visit that is now boarding.
+    stay = db.scalar(select(InpatientStay).where(InpatientStay.facility_id == hosp.id, InpatientStay.status == "pending")
+                     .order_by(InpatientStay.requested_at).limit(1))
+    if stay:
+        v = visit(stay.patient, int((now() - stay.requested_at).total_seconds() // 60) + 150, stay.reason, esi=3, roomed=True, seen=True)
+        v.status, v.stay_id, v.disposition_at = "boarding", stay.id, stay.requested_at
+        stay.ed_visit_id = v.id
+    # Recent departures for metrics.
+    for mins, dispo in [(300, "discharged"), (420, "discharged"), (260, "lwbs"), (600, "discharged")]:
+        v = visit(next(pool), mins, rng.choice(["Back pain", "Headache", "Sore throat", "Rash"]), esi=rng.choice([4, 5]), seen=dispo != "lwbs")
+        v.status, v.disposition, v.disposition_at, v.departed_at = "departed", dispo, now() - timedelta(minutes=mins - 150), now() - timedelta(minutes=mins - 160)
+    db.flush()

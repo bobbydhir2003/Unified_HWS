@@ -42,6 +42,10 @@ class Patient(UUIDPk, Timestamps, OrgScoped, Base):
     emergency_contact_name: Mapped[str | None] = mapped_column(String(200))
     emergency_contact_relation: Mapped[str | None] = mapped_column(String(60))
     emergency_contact_phone: Mapped[str | None] = mapped_column(String(40))
+    # Emergency quick registration: temporary identity until reconciled (merged) into the real chart.
+    is_temporary: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    merged_into_id: Mapped[uuid.UUID | None] = fk("patients.id", nullable=True, ondelete="SET NULL", index=False)
+    merged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(20), default="active")
     primary_clinic_id: Mapped[uuid.UUID | None] = fk("clinics.id", nullable=True, ondelete="SET NULL")
     primary_provider_id: Mapped[uuid.UUID | None] = fk(
@@ -58,7 +62,7 @@ class Patient(UUIDPk, Timestamps, OrgScoped, Base):
 
     __table_args__ = (
         UniqueConstraint("organization_id", "mrn"),
-        CheckConstraint("status in ('active','inactive','deceased')", name="status"),
+        CheckConstraint("status in ('active','inactive','deceased','merged')", name="status"),
         CheckConstraint("sex_at_birth in ('female','male','intersex','unknown')", name="sex"),
         Index("ix_patients_org_name", "organization_id", text("lower(last_name)"), text("lower(first_name)")),
         Index("ix_patients_org_dob", "organization_id", "date_of_birth"),
