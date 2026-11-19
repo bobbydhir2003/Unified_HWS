@@ -20,16 +20,24 @@ All work is local on branch `dev` (never pushed). Synthetic data only. Not HIPAA
 | A6 Early Command Center: 8 DB-derived tiles with sources, problem queue (search/severity/department/SLA filters), category×severity matrix, department worklists, automation health, live (SSE) + wall display | ✅ | (milestone commit) |
 | A-demo: `tests/test_milestone_a_journey.py` (registration → inactive coverage detected → fixed → payer re-verified → case auto-closed → check-in → AI scribe → attested sign → completion → follow-up task → claim) + Insurance Guardian & Command Center browser flows | ✅ | (milestone commit) |
 
-## Milestone B — Unified Hospital: not started
+## Milestone B — Unified Hospital (in progress)
+
+| Package | Status | Commit |
+|---|---|---|
+| B1/B2 Inpatient stays + ADT (admit/transfer/discharge order/discharge/cancel), DB exclusion constraint against double bed occupancy, one active stay per patient, bed state machine + history, housekeeping tasks, bed board (live), census, bed-flow monitors (turnover delay, admission waiting, discharge not departed) | ✅ | 0fd926c, 71786f8 |
+| B4 Nursing: inpatient encounter per stay (notes reuse: progress/nursing/discharge_summary), vitals, SBAR handoffs (append-only after acknowledgment), care team, nursing workspace | ✅ | 9c61195, 71786f8 |
+| B5 Discharge coordination: checklist w/ owner task fan-out on discharge order, data-verified items (signed summary, booked follow-up, approved instructions), attested manual items, instructions draft → clinician approval (approval gate), readiness gate (physician-only audited override) | ✅ | 9c61195, 71786f8 |
+| B3 Emergency department | ⏳ next | |
+| B6 Pharmacy + Watchdog, B7 Lab, B8 Radiology, B9 Procurement, B10 Prior auth/claims, B11 OR + rostering, B12 portal | ⏳ | |
 B1 inpatient/ADT → B2 bed board → B3 ED → B4 nursing → B5 discharge agent → B6 pharmacy + Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims → B11 OR + rostering → B12 portal.
 Foundations already in place: locations with `bed_status`, hospital seed (Harborview General: ED 12 bays, 4B/4C/ICU beds, 4 ORs, pharmacy storage), department-scoped staff, engine + monitors.
 
 ## Milestone C — Intelligent Operations: not started
 
 ## Tests actually executed (2026-11-19)
-- Backend: `uv run pytest -q` → **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
+- Backend (latest): **95 passed** after B5 (adds test_adt, test_discharge). Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
 - Frontend: `npm run typecheck` and `npm run build` pass.
-- Browser (local dev, fresh seed, Chrome): api_smoke (no 4xx/5xx for any role) + all 8 original flows + `insurance_guardian_flow` + `command_center_flow` passed at Milestone A completion.
+- Browser (local dev, fresh seed, Chrome): api_smoke (no 4xx/5xx for any role) + all 8 original flows + `insurance_guardian_flow` + `command_center_flow` passed at Milestone A completion; `adt_flow` passed after B5.
 - OpenAI: NOT validated against the live API (no key). Simulated provider used in every run above.
 
 ## Known issues / notes
@@ -40,7 +48,7 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - Header still says "clinic" switcher; facility switcher UI to be finished with Command Center.
 
 ## Next actions
-1. Milestone B, B1: inpatient stays + ADT (admit/transfer/discharge) with exclusion constraint against double bed assignment, movement history, census; then B2 bed board (SSE), B3 ED, B4 nursing, B5 discharge coordination...
+1. B3 Emergency department (quick registration w/ temporary aliases + identity reconciliation, tracking board, triage recorded by nurses, provider assignment, disposition → admission request, boarding monitor), then B6 pharmacy/inventory + Watchdog, B7 lab, B8 radiology, B9 procurement, B10 prior auth/claims, B11 OR/rostering, B12 portal; Milestone B E2E + regression.
 2. When an OpenAI key is available: set `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `AI_TEXT_MODEL` (+ vision/transcription), run AI workspace → "Check provider connection", then document AI / scribe / assistant on synthetic data and record results here.
 
 ---
