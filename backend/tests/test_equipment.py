@@ -39,7 +39,7 @@ def test_below_par_restock_by_transfer(as_user):
     assert short
     s = short[0]
     main = next(x for x in rx.get("/inventory/locations").json() if x["code"] == "RX-MAIN")
-    lot = next(l for l in rx.get(f"/inventory/items/{s['item_id']}").json()["lots"] if l["location_id"] == main["id"] and not l["expired"])
+    lot = next(x for x in rx.get(f"/inventory/items/{s['item_id']}").json()["lots"] if x["location_id"] == main["id"] and not x["expired"])
     rx.post("/inventory/transfer", json={"lot_id": lot["lot_id"], "from_location_id": main["id"], "to_location_id": s["location_id"],
                                          "quantity": s["short"] + 1, "reason": "Restock to par"})
     after = next(p for p in rx.get("/inventory/pars", params={"item_id": s["item_id"]}).json() if p["location_id"] == s["location_id"])
