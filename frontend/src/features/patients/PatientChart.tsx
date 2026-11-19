@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, CalendarPlus, ClipboardList, ClipboardPen, FileStack, TestTube, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, ShieldAlert,
+  AlertTriangle, CalendarPlus, ClipboardList, ClipboardPen, FileStack, Receipt, TestTube, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, ShieldAlert,
   ShieldCheck, Stethoscope, StickyNote, Trash2, Users,
 } from "lucide-react";
 import * as React from "react";
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/menu";
 import { Avatar, Skeleton } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { PatientBillingTab } from "@/features/billing/BillingPage";
 import { PatientDocumentsTab } from "@/features/documents/DocumentReview";
 import { PatientOrdersTab, PatientResultsTab } from "@/features/orders/OrdersPages";
 import { AppointmentDialog } from "@/features/schedule/AppointmentDialog";
@@ -149,6 +150,7 @@ const TABS = [
   { key: "timeline", label: "Timeline", icon: History, clinical: true },
   { key: "documents", label: "Documents", icon: FileStack, docs: true },
   { key: "appointments", label: "Appointments", icon: CalendarPlus },
+  { key: "billing", label: "Billing", icon: Receipt, billing: true },
   { key: "demographics", label: "Demographics", icon: Users },
   { key: "notes", label: "Front-desk notes", icon: StickyNote },
 ];
@@ -172,7 +174,7 @@ export function PatientChart() {
   if (!pq.data) return <div className="space-y-4"><Skeleton className="h-28 rounded-xl" /><Skeleton className="h-9 w-2/3" /><LoadingRows /></div>;
   const p = pq.data;
   const clinical = can("clinical:read");
-  const tabs = TABS.filter((t) => (!t.clinical || clinical) && (!("docs" in t) || can("documents:read")));
+  const tabs = TABS.filter((t) => (!t.clinical || clinical) && (!("docs" in t) || can("documents:read")) && (!("billing" in t) || can("billing:read")));
 
   const startVisit = async () => {
     setStarting(true);
@@ -215,6 +217,7 @@ export function PatientChart() {
         {tab === "timeline" && clinical && <TimelineTab patientId={p.id} />}
         {tab === "documents" && can("documents:read") && <PatientDocumentsTab patientId={p.id} />}
         {tab === "appointments" && <AppointmentsTab patientId={p.id} />}
+        {tab === "billing" && can("billing:read") && <PatientBillingTab patientId={p.id} />}
         {tab === "demographics" && <DemographicsTab p={p} />}
         {tab === "notes" && <AdminNotesTab patientId={p.id} />}
       </div>

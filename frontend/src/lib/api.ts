@@ -54,6 +54,7 @@ type Opts = {
   params?: Record<string, string | number | boolean | null | undefined | string[]>;
   signal?: AbortSignal;
   raw?: boolean;
+  headers?: Record<string, string>;
 };
 
 function buildUrl(path: string, params?: Opts["params"]) {
@@ -68,7 +69,7 @@ function buildUrl(path: string, params?: Opts["params"]) {
 }
 
 async function doFetch(path: string, opts: Opts) {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...(opts.headers ?? {}) };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (orgId) headers["X-Organization-Id"] = orgId;
   let body: BodyInit | undefined;
@@ -119,7 +120,7 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
 }
 
 export const get = <T>(path: string, params?: Opts["params"]) => api<T>(path, { params });
-export const post = <T>(path: string, body?: unknown) => api<T>(path, { method: "POST", body: body ?? {} });
+export const post = <T>(path: string, body?: unknown, headers?: Record<string, string>) => api<T>(path, { method: "POST", body: body ?? {}, headers });
 export const put = <T>(path: string, body: unknown) => api<T>(path, { method: "PUT", body });
 export const patch = <T>(path: string, body: unknown) => api<T>(path, { method: "PATCH", body });
 export const del = <T>(path: string) => api<T>(path, { method: "DELETE" });

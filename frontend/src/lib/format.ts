@@ -42,3 +42,13 @@ export function cToF(c?: string | number | null) {
   if (c === null || c === undefined || c === "") return null;
   return Math.round((Number(c) * 9) / 5 * 10 + 320) / 10;
 }
+
+export function fmtMoney(cents?: number | null) {
+  if (cents === null || cents === undefined) return "—";
+  return (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+/** One key per user intent: reuse it if the same action is retried (e.g. after a network error). */
+export function newIdempotencyKey(scope: string) {
+  return `${scope}-${crypto.randomUUID()}`;
+}

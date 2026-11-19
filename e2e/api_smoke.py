@@ -36,9 +36,11 @@ for email in ["dr.chen@harborview.dev","frontdesk@harborview.dev","nurse.rivera@
     if "audit:read" in m["permissions"]: chk(c,"/audit")
     if "clinic:manage" in m["permissions"]: chk(c,"/system/status"); chk(c,"/clinics",params={"include_inactive":True})
     if "messages:use" in m["permissions"]: chk(c,"/messages")
+    if "billing:read" in m["permissions"]:
+        for path in ["/billing/summary","/billing/charge-queue","/claims","/invoices","/fee-schedule"]: chk(c,path)
     chk(c,"/organizations"); chk(c,"/auth/sessions")
     print("ok", email)
 c,m=login("patient@harborview.dev"); chk(c,f"/patients/{m['patient_id']}"); chk(c,f"/patients/{m['patient_id']}/summary")
-for path in ["/portal/home","/portal/appointments","/portal/booking/options","/portal/messages","/portal/visits",f"/patients/{m['patient_id']}/results"]: chk(c,path)
+for path in ["/portal/bills","/portal/home","/portal/appointments","/portal/booking/options","/portal/messages","/portal/visits",f"/patients/{m['patient_id']}/results"]: chk(c,path)
 print("ok patient")
 print("BAD:",bad)

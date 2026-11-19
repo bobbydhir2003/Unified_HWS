@@ -251,6 +251,11 @@ def seed(reset: bool = False) -> None:
                                        ("Annual physical", 40, "amber", False), ("Sick visit", 20, "rose", False),
                                        ("Telehealth follow-up", 20, "cyan", True)]}
         db.add_all(types.values())
+        from app.data.cpt_common import CPT_DEFAULTS
+        from app.models import FeeScheduleItem
+
+        for code, desc, cents in CPT_DEFAULTS:
+            db.add(FeeScheduleItem(organization_id=org.id, code=code, description=desc, price_cents=cents))
         for name, spec, content in TEMPLATES:
             db.add(ClinicalTemplate(organization_id=org.id, name=name, specialty=spec, content=content))
         db.flush()

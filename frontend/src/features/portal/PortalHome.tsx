@@ -19,6 +19,7 @@ import { flagClass, flagLabel } from "@/features/orders/shared";
 import type { Summary } from "@/features/patients/PatientChart";
 import { VideoVisit } from "@/features/telehealth/VideoVisit";
 import { get, post } from "@/lib/api";
+import { fmtMoney, newIdempotencyKey } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtTime } from "@/lib/format";
 import type { Appointment } from "@/lib/types";
@@ -47,6 +48,7 @@ const NAV = [
   { to: "/portal/visits", label: "Visit summaries", icon: FileHeart },
   { to: "/portal/results", label: "Test results", icon: FlaskConical },
   { to: "/portal/health", label: "Health record", icon: HeartPulse },
+  { to: "/portal/billing", label: "Billing", icon: CreditCard },
   { to: "/portal/account", label: "Account", icon: UserRound },
 ];
 
@@ -73,9 +75,6 @@ export function PortalHome() {
               <n.icon className="size-4" />{n.label}
             </NavLink>
           ))}
-          <span className="flex shrink-0 cursor-not-allowed items-center gap-1.5 px-3 py-2.5 text-[13px] text-muted-foreground/60" title="Online bills and payments are coming soon">
-            <CreditCard className="size-4" />Billing <Badge className="ml-0.5">Soon</Badge>
-          </span>
         </nav>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
@@ -90,6 +89,7 @@ export function PortalHome() {
           <Route path="visits" element={<VisitSummaries />} />
           <Route path="results" element={<PortalResults />} />
           <Route path="health" element={<HealthRecord />} />
+          <Route path="billing" element={<PortalBilling />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="*" element={<EmptyState title="Page not found" />} />
         </Routes>
@@ -475,6 +475,59 @@ function HealthRecord() {
           <CardContent className="text-[13.5px]">{d.last_vitals ? <>{d.last_vitals.systolic && <p>Blood pressure {d.last_vitals.systolic}/{d.last_vitals.diastolic}</p>}{d.last_vitals.heart_rate && <p>Heart rate {d.last_vitals.heart_rate}</p>}<p className="text-xs text-muted-foreground">{fmtDateTime(d.last_vitals.measured_at)} · {fmtTime(d.last_vitals.measured_at)}</p></> : <p className="text-muted-foreground">None recorded.</p>}</CardContent></Card>
       </div>
       <p className="text-xs text-muted-foreground">Something incorrect? <Link to="/portal/messages/new" className="text-primary underline">Let your care team know</Link>.</p>
+    </div>
+  );
+}
+
+type Bill = { id: string; number: string; description: string; status: string; total_cents: number; balance_cents: number; issued_at: string; due_date: string };
+
+function PortalBilling() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["portal-bills"], queryFn: () => get<{ balance_cents: number; invoices: Bill[]; payments: { id: string; amount_cents: number; created_at: string; reference: string | null }[] }>("/portal/bills") });
+  const [paying, setPaying] = React.useState<Bill | null>(null);
+  const [amount, setAmount] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const key = React.useRef<string | null>(null);
+  if (!q.data) return <LoadingRows />;
+  const cents = Math.round(Number(amount) * 100);
+  return (
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">Billing</h1>
+      <Card><CardContent className="flex flex-wrap items-center gap-4 pt-5">
+        <CreditCard className="size-6 text-primary" />
+        <div><p className="text-xs text-muted-foreground">Amount you owe</p><p className="text-2xl font-semibold tabular">{fmtMoney(q.data.balance_cents)}</p></div>
+        <Badge variant="warning" className="ml-auto"><FlaskConical />Payments are simulated — no card is charged</Badge>
+      </CardContent></Card>
+      <Card><CardHeader className="pb-2"><CardTitle>Statements</CardTitle></CardHeader><CardContent>
+        {!q.data.invoices.length ? <p className="text-[13px] text-muted-foreground">No statements.</p> : (
+          <ul className="divide-y">{q.data.invoices.map((i) => (
+            <li key={i.id} className="flex flex-wrap items-center gap-3 py-3 text-[13.5px]">
+              <span className="min-w-0 flex-1"><span className="font-medium">{i.description}</span><span className="block text-xs text-muted-foreground">{i.number} · issued {fmtDate(i.issued_at)} · due {fmtDate(i.due_date)}</span></span>
+              <span className="tabular">{fmtMoney(i.balance_cents)}{i.balance_cents !== i.total_cents && <span className="text-xs text-muted-foreground"> of {fmtMoney(i.total_cents)}</span>}</span>
+              {i.status === "open" ? <Button size="sm" onClick={() => { setPaying(i); setAmount((i.balance_cents / 100).toFixed(2)); key.current = null; }}>Pay now</Button> : <Badge variant="success">Paid</Badge>}
+            </li>
+          ))}</ul>
+        )}
+      </CardContent></Card>
+      <Card><CardHeader className="pb-2"><CardTitle>Payment history</CardTitle></CardHeader><CardContent>
+        {!q.data.payments.length ? <p className="text-[13px] text-muted-foreground">No payments yet.</p> : <ul className="divide-y text-[13.5px]">{q.data.payments.map((p) => <li key={p.id} className="flex justify-between py-2"><span>{fmtDateTime(p.created_at)} · {p.reference}</span><span className="tabular">{fmtMoney(p.amount_cents)}</span></li>)}</ul>}
+      </CardContent></Card>
+      {paying && (
+        <Card className="border-primary/30"><CardContent className="space-y-3 pt-5">
+          <p className="font-medium">Pay {paying.number}</p>
+          <Field label="Amount (USD)" hint={`Balance ${fmtMoney(paying.balance_cents)}`}><Input inputMode="decimal" value={amount} onChange={(e) => { setAmount(e.target.value.replace(/[^\d.]/g, "")); key.current = null; }} className="max-w-40" /></Field>
+          <p className="text-xs text-muted-foreground">This environment uses a simulated payment processor. You won't be asked for card details and nothing is charged.</p>
+          <div className="flex gap-2">
+            <Button loading={busy} disabled={!(cents > 0) || cents > paying.balance_cents} onClick={async () => {
+              key.current ??= newIdempotencyKey("portal-pay");
+              setBusy(true);
+              try { await post(`/portal/bills/${paying.id}/pay`, { amount_cents: cents }, { "Idempotency-Key": key.current }); toast.success(`Payment of ${fmtMoney(cents)} received`); setPaying(null); qc.invalidateQueries({ queryKey: ["portal-bills"] }); }
+              catch (e) { toastError(e); } finally { setBusy(false); }
+            }}>Pay {cents > 0 ? fmtMoney(cents) : ""}</Button>
+            <Button variant="ghost" onClick={() => setPaying(null)}>Cancel</Button>
+          </div>
+        </CardContent></Card>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from app.api.routers import (
     admin,
     auth,
+    billing,
     clinical,
     documents,
     health,
@@ -83,3 +84,4 @@ app.include_router(orders.router, prefix=API)
 app.include_router(portal.router, prefix=API)
 app.include_router(messages.router, prefix=API)
 app.include_router(telehealth.router, prefix=API)
+app.include_router(billing.router, prefix=API)

@@ -1,4 +1,5 @@
 from app.models.base import Base
+from app.models.billing import Charge, Claim, ClaimEvent, ClaimSubmission, FeeScheduleItem, Invoice, Payment
 from app.models.clinical import (
     Allergy,
     ClinicalNote,
@@ -41,6 +42,13 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "Payment",
+    "Invoice",
+    "FeeScheduleItem",
+    "ClaimSubmission",
+    "ClaimEvent",
+    "Claim",
+    "Charge",
     "TelehealthSignal",
     "TelehealthSession",
     "SecureMessage",

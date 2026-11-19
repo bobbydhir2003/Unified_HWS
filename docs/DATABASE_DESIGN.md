@@ -19,6 +19,7 @@ PostgreSQL 16. UUID primary keys, `timestamptz` everywhere, Alembic migrations i
 | Audit | `audit_events` |
 | Patients | `patients`, `patient_insurances`, `patient_access_grants`, `patient_notes` |
 | Scheduling | `appointment_types`, `provider_availability`, `appointments` |
+| Billing | `fee_schedule`, `charges`, `claims`, `claim_events`, `claim_submissions`, `invoices`, `payments` (all money in integer cents) |
 | Portal & telehealth | `message_threads`, `secure_messages`, `intake_submissions`, `telehealth_sessions`, `telehealth_signals` |
 | Orders | `orders` (details JSONB validated per type, safety warnings/override, simulated transmission record, review/release), `lab_results` |
 | Documents & AI | `scribe_sessions`, `documents` (status, AI draft fields, match candidates, reviewer), `ai_jobs` (provider, model, PHI-sent flag, tokens, latency, error) |
@@ -33,6 +34,8 @@ PostgreSQL 16. UUID primary keys, `timestamptz` everywhere, Alembic migrations i
 | Signed notes can't change | trigger `freeze_signed_note` on `clinical_notes` |
 | No versions after signing | trigger `forbid_version_on_signed` |
 | No provider double-booking | `EXCLUDE USING gist (provider_id WITH =, tstzrange(start_at,end_at) WITH &&) WHERE status NOT IN ('cancelled','no_show')` |
+| Idempotent claim submission / payments | `UNIQUE (organization_id, idempotency_key)` on `claim_submissions` and `payments` |
+| Charge arithmetic | `CHECK amount_cents = units * unit_price_cents` |
 | One encounter per appointment | `UNIQUE (appointment_id)` on `encounters` |
 | MRN unique per org | `UNIQUE (organization_id, mrn)`; allocated from a row-locked counter in `organizations.settings` |
 | Vital sign ranges | `CHECK` constraints |
@@ -56,6 +59,7 @@ PostgreSQL 16. UUID primary keys, `timestamptz` everywhere, Alembic migrations i
 | `0004` | Scribe sessions (consent method/time, transcript, draft, applied note version, audio retention) |
 | `0005` | Orders (type/status/priority checks, `signed_requires_signer`), lab results |
 | `0006` | Message threads/messages, intake submissions, telehealth sessions/signals, `appointments.booked_via` |
+| `0007` | Billing: fee schedule, charges, claims, claim events/submissions (idempotency), invoices, payments (idempotency); amount CHECKs |
 | `0003` | Documents, AI jobs (`CHECK status <> 'filed' OR patient_id IS NOT NULL`) |
 
 Objects managed by hand-written SQL (`ix_patients_name_trgm`, the exclusion constraint) are excluded from autogenerate in `alembic/env.py`.
