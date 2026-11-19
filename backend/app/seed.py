@@ -4,6 +4,7 @@ Usage:  python -m app.seed          (no-op if already seeded)
         python -m app.seed --reset  (truncate everything and reseed)
 """
 
+import os
 import random
 import sys
 from datetime import date, datetime, time, timedelta
@@ -38,8 +39,19 @@ from app.models import (
     VitalSigns,
 )
 
-DEV_PASSWORD = "Undeclared!2026"
+# Demo accounts share one password. Locally it's the documented dev default; any shared/deployed environment must set
+# SEED_DEMO_PASSWORD (the default is public in the repository) — seeding refuses otherwise.
+DEV_PASSWORD = os.environ.get("SEED_DEMO_PASSWORD") or "Undeclared!2026"
 rng = random.Random(20261119)
+
+
+def _webhook_secret(kind: str) -> str:
+    """Known values locally (tests/E2E post to these webhooks); random per deployment when a demo password is set."""
+    if os.environ.get("SEED_DEMO_PASSWORD"):
+        import secrets
+
+        return secrets.token_urlsafe(32)
+    return f"dev-{kind}-secret-harborview"
 
 FIRST_F = ["Ava", "Sofia", "Maya", "Isabella", "Grace", "Lena", "Priya", "Hana", "Chloe", "Nora", "Elena", "Amara",
            "Zoe", "Leah", "Mei", "Fatima", "Ruth", "Iris", "Clara", "Dana"]
@@ -309,7 +321,7 @@ def seed(reset: bool = False) -> None:
 
         # ---- Org 1: Harborview Family Medicine ----
         org = Organization(name="Harborview Health", slug="harborview",
-                           settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": "dev-fax-secret-harborview", "voice_webhook_secret": "dev-voice-secret-harborview"})
+                           settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": _webhook_secret("fax"), "voice_webhook_secret": _webhook_secret("voice")})
         db.add(org)
         db.flush()
         tz = "America/New_York"
@@ -508,10 +520,21 @@ def seed(reset: bool = False) -> None:
         run_all(db, [org.id])
         db.commit()
         dispatch_pending()
-        print("Seeded synthetic data. Dev password for all accounts:", DEV_PASSWORD)
+        shown = DEV_PASSWORD if not os.environ.get("SEED_DEMO_PASSWORD") else "(value of SEED_DEMO_PASSWORD)"
+        print("Seeded synthetic data. Password for all demo accounts:", shown)
     finally:
         db.close()
 
 
+def _check_password() -> None:
+    from app.core.config import settings
+
+    if settings.environment in ("staging", "production") and not os.environ.get("SEED_DEMO_PASSWORD"):
+        raise SystemExit("Refusing to seed a shared environment with the public default password: set SEED_DEMO_PASSWORD.")
+    if "--reset" in sys.argv and settings.environment in ("staging", "production"):
+        raise SystemExit("--reset is disabled outside development/test.")
+
+
 if __name__ == "__main__":
+    _check_password()
     seed(reset="--reset" in sys.argv)

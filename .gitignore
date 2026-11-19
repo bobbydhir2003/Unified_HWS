@@ -11,3 +11,4 @@ backend/.env
 .DS_Store
 *.log
 e2e/.venv/
+*.tsbuildinfo
