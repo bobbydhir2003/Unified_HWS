@@ -31,6 +31,8 @@ const BillingPage = lazy(() => import("@/features/billing/BillingPage").then((m)
 const AIMonitoringPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AIMonitoringPage })));
 const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AutomationPage })));
 const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
+const CommandCenter = lazy(() => import("@/features/command/CommandCenter").then((m) => ({ default: m.CommandCenter })));
+const AIWorkspace = lazy(() => import("@/features/ai/AIWorkspace").then((m) => ({ default: m.AIWorkspace })));
 const WorklistPage = lazy(() => import("@/features/ops/WorklistPage").then((m) => ({ default: m.WorklistPage })));
 const MonitorsPage = lazy(() => import("@/features/ops/MonitorsPage").then((m) => ({ default: m.MonitorsPage })));
 const InsuranceGuardianPage = lazy(() => import("@/features/insurance/InsuranceGuardian").then((m) => ({ default: m.InsuranceGuardianPage })));
@@ -141,6 +143,8 @@ const router = createBrowserRouter([
               { path: "messages", element: <Perm perm="messages:use"><MessagesPage /></Perm>, handle: { crumb: "Messages" } },
               { path: "telehealth/:appointmentId", element: <Perm perm="clinical:read"><VideoVisit /></Perm>, handle: { crumb: "Video visit" } },
               { path: "analytics", element: <Perm perm="analytics:read"><AnalyticsPage /></Perm>, handle: { crumb: "Analytics" } },
+              { path: "command", element: <Perm perm="cases:read"><CommandCenter /></Perm>, handle: { crumb: "Command Center" } },
+              { path: "ai", element: <Perm perm="ai:use"><AIWorkspace /></Perm>, handle: { crumb: "AI workspace" } },
               { path: "worklist", element: <Perm perm="cases:read"><WorklistPage /></Perm>, handle: { crumb: "My work" } },
               { path: "insurance", element: <Perm perm="cases:read"><InsuranceGuardianPage /></Perm>, handle: { crumb: "Insurance Guardian" } },
               { path: "automation/monitors", element: <Perm perm="cases:read"><MonitorsPage /></Perm>, handle: { crumb: "Monitors & rules" } },

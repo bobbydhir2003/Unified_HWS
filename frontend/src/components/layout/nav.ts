@@ -1,5 +1,5 @@
 import {
-  Activity, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks,
+  Activity, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
   type LucideIcon, Mail, MessageSquare, PhoneCall, Receipt, ScrollText, ServerCog, Settings2, ShieldCheck, Stethoscope, Users, UsersRound, Workflow,
 } from "lucide-react";
 
@@ -11,6 +11,7 @@ export const NAV: NavSection[] = [
   {
     items: [
       { to: "/", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/command", label: "Command Center", icon: Radar, any: ["command:view", "automation:manage"] },
       { to: "/worklist", label: "My work", icon: Inbox, perm: "cases:read" },
       { to: "/front-desk", label: "Front desk", icon: ClipboardList, perm: "schedule:write" },
       { to: "/schedule", label: "Schedule", icon: CalendarDays, perm: "schedule:read" },
@@ -33,6 +34,7 @@ export const NAV: NavSection[] = [
   {
     title: "AI & automation",
     items: [
+      { to: "/ai", label: "AI workspace", icon: Sparkles, perm: "ai:use" },
       { to: "/automation/monitors", label: "Monitors & rules", icon: Activity, any: ["automation:manage", "command:view"] },
       { to: "/automation", label: "Automation studio", icon: Workflow, perm: "automation:manage" },
       { to: "/receptionist", label: "AI receptionist", icon: PhoneCall, perm: "schedule:write" },

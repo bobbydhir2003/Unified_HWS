@@ -381,7 +381,11 @@ def ai_jobs(kind: str | None = None, status: str | None = None, ctx: TenantConte
     return {"provider": settings.ai_provider, "phi_allowed": settings.ai_phi_allowed, "phi_sent_externally_total": phi_external, "summary": summary,
             "jobs": [{"id": j.id, "kind": j.kind, "status": j.status, "provider": j.provider, "model": j.model, "latency_ms": j.latency_ms,
                       "input_tokens": j.input_tokens, "output_tokens": j.output_tokens, "phi_sent_externally": j.phi_sent_externally,
-                      "error": j.error, "created_at": j.created_at, "subject_type": j.subject_type} for j in rows]}
+                      "error": j.error, "created_at": j.created_at, "subject_type": j.subject_type,
+                      "cost_usd": float(j.cost_usd) if j.cost_usd is not None else None} for j in rows],
+            "cost_30d_usd": float(ctx.db.scalar(select(func.coalesce(func.sum(AIJob.cost_usd), 0)).where(
+                AIJob.organization_id == ctx.org_id, AIJob.created_at >= now() - timedelta(days=30))) or 0),
+            "cost_tracking": bool(settings.ai_prices)}
 
 
 # ======================= Provider status (no secrets ever returned) =======================
