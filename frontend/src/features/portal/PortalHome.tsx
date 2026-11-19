@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, CalendarPlus, CircleAlert, ClipboardCheck, CreditCard, FileHeart, FlaskConical, HeartPulse, Home, LogOut, Mail, MessageSquare, Pill, Send, ShieldCheck, UserRound, Video } from "lucide-react";
+import { BellRing, CalendarDays, CalendarPlus, CircleAlert, ClipboardCheck, CreditCard, FileHeart, FileUp, FlaskConical, HeartPulse, Home, Hospital, LogOut, Mail, MessageSquare, Pill, Send, ShieldCheck, UserRound, Video } from "lucide-react";
 import * as React from "react";
 import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { PortalDocuments, PortalNotifications, PortalStays, ReadinessCard } from "./PortalExt";
 import { PortalInsurance, usePortalInsurance } from "./PortalInsurance";
 import { LegalFooter } from "@/components/common/LegalFooter";
 import { toast } from "sonner";
@@ -48,6 +49,9 @@ const NAV = [
   { to: "/portal/results", label: "Test results", icon: FlaskConical },
   { to: "/portal/health", label: "Health record", icon: HeartPulse },
   { to: "/portal/insurance", label: "Insurance", icon: ShieldCheck },
+  { to: "/portal/stays", label: "Hospital stays", icon: Hospital },
+  { to: "/portal/documents", label: "Documents", icon: FileUp },
+  { to: "/portal/notifications", label: "Notifications", icon: BellRing },
   { to: "/portal/billing", label: "Billing", icon: CreditCard },
   { to: "/portal/account", label: "Account", icon: UserRound },
 ];
@@ -91,6 +95,9 @@ export function PortalHome() {
           <Route path="health" element={<HealthRecord />} />
           <Route path="billing" element={<PortalBilling />} />
           <Route path="insurance" element={<PortalInsurance />} />
+          <Route path="stays" element={<PortalStays />} />
+          <Route path="documents" element={<PortalDocuments />} />
+          <Route path="notifications" element={<PortalNotifications />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="*" element={<EmptyState title="Page not found" />} />
         </Routes>
@@ -143,11 +150,12 @@ function PortalDashboard() {
   const unread = (threads.data ?? []).reduce((n, t) => n + t.unread, 0);
   return (
     <div className="space-y-6">
-      <InsurancePrompt />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div><h1 className="text-2xl font-semibold tracking-tight">Hello, {q.data.patient.first_name}</h1><p className="text-[13.5px] text-muted-foreground">Here's what's coming up.</p></div>
         <Button asChild><Link to="/portal/book"><CalendarPlus />Book an appointment</Link></Button>
       </div>
+      <InsurancePrompt />
+      <ReadinessCard />
       <div className="grid gap-3 sm:grid-cols-3">
         <Link to="/portal/messages" className="rounded-xl border bg-card p-4 hover:bg-muted/40"><Mail className="mb-2 size-5 text-primary" /><p className="font-medium">Messages</p><p className="text-[13px] text-muted-foreground">{unread ? `${unread} unread` : "Message your care team"}</p></Link>
         <Link to="/portal/results" className="rounded-xl border bg-card p-4 hover:bg-muted/40"><FlaskConical className="mb-2 size-5 text-primary" /><p className="font-medium">Test results</p><p className="text-[13px] text-muted-foreground">{q.data.has_recent_results ? "New results available" : "View released results"}</p></Link>
