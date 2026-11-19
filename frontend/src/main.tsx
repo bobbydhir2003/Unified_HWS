@@ -21,6 +21,7 @@ import { MessagesPage } from "@/features/messages/MessagesPage";
 import { VideoVisit } from "@/features/telehealth/VideoVisit";
 import { BillingPage } from "@/features/billing/BillingPage";
 import { AIMonitoringPage, AutomationPage, ReceptionistPage, TasksPage } from "@/features/ai/AIPages";
+import { AnalyticsPage } from "@/features/analytics/AnalyticsPage";
 import { EncounterPage } from "@/features/encounters/EncounterPage";
 import { EncountersList } from "@/features/encounters/EncountersList";
 import { PatientChart } from "@/features/patients/PatientChart";
@@ -126,6 +127,7 @@ const router = createBrowserRouter([
               },
               { path: "messages", element: <Perm perm="messages:use"><MessagesPage /></Perm>, handle: { crumb: "Messages" } },
               { path: "telehealth/:appointmentId", element: <Perm perm="clinical:read"><VideoVisit /></Perm>, handle: { crumb: "Video visit" } },
+              { path: "analytics", element: <Perm perm="analytics:read"><AnalyticsPage /></Perm>, handle: { crumb: "Analytics" } },
               { path: "tasks", element: <Perm perm="patients:read"><TasksPage /></Perm>, handle: { crumb: "Tasks" } },
               { path: "automation", element: <Perm perm="messages:use"><AutomationPage /></Perm>, handle: { crumb: "Automation studio" } },
               { path: "receptionist", element: <Perm perm="schedule:write"><ReceptionistPage /></Perm>, handle: { crumb: "AI receptionist" } },

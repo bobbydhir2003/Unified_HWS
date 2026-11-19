@@ -39,6 +39,9 @@ for email in ["dr.chen@harborview.dev","frontdesk@harborview.dev","nurse.rivera@
     if "billing:read" in m["permissions"]:
         for path in ["/billing/summary","/billing/charge-queue","/claims","/invoices","/fee-schedule"]: chk(c,path)
     chk(c,"/tasks"); chk(c,"/tasks-count")
+    if "analytics:read" in m["permissions"]:
+        for path in ["/analytics/operations","/analytics/providers","/analytics/population","/analytics/care-gaps","/analytics/quality"]: chk(c,path)
+    if "billing:read" in m["permissions"]: chk(c,"/analytics/financial")
     if "messages:use" in m["permissions"]: chk(c,"/automation/runs")
     if "automation:manage" in m["permissions"]: chk(c,"/automation/workflows"); chk(c,"/automation/templates")
     if "schedule:write" in m["permissions"]: chk(c,"/receptionist/calls")

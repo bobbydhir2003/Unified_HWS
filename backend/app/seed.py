@@ -200,6 +200,100 @@ TEMPLATES = [
 ]
 
 
+def seed_history(db, org, providers: dict, lab_user):
+    """Synthetic lab and billing history so analytics, care gaps and A/R have realistic shape."""
+    from app.data.cpt_common import CPT_DEFAULTS
+    from app.models import Charge, Claim, ClaimEvent, Invoice, PatientInsurance, Payment
+
+    fees = {c: (d, cents) for c, d, cents in CPT_DEFAULTS}
+    today = now()
+    # --- labs: A1c for diabetics, lipids for hyperlipidemia ---
+    for prob in db.scalars(select(Problem).where(Problem.organization_id == org.id, Problem.status == "active")).all():
+        pat = db.get(Patient, prob.patient_id)
+        prov = providers.get(pat.primary_provider_id)
+        if not prov:
+            continue
+        if prob.code and prob.code.startswith("E11"):
+            draws = rng.choice([[400], [300, 120], [210, 30], []])  # some patients overdue / never tested
+            level = rng.uniform(6.4, 10.2)
+            for ago in draws:
+                level = max(5.8, level + rng.uniform(-0.8, 0.5))
+                _lab(db, org, pat, prov, lab_user, "4548-4", "Hemoglobin A1c", [("Hemoglobin A1c", "%", round(level, 1), "4.0-5.6", 5.6)], today - timedelta(days=ago))
+        if prob.code and prob.code.startswith("E78") and rng.random() < 0.6:
+            ago = rng.choice([90, 200, 500])
+            ldl = rng.randint(85, 185)
+            _lab(db, org, pat, prov, lab_user, "57698-3", "Lipid panel", [("LDL cholesterol", "mg/dL", ldl, "0-129", 129),
+                                                                          ("HDL cholesterol", "mg/dL", rng.randint(35, 70), "40-100", 100)], today - timedelta(days=ago))
+    db.flush()
+    # --- billing for completed visits older than 10 days ---
+    seq_c, seq_i = 1000, 1000
+    encs = db.scalars(select(Encounter).where(Encounter.organization_id == org.id, Encounter.status == "completed",
+                                              Encounter.started_at < today - timedelta(days=10)).order_by(Encounter.started_at)).all()
+    for e in encs:
+        ins = db.scalar(select(PatientInsurance).where(PatientInsurance.patient_id == e.patient_id, PatientInsurance.priority == "primary"))
+        code = rng.choice(["99213", "99213", "99214"])
+        desc, price = fees[code]
+        dx = [d.code for d in e.diagnoses][:1] or ["Z00.00"]
+        seq_c += 1
+        roll = rng.random()
+        status = "paid" if roll < 0.75 else "denied" if roll < 0.85 else "accepted"
+        sub = e.started_at + timedelta(days=2)
+        c = Claim(organization_id=org.id, claim_number=f"CLM-{sub:%y}-{seq_c}", patient_id=e.patient_id, encounter_id=e.id, insurance_id=ins.id,
+                  payer_name=ins.payer_name, member_id=ins.member_id, rendering_provider_id=e.provider_id, service_date=e.started_at.date(),
+                  status=status, total_charge_cents=price, scrub_errors=[], clearinghouse_ref=f"SIM-837-HIST{seq_c}", submitted_at=sub, submission_count=1)
+        c.created_at = sub
+        db.add(c)
+        db.flush()
+        db.add(Charge(organization_id=org.id, encounter_id=e.id, patient_id=e.patient_id, claim_id=c.id, code=code, description=desc, units=1,
+                      unit_price_cents=price, amount_cents=price, diagnosis_codes=dx, status="billed"))
+        db.add(ClaimEvent(organization_id=org.id, claim_id=c.id, event="submitted", details={"simulated": True}, created_at=sub))
+        if status == "paid":
+            adj = sub + timedelta(days=rng.randint(10, 28))
+            allowed = round(price * 0.78)
+            resp = round(allowed * 0.2)
+            c.allowed_cents, c.paid_cents, c.patient_responsibility_cents, c.adjustment_cents, c.adjudicated_at = allowed, allowed - resp, resp, price - allowed, adj
+            pay = Payment(organization_id=org.id, patient_id=e.patient_id, claim_id=c.id, source="insurance", method="eft_simulated", amount_cents=allowed - resp,
+                          reference=f"ERA-HIST{seq_c}", idempotency_key=f"seed-era-{c.id}")
+            pay.created_at = adj
+            db.add(pay)
+            db.add(ClaimEvent(organization_id=org.id, claim_id=c.id, event="paid", details={"simulated": True}, created_at=adj))
+            seq_i += 1
+            paid_by_patient = rng.random() < 0.6
+            inv = Invoice(organization_id=org.id, number=f"INV-{adj:%y}-{seq_i}", patient_id=e.patient_id, claim_id=c.id, encounter_id=e.id,
+                          description=f"Patient responsibility for visit {e.started_at:%b %d, %Y}", status="paid" if paid_by_patient else "open",
+                          total_cents=resp, balance_cents=0 if paid_by_patient else resp, due_date=(adj + timedelta(days=30)).date())
+            inv.issued_at = adj
+            db.add(inv)
+            db.flush()
+            if paid_by_patient:
+                pp = Payment(organization_id=org.id, patient_id=e.patient_id, invoice_id=inv.id, claim_id=c.id, source="patient", method=rng.choice(["card_simulated", "cash", "check"]),
+                             amount_cents=resp, idempotency_key=f"seed-pp-{inv.id}")
+                pp.created_at = adj + timedelta(days=rng.randint(3, 25))
+                db.add(pp)
+        elif status == "denied":
+            adj = sub + timedelta(days=12)
+            c.denial_code, c.denial_reason, c.adjudicated_at, c.allowed_cents = "CO-16", "Claim lacks information needed for adjudication", adj, 0
+            db.add(ClaimEvent(organization_id=org.id, claim_id=c.id, event="denied", details={"code": "CO-16", "simulated": True}, created_at=adj))
+    org.settings = {**org.settings, "claim_seq": seq_c, "invoice_seq": seq_i}
+
+
+def _lab(db, org, pat, prov, user, code, title, comps, when):
+    from app.models import LabResult, Order
+
+    o = Order(organization_id=org.id, patient_id=pat.id, order_type="lab", status="completed", title=title, code=code, details={"code": code},
+              ordered_by_id=prov.user_id, signed_by_id=prov.user_id, signed_at=when - timedelta(days=2), transmitted_at=when - timedelta(days=2),
+              transmission={"channel": "Lab interface (simulated)", "reference": "SIM-LAB-HIST", "simulated": True, "destination": "Default partner (simulated)"},
+              resulted_at=when, results_reviewed_by_id=prov.user_id, results_reviewed_at=when + timedelta(days=1), released_to_patient_at=when + timedelta(days=1))
+    o.created_at = when - timedelta(days=2)
+    db.add(o)
+    db.flush()
+    for name, unit, val, rr, hi in comps:
+        lo = float(rr.split("-")[0])
+        flag = "high" if val > hi else "low" if val < lo else "normal"
+        db.add(LabResult(organization_id=org.id, order_id=o.id, patient_id=pat.id, name=name, value=str(val), unit=unit, reference_range=rr,
+                         flag=flag, resulted_at=when, source="simulated"))
+
+
 def seed(reset: bool = False) -> None:
     if reset:
         with engine.begin() as c:
@@ -353,6 +447,8 @@ def seed(reset: bool = False) -> None:
                         continue
                     db.add(a)
                     db.flush()
+
+        seed_history(db, org, {chen.id: chen, okafor.id: okafor}, nurse_u)
 
         # ---- Org 2: Lakeside Pediatrics (tenant isolation) ----
         org2 = Organization(name="Lakeside Pediatrics", slug="lakeside", settings={"synthetic_data": True, "mrn_seq": 500000})
