@@ -33,6 +33,10 @@ const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({
 const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
 const CommandCenter = lazy(() => import("@/features/command/CommandCenter").then((m) => ({ default: m.CommandCenter })));
 const AIWorkspace = lazy(() => import("@/features/ai/AIWorkspace").then((m) => ({ default: m.AIWorkspace })));
+const BedBoard = lazy(() => import("@/features/inpatient/BedBoard").then((m) => ({ default: m.BedBoard })));
+const InpatientsPage = lazy(() => import("@/features/inpatient/InpatientPages").then((m) => ({ default: m.InpatientsPage })));
+const InpatientDetail = lazy(() => import("@/features/inpatient/InpatientPages").then((m) => ({ default: m.InpatientDetail })));
+const NursingPage = lazy(() => import("@/features/inpatient/InpatientPages").then((m) => ({ default: m.NursingPage })));
 const WorklistPage = lazy(() => import("@/features/ops/WorklistPage").then((m) => ({ default: m.WorklistPage })));
 const MonitorsPage = lazy(() => import("@/features/ops/MonitorsPage").then((m) => ({ default: m.MonitorsPage })));
 const InsuranceGuardianPage = lazy(() => import("@/features/insurance/InsuranceGuardian").then((m) => ({ default: m.InsuranceGuardianPage })));
@@ -145,6 +149,15 @@ const router = createBrowserRouter([
               { path: "analytics", element: <Perm perm="analytics:read"><AnalyticsPage /></Perm>, handle: { crumb: "Analytics" } },
               { path: "command", element: <Perm perm="cases:read"><CommandCenter /></Perm>, handle: { crumb: "Command Center" } },
               { path: "ai", element: <Perm perm="ai:use"><AIWorkspace /></Perm>, handle: { crumb: "AI workspace" } },
+              { path: "beds", element: <Perm perm="adt:read"><BedBoard /></Perm>, handle: { crumb: "Bed board" } },
+              { path: "nursing", element: <Perm perm="adt:read"><NursingPage /></Perm>, handle: { crumb: "Nursing" } },
+              {
+                path: "inpatients", handle: { crumb: "Inpatients" },
+                children: [
+                  { index: true, element: <Perm perm="adt:read"><InpatientsPage /></Perm> },
+                  { path: ":stayId", element: <Perm perm="adt:read"><InpatientDetail /></Perm>, handle: { crumb: "Stay" } },
+                ],
+              },
               { path: "worklist", element: <Perm perm="cases:read"><WorklistPage /></Perm>, handle: { crumb: "My work" } },
               { path: "insurance", element: <Perm perm="cases:read"><InsuranceGuardianPage /></Perm>, handle: { crumb: "Insurance Guardian" } },
               { path: "automation/monitors", element: <Perm perm="cases:read"><MonitorsPage /></Perm>, handle: { crumb: "Monitors & rules" } },

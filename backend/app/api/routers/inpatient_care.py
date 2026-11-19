@@ -240,7 +240,7 @@ class HandoffIn(BaseModel):
 
 def _handoff_out(h: HandoffNote, names: dict) -> dict:
     return {"id": h.id, "shift": h.shift, "situation": h.situation, "background": h.background, "assessment": h.assessment,
-            "recommendation": h.recommendation, "author": names.get(h.author_id), "created_at": h.created_at,
+            "recommendation": h.recommendation, "author": names.get(h.author_id), "author_id": h.author_id, "created_at": h.created_at,
             "acknowledged_by": names.get(h.acknowledged_by_id), "acknowledged_at": h.acknowledged_at}
 
 

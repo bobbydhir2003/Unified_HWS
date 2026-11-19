@@ -69,8 +69,9 @@ def test_admit_transfer_discharge_flow(as_user):
     assert doc.post(f"/adt/stays/{stay['id']}/discharge-order", json={"disposition": "home"}).json()["status"] == "discharge_ordered"
     blocked = nurse.post(f"/adt/stays/{stay['id']}/discharge", json={})
     assert blocked.status_code == 400 and "checklist incomplete" in blocked.text  # discharge plan created by the coordinator
-    assert nurse.post(f"/adt/stays/{stay['id']}/discharge", json={"override_readiness": True}).status_code == 400  # reason required
-    d = nurse.post(f"/adt/stays/{stay['id']}/discharge", json={"override_readiness": True, "override_reason": "Transferred to outside facility per family"}).json()
+    assert nurse.post(f"/adt/stays/{stay['id']}/discharge", json={"override_readiness": True, "override_reason": "Leaving now"}).status_code == 400  # physicians only
+    assert doc.post(f"/adt/stays/{stay['id']}/discharge", json={"override_readiness": True}).status_code == 400  # reason required
+    d = doc.post(f"/adt/stays/{stay['id']}/discharge", json={"override_readiness": True, "override_reason": "Transferred to outside facility per family"}).json()
     assert d["status"] == "discharged"
     detail = doc.get(f"/adt/stays/{stay['id']}").json()
     assert [e["kind"] for e in detail["events"]] == ["admission_requested", "admitted", "transferred", "discharge_ordered", "discharged"]

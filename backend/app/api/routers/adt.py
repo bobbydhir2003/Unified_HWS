@@ -87,7 +87,8 @@ def stay_out(ctx: TenantContext, s: InpatientStay, bed: Location | None = None) 
             "requested_at": s.requested_at, "admitted_at": s.admitted_at, "waiting_hours": _hours(s.requested_at) if s.status == "pending" else None,
             "los_hours": _hours(s.admitted_at) if s.admitted_at and not s.discharged_at else None,
             "expected_discharge_date": s.expected_discharge_date, "discharge_ordered_at": s.discharge_ordered_at,
-            "discharge_disposition": s.discharge_disposition, "discharged_at": s.discharged_at, "ed_visit_id": s.ed_visit_id}
+            "discharge_disposition": s.discharge_disposition, "discharged_at": s.discharged_at, "ed_visit_id": s.ed_visit_id,
+            "encounter_id": s.encounter_id}
 
 
 # ---------- Bed board & census ----------
@@ -299,6 +300,8 @@ def complete_discharge(sid: uuid.UUID, body: DischargeIn, ctx: TenantContext = D
     if r and not r["ready"]:
         if not body.override_readiness:
             raise bad_request(f"Discharge checklist incomplete: {', '.join(r['blocking'])}")
+        if not ctx.can(P.ORDERS_SIGN):
+            raise bad_request("Only a physician can discharge with open checklist items")
         if not body.override_reason:
             raise bad_request("A reason is required to discharge with open checklist items")
         ctx.audit("discharge.readiness_override", resource_type="inpatient_stay", resource_id=s.id, patient_id=s.patient_id,
