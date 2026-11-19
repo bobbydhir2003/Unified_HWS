@@ -5,4 +5,5 @@ from app.monitors import (
     insurance,  # noqa: F401
     lab,  # noqa: F401
     pharmacy,  # noqa: F401
+    radiology,  # noqa: F401
 )

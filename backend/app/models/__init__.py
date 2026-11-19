@@ -74,10 +74,12 @@ from app.models.portal import (
     TelehealthSession,
     TelehealthSignal,
 )
+from app.models.radiology import ImagingStudy
 from app.models.scheduling import Appointment, AppointmentType, ProviderAvailability
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "ImagingStudy",
     "CriticalResultAlert",
     "Specimen",
     "InventoryItem",

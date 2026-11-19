@@ -92,6 +92,27 @@ class SimulatedEligibility:
                 "coverage_end": end, "plan": f"{payer_name} (simulated benefits)", "copay_cents": 2500}
 
 
+class ImagingArchive(Protocol):
+    """External PACS/VNA over DICOMweb (QIDO-RS/WADO-RS) + a zero-footprint viewer. Undeclared never stores pixels."""
+
+    name: str
+
+    def register_order(self, *, accession: int, modality: str, patient_mrn: str) -> str | None: ...
+    def viewer_url(self, *, study_instance_uid: str | None, accession: int) -> str | None: ...
+
+
+class SimulatedArchive:
+    """No PACS connected: generates a synthetic Study Instance UID for workflow testing; no images or viewer exist."""
+
+    name = "simulated"
+
+    def register_order(self, *, accession: int, modality: str, patient_mrn: str) -> str | None:
+        return f"2.25.{int(hashlib.sha256(f'{accession}{patient_mrn}'.encode()).hexdigest()[:24], 16)}"
+
+    def viewer_url(self, *, study_instance_uid: str | None, accession: int) -> str | None:
+        return None
+
+
 class OutboxGateway:
     name = "outbox"
 
@@ -106,6 +127,7 @@ _REGISTRY = {
     "clearinghouse": {"simulated": SimulatedClearinghouse},
     "message_gateway": {"outbox": OutboxGateway},
     "eligibility": {"simulated": SimulatedEligibility},
+    "imaging_archive": {"simulated": SimulatedArchive},
 }
 
 
@@ -130,6 +152,10 @@ def message_gateway() -> MessageGateway:
 
 def eligibility_gateway() -> EligibilityGateway:
     return _get("eligibility", settings.eligibility_adapter)
+
+
+def imaging_archive() -> ImagingArchive:
+    return _get("imaging_archive", "simulated")
 
 
 def status() -> dict:

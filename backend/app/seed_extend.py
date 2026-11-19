@@ -212,6 +212,27 @@ def _staff(db, org, hosp, email, first, last, title, role, dept_code) -> bool:
     return True
 
 
+def seed_imaging_orders(db, org: Organization) -> int:
+    if db.scalar(select(Order.id).where(Order.organization_id == org.id, Order.order_type == "imaging", Order.notes == "Synthetic inpatient imaging").limit(1)):
+        return 0
+    stays = db.scalars(select(InpatientStay).where(InpatientStay.organization_id == org.id, InpatientStay.status == "admitted")
+                       .order_by(InpatientStay.admitted_at.desc()).limit(3)).all()
+    picks = [("71046", "XR chest, 2 views", "stat", "Hypoxia — evaluate for pneumonia or effusion"),
+             ("70450", "CT head without contrast", "urgent", "Fall with confusion — rule out bleed"),
+             ("76700", "US abdomen, complete", "routine", "Elevated LFTs — evaluate gallbladder")]
+    n = 0
+    for s, (code, title, prio, q) in zip(stays, picks, strict=False):
+        prov = db.get(ProviderProfile, s.attending_provider_id) if s.attending_provider_id else None
+        if not prov:
+            continue
+        db.add(Order(organization_id=org.id, patient_id=s.patient_id, encounter_id=s.encounter_id, order_type="imaging", status="signed", priority=prio,
+                     title=title, code=code, details={"code": code, "laterality": "n/a", "contrast": False, "clinical_question": q},
+                     ordered_by_id=prov.user_id, signed_by_id=prov.user_id, signed_at=now() - timedelta(minutes=40 + 25 * n), notes="Synthetic inpatient imaging"))
+        n += 1
+    db.flush()
+    return n
+
+
 def extend(db) -> list[str]:
     done = []
     for org in db.scalars(select(Organization).where(Organization.slug == "harborview")):
@@ -226,6 +247,8 @@ def extend(db) -> list[str]:
             done.append("medication orders")
         if seed_lab_orders(db, org):
             done.append("lab orders")
+        if seed_imaging_orders(db, org):
+            done.append("imaging orders")
     return done
 
 
