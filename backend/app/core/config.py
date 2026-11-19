@@ -43,7 +43,16 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-opus-5-5"
     ai_phi_allowed: bool = False
-    scribe_retain_audio: bool = False  # delete raw audio once transcribed (default: minimize retained PHI)  # must be explicitly enabled to send PHI to an external provider
+    scribe_retain_audio: bool = False
+
+    # External integration adapters (see app/integrations/adapters.py). Only simulated ones ship today.
+    order_transmitter_adapter: str = "simulated"
+    clearinghouse_adapter: str = "simulated"
+    message_gateway_adapter: str = "outbox"
+
+    # Abuse protection (per client IP, per process). Put a WAF/edge limiter in front in production.
+    rate_limit_enabled: bool = True
+    rate_limit_auth_per_minute: int = 20  # delete raw audio once transcribed (default: minimize retained PHI)  # must be explicitly enabled to send PHI to an external provider
 
     @property
     def is_production(self) -> bool:

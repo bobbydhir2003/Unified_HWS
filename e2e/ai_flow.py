@@ -1,4 +1,5 @@
 """UI E2E (phase 10): chart assistant with citations + refusal; urgent message triage → task; AI receptionist booking; automation studio."""
+import os
 import sys, uuid
 import httpx
 from playwright.sync_api import sync_playwright, expect
@@ -11,12 +12,12 @@ tag = uuid.uuid4().hex[:5]
 pat.post("/portal/messages", json={"subject": f"Help {tag}", "body": "I've had chest pain since this morning"})
 
 with sync_playwright() as pw:
-    b = pw.chromium.launch(channel="chrome", headless=True)
+    b = pw.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True)
     def login(email):
         pg = b.new_page(viewport={"width": 1440, "height": 950}); pg.on("pageerror", lambda e: errors.append(f"{email}: {e}"))
         pg.goto("http://localhost:5173/login")
         pg.fill("input[type=email]", email); pg.fill("input[type=password]", "Undeclared!2026"); pg.click("button[type=submit]")
-        pg.wait_for_function("!location.pathname.startsWith('/login')")
+        pg.wait_for_url(lambda u: '/login' not in u)
         return pg
     doc = login("dr.chen@harborview.dev")
     doc.goto("http://localhost:5173/patients?q=Elena%20Moreau"); doc.locator("tbody tr").first.click(); doc.wait_for_selector("text=MRN")

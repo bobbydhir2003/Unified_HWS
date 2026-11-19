@@ -1,15 +1,16 @@
 """UI E2E (billing specialist): charge capture → claim → idempotent submit → simulated payer → appeal if denied → patient payment."""
+import os
 import sys
 from playwright.sync_api import sync_playwright, expect
 
 OUT = sys.argv[1]; errors = []
 with sync_playwright() as pw:
-    b = pw.chromium.launch(channel="chrome", headless=True)
+    b = pw.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True)
     pg = b.new_page(viewport={"width": 1440, "height": 950})
     pg.on("pageerror", lambda e: errors.append(str(e)))
     pg.goto("http://localhost:5173/login")
     pg.fill("input[type=email]", "billing@harborview.dev"); pg.fill("input[type=password]", "Undeclared!2026"); pg.click("button[type=submit]")
-    pg.wait_for_function("!location.pathname.startsWith('/login')")
+    pg.wait_for_url(lambda u: '/login' not in u)
     pg.goto("http://localhost:5173/billing?tab=capture"); pg.wait_for_selector("tbody tr")
     # Pick a visit with a payer (insured) from the queue
     row = pg.locator("tbody tr", has_not_text="Self-pay").first

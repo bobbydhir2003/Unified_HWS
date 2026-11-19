@@ -36,3 +36,58 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production images
+        run: docker compose build api web
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: undeclared, POSTGRES_PASSWORD: undeclared, POSTGRES_DB: undeclared }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://undeclared:undeclared@localhost:5432/undeclared
+      CELERY_EAGER: "true"
+      RATE_LIMIT_AUTH_PER_MINUTE: "500"
+      SECRET_KEY: ci-only-secret-key-not-for-production-use
+      E2E_BROWSER_CHANNEL: ""   # use Playwright's bundled Chromium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - name: API (migrate, seed, serve)
+        working-directory: backend
+        run: |
+          uv sync --frozen
+          uv run alembic upgrade head
+          uv run python -m app.seed
+          nohup uv run uvicorn app.main:app --port 8010 > ../api.log 2>&1 &
+      - name: Web (Vite dev server proxying /api)
+        working-directory: frontend
+        run: |
+          npm ci
+          API_PROXY_TARGET=http://localhost:8010 nohup npx vite --port 5173 > ../web.log 2>&1 &
+      - name: Playwright
+        run: |
+          uv venv e2e/.venv && VIRTUAL_ENV=e2e/.venv uv pip install playwright httpx
+          e2e/.venv/bin/playwright install --with-deps chromium
+          for i in $(seq 1 60); do curl -sf localhost:5173/api/health/ready && break; sleep 2; done
+      - name: E2E flows
+        run: |
+          mkdir -p shots
+          for f in clinical_flow documents_flow scribe_flow orders_flow portal_telehealth_flow billing_flow ai_flow analytics_flow; do
+            echo "== $f"; e2e/.venv/bin/python e2e/$f.py shots
+          done
+          e2e/.venv/bin/python e2e/api_smoke.py
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: e2e-artifacts, path: "shots\napi.log\nweb.log" }

@@ -46,6 +46,9 @@ for email in ["dr.chen@harborview.dev","frontdesk@harborview.dev","nurse.rivera@
     if "automation:manage" in m["permissions"]: chk(c,"/automation/workflows"); chk(c,"/automation/templates")
     if "schedule:write" in m["permissions"]: chk(c,"/receptionist/calls")
     if "clinic:manage" in m["permissions"]: chk(c,"/ai/jobs")
+    chk(c,"/fhir/R4/metadata")
+    if "clinical:read" in m["permissions"] and "patients:read" in m["permissions"]:
+        chk(c,f"/fhir/R4/Patient/{pid}"); chk(c,"/fhir/R4/Observation",params={"patient":pid})
     chk(c,"/organizations"); chk(c,"/auth/sessions")
     print("ok", email)
 c,m=login("patient@harborview.dev"); chk(c,f"/patients/{m['patient_id']}"); chk(c,f"/patients/{m['patient_id']}/summary")

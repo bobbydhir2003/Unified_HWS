@@ -1,4 +1,5 @@
 """UI E2E (two browsers): patient portal ↔ clinician. Video visit connects over WebRTC; secure messaging; self-booking + intake."""
+import os
 import sys, random
 from datetime import datetime, timedelta, timezone
 import httpx
@@ -35,13 +36,13 @@ assert appt, r.text
 
 ARGS = ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", "--disable-features=WebRtcHideLocalIpsWithMdns"]
 with sync_playwright() as pw:
-    b = pw.chromium.launch(channel="chrome", headless=True, args=ARGS)
+    b = pw.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True, args=ARGS)
     def login(email):
         ctx = b.new_context(viewport={"width": 1366, "height": 900}, permissions=["camera", "microphone"])
         pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(f"{email}: {e}"))
         pg.goto("http://localhost:5173/login")
         pg.fill("input[type=email]", email); pg.fill("input[type=password]", "Undeclared!2026"); pg.click("button[type=submit]")
-        pg.wait_for_function("!location.pathname.startsWith('/login')")
+        pg.wait_for_url(lambda u: '/login' not in u)
         return pg
     pat = login("patient@harborview.dev")
     doc = login("dr.chen@harborview.dev")

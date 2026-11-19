@@ -1,15 +1,16 @@
 """UI E2E (phase 11): analytics tabs render from live data; care-gap outreach; CSV export download."""
+import os
 import sys
 from playwright.sync_api import sync_playwright, expect
 
 OUT = sys.argv[1]; errors = []
 with sync_playwright() as pw:
-    b = pw.chromium.launch(channel="chrome", headless=True)
+    b = pw.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True)
     ctx = b.new_context(viewport={"width": 1440, "height": 1000}, accept_downloads=True)
     pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(str(e)))
     pg.goto("http://localhost:5173/login")
     pg.fill("input[type=email]", "dr.okafor@harborview.dev"); pg.fill("input[type=password]", "Undeclared!2026"); pg.click("button[type=submit]")
-    pg.wait_for_function("!location.pathname.startsWith('/login')")
+    pg.wait_for_url(lambda u: '/login' not in u)
     pg.goto("http://localhost:5173/analytics?days=90"); pg.wait_for_selector("text=Daily volume")
     pg.get_by_role("button", name="All locations").click(); pg.wait_for_timeout(1200)
     pg.screenshot(path=f"{OUT}/an-01-ops.png")

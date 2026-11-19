@@ -11,6 +11,7 @@ from app.core.db import get_db
 from app.core.errors import bad_request, conflict, forbidden, not_found
 from app.core.permissions import P, Role
 from app.core.security import hash_token, new_opaque_token, now
+from app.integrations.adapters import status as adapter_status
 from app.models import (
     AuditEvent,
     Clinic,
@@ -311,6 +312,7 @@ def system_status(ctx: TenantContext = Depends(require(P.CLINIC_MANAGE))):
         "ai_phi_allowed": settings.ai_phi_allowed,
         "storage_backend": settings.storage_backend,
         "mfa_enforced": settings.enforce_mfa,
+        "adapters": adapter_status(),
         "integrations": {
             "email": "simulated (outbox)", "sms": "simulated", "eprescribing": "simulated",
             "labs": "simulated", "clearinghouse": "simulated", "payments": "simulated", "telephony": "sandbox",

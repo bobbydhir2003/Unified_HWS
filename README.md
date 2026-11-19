@@ -73,6 +73,14 @@ cd frontend && npm run typecheck && npm run build
 | Worker (non-eager) | `uv run celery -A app.worker worker -B -l info` |
 | Reseed | `uv run python -m app.seed --reset` |
 
+## Operations & interoperability
+
+- Metrics: `GET /api/metrics` (Prometheus) · readiness: `GET /api/health/ready`
+- FHIR R4 (read): `GET /api/fhir/R4/metadata`, `/Patient/{id}`, `/Observation?patient={id}&category=laboratory`, …
+- Backups: `ops/backup.sh <dir>` / `ops/restore.sh <dump>` (see docs/OPERATIONS.md)
+- AWS reference infrastructure: `infra/aws/` (not applied — see docs/DEPLOYMENT.md)
+- Browser E2E: `e2e/` (Playwright; also in CI)
+
 ## Docs
 
-[Plan](docs/MASTER_IMPLEMENTATION_PLAN.md) · [Progress](docs/IMPLEMENTATION_PROGRESS.md) · [Architecture](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_DESIGN.md) · [UI/UX](docs/UI_UX_SYSTEM.md) · [Security](docs/SECURITY_AND_COMPLIANCE.md) · [Integrations](docs/INTEGRATIONS.md)
+[Plan](docs/MASTER_IMPLEMENTATION_PLAN.md) · [Progress](docs/IMPLEMENTATION_PROGRESS.md) · [Architecture](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_DESIGN.md) · [UI/UX](docs/UI_UX_SYSTEM.md) · [Security](docs/SECURITY_AND_COMPLIANCE.md) · [Integrations](docs/INTEGRATIONS.md) · [Deployment](docs/DEPLOYMENT.md) · [Operations](docs/OPERATIONS.md) · [Production readiness](docs/PRODUCTION_READINESS.md)

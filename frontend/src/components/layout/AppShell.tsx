@@ -10,7 +10,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
   Popover, PopoverContent, PopoverTrigger, Tooltip,
 } from "@/components/ui/menu";
-import { Avatar, Kbd } from "@/components/ui/misc";
+import { Avatar, Kbd, Skeleton } from "@/components/ui/misc";
 import { get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fromNow } from "@/lib/format";
@@ -351,7 +351,9 @@ export function AppShell() {
             </div>
           </header>
           <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 sm:px-6 lg:py-6">
-            <Outlet />
+            <React.Suspense fallback={<div className="space-y-3" aria-busy="true"><Skeleton className="h-8 w-56" /><Skeleton className="h-64 w-full rounded-xl" /></div>}>
+              <Outlet />
+            </React.Suspense>
           </main>
         </div>
       </div>

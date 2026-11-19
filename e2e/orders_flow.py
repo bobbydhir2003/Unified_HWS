@@ -1,4 +1,5 @@
 """UI E2E: Rx with allergy warning → override sign → med list; lab order → simulated result → review & release → Results tab."""
+import os
 import sys, random
 import httpx
 from playwright.sync_api import sync_playwright, expect
@@ -13,7 +14,7 @@ p = c.post("/patients", json={"first_name": "Orderly", "last_name": f"Uitest{ran
 c.post(f"/patients/{p['id']}/allergies", json={"substance": "Penicillin", "severity": "severe", "reaction": "Anaphylaxis"})
 enc = c.post("/encounters", json={"patient_id": p["id"], "clinic_id": clinic, "chief_complaint": "Sore throat"}).json()
 with sync_playwright() as pw:
-    b = pw.chromium.launch(channel="chrome", headless=True)
+    b = pw.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True)
     pg = b.new_page(viewport={"width": 1440, "height": 1000})
     pg.on("pageerror", lambda e: errors.append(str(e)))
     pg.goto("http://localhost:5173/login")

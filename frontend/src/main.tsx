@@ -1,37 +1,46 @@
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ShieldAlert } from "lucide-react";
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { EmptyState } from "@/components/common";
 import { AppShell } from "@/components/layout/AppShell";
 import { TooltipProvider } from "@/components/ui/menu";
-import { AccountPage } from "@/features/account/AccountPage";
-import { AuditPage, OrganizationsPage, OutboxPage, SystemPage } from "@/features/admin/AdminPages";
-import { ClinicsPage, SchedulingSetupPage } from "@/features/admin/ClinicsPages";
-import { StaffPage } from "@/features/admin/StaffPage";
 import { AcceptInvitePage, ForgotPasswordPage, LoginPage, ResetPasswordPage } from "@/features/auth/AuthPages";
-import { Dashboard } from "@/features/dashboard/Dashboard";
-import { DocumentReview } from "@/features/documents/DocumentReview";
-import { DocumentsPage } from "@/features/documents/DocumentsPage";
-import { OrdersPage } from "@/features/orders/OrdersPages";
-import { MessagesPage } from "@/features/messages/MessagesPage";
-import { VideoVisit } from "@/features/telehealth/VideoVisit";
-import { BillingPage } from "@/features/billing/BillingPage";
-import { AIMonitoringPage, AutomationPage, ReceptionistPage, TasksPage } from "@/features/ai/AIPages";
-import { AnalyticsPage } from "@/features/analytics/AnalyticsPage";
-import { EncounterPage } from "@/features/encounters/EncounterPage";
-import { EncountersList } from "@/features/encounters/EncountersList";
-import { PatientChart } from "@/features/patients/PatientChart";
-import { NewPatientPage } from "@/features/patients/PatientForm";
-import { PatientsList } from "@/features/patients/PatientsList";
-import { PortalHome } from "@/features/portal/PortalHome";
-import { FrontDesk } from "@/features/schedule/FrontDesk";
-import { SchedulePage } from "@/features/schedule/SchedulePage";
 import { ApiError } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
+
+// Feature pages load on demand (route-level code splitting).
+const AccountPage = lazy(() => import("@/features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
+const AuditPage = lazy(() => import("@/features/admin/AdminPages").then((m) => ({ default: m.AuditPage })));
+const OrganizationsPage = lazy(() => import("@/features/admin/AdminPages").then((m) => ({ default: m.OrganizationsPage })));
+const OutboxPage = lazy(() => import("@/features/admin/AdminPages").then((m) => ({ default: m.OutboxPage })));
+const SystemPage = lazy(() => import("@/features/admin/AdminPages").then((m) => ({ default: m.SystemPage })));
+const ClinicsPage = lazy(() => import("@/features/admin/ClinicsPages").then((m) => ({ default: m.ClinicsPage })));
+const SchedulingSetupPage = lazy(() => import("@/features/admin/ClinicsPages").then((m) => ({ default: m.SchedulingSetupPage })));
+const StaffPage = lazy(() => import("@/features/admin/StaffPage").then((m) => ({ default: m.StaffPage })));
+const Dashboard = lazy(() => import("@/features/dashboard/Dashboard").then((m) => ({ default: m.Dashboard })));
+const DocumentReview = lazy(() => import("@/features/documents/DocumentReview").then((m) => ({ default: m.DocumentReview })));
+const DocumentsPage = lazy(() => import("@/features/documents/DocumentsPage").then((m) => ({ default: m.DocumentsPage })));
+const OrdersPage = lazy(() => import("@/features/orders/OrdersPages").then((m) => ({ default: m.OrdersPage })));
+const MessagesPage = lazy(() => import("@/features/messages/MessagesPage").then((m) => ({ default: m.MessagesPage })));
+const VideoVisit = lazy(() => import("@/features/telehealth/VideoVisit").then((m) => ({ default: m.VideoVisit })));
+const BillingPage = lazy(() => import("@/features/billing/BillingPage").then((m) => ({ default: m.BillingPage })));
+const AIMonitoringPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AIMonitoringPage })));
+const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AutomationPage })));
+const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
+const TasksPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.TasksPage })));
+const AnalyticsPage = lazy(() => import("@/features/analytics/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })));
+const EncounterPage = lazy(() => import("@/features/encounters/EncounterPage").then((m) => ({ default: m.EncounterPage })));
+const EncountersList = lazy(() => import("@/features/encounters/EncountersList").then((m) => ({ default: m.EncountersList })));
+const PatientChart = lazy(() => import("@/features/patients/PatientChart").then((m) => ({ default: m.PatientChart })));
+const NewPatientPage = lazy(() => import("@/features/patients/PatientForm").then((m) => ({ default: m.NewPatientPage })));
+const PatientsList = lazy(() => import("@/features/patients/PatientsList").then((m) => ({ default: m.PatientsList })));
+const PortalHome = lazy(() => import("@/features/portal/PortalHome").then((m) => ({ default: m.PortalHome })));
+const FrontDesk = lazy(() => import("@/features/schedule/FrontDesk").then((m) => ({ default: m.FrontDesk })));
+const SchedulePage = lazy(() => import("@/features/schedule/SchedulePage").then((m) => ({ default: m.SchedulePage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,7 +113,7 @@ const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
-      { path: "/portal/*", element: <PortalHome /> },
+      { path: "/portal/*", element: <Suspense fallback={<Splash />}><PortalHome /></Suspense> },
       {
         element: <AppShell />,
         handle: { crumb: "Home" },

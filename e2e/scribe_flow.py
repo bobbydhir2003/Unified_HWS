@@ -1,9 +1,10 @@
 """UI E2E: AI scribe — mic recording fails honestly without STT; synthetic demo → draft → insert → attested sign → complete."""
+import os
 import sys
 from playwright.sync_api import sync_playwright, expect
 OUT = sys.argv[1]; errors = []
 with sync_playwright() as p:
-    b = p.chromium.launch(channel="chrome", headless=True,
+    b = p.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True,
                           args=["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"])
     ctx = b.new_context(viewport={"width": 1440, "height": 1000}, permissions=["microphone"])
     pg = ctx.new_page()

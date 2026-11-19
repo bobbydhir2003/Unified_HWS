@@ -1,6 +1,6 @@
 # Integrations
 
-Every external dependency sits behind an adapter. Until a real, contracted and validated partner is connected, the adapter is **simulated**: deterministic, offline, and labeled `Simulated` in the UI and API.
+Every external dependency sits behind an adapter (`app/integrations/adapters.py`: `OrderTransmitter`, `Clearinghouse`, `MessageGateway` protocols + registry selected by `*_ADAPTER` settings). Until a real, contracted and validated partner is connected, the adapter is **simulated**: deterministic, offline, and labeled `Simulated` in the UI and API.
 
 | Integration | Status | Adapter / location | Production path |
 |---|---|---|---|
@@ -21,4 +21,4 @@ Every external dependency sits behind an adapter. Until a real, contracted and v
 | Patient payments | Simulated processor (`card_simulated`); no card data collected | `routers/billing.py:_apply_payment` | PCI-compliant processor with hosted fields/tokenization (card data never touches Undeclared servers) |
 | Telehealth video | Browser WebRTC (peer-to-peer, STUN only) with authenticated API signaling | `routers/telehealth.py`, `features/telehealth/VideoVisit.tsx` | BAA-covered video vendor (e.g. TURN/SFU, bandwidth adaptation); swap `join` to return vendor tokens |
 | Telephony / AI receptionist | Sandbox simulator + webhook (`POST /api/integrations/voice/{org_slug}/inbound`, `X-Voice-Secret`, JSON `{call_sid, from_number, speech}` → `{say, hangup, transfer}`) | `routers/ai.py`, `services/receptionist.py` | BAA-covered telephony + speech recognition/TTS vendor posting recognized speech per turn; warm transfer to staff line |
-| FHIR R4 | Planned (phase 12) | — | Read API for Patient, Encounter, Condition, AllergyIntolerance, Observation |
+| FHIR R4 | Read API implemented: `/api/fhir/R4/metadata`, `Patient/{id}`, `Patient?identifier|family|birthdate`, `Encounter|Condition|AllergyIntolerance|MedicationStatement|Observation?patient=` (Observation `category=vital-signs|laboratory`) | `app/integrations/fhir.py` | Add SMART on FHIR (OAuth scopes), US Core profiles + Inferno testing, write operations, `$export` |

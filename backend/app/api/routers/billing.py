@@ -20,6 +20,7 @@ from app.core.errors import bad_request, forbidden, not_found
 from app.core.permissions import P
 from app.core.security import now
 from app.data.cpt_common import EM_ESTABLISHED, EM_NEW
+from app.integrations import adapters
 from app.models import (
     Charge,
     Claim,
@@ -383,7 +384,7 @@ def submit_claim(cid: uuid.UUID, idempotency_key: str | None = Header(default=No
         c.scrub_errors, c.status = errs, "draft"
         ctx.db.commit()
         raise HTTPException(422, {"code": "scrub_failed", "message": "Fix claim errors before submitting", "errors": errs})
-    ref = f"SIM-837-{hashlib.sha1(f'{c.id}{key}'.encode()).hexdigest()[:10].upper()}"
+    ref = adapters.clearinghouse().submit(c.id, key)
     c.status, c.clearinghouse_ref, c.submitted_at = "accepted", ref, now()  # mock clearinghouse accepts immediately (277CA)
     c.submission_count += 1
     c.denial_code = c.denial_reason = None

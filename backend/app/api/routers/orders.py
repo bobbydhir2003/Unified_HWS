@@ -19,6 +19,7 @@ from app.core.errors import bad_request, forbidden, not_found
 from app.core.permissions import P
 from app.core.security import now
 from app.data import catalogs
+from app.integrations import adapters
 from app.models import Allergy, Encounter, LabResult, Order, Organization, Patient, PatientMedication
 from app.schemas.common import Page
 from app.services.notify import notify
@@ -291,11 +292,7 @@ def sign_order(oid: uuid.UUID, body: SignIn, ctx: TenantContext = Depends(requir
     ts = now()
     o.status, o.signed_by_id, o.signed_at = "signed", ctx.user.id, ts
     o.safety_override_reason = body.override_reason if warnings else None
-    # SIMULATED transmission
-    channel = {"medication": "eRx (simulated)", "lab": "Lab interface (simulated)", "imaging": "Imaging order (simulated)",
-               "referral": "Referral fax (simulated)"}[o.order_type]
-    o.transmission = {"channel": channel, "reference": f"SIM-{o.order_type[:3].upper()}-{uuid.uuid4().hex[:8].upper()}",
-                      "simulated": True, "destination": (o.details.get("pharmacy") or o.details.get("specialist_org") or "Default partner (simulated)")}
+    o.transmission = adapters.order_transmitter().transmit(o.order_type, o.details, o.id)
     o.transmitted_at = ts
     o.status = "completed" if o.order_type == "medication" else "transmitted"
     if o.order_type == "medication":
@@ -304,7 +301,8 @@ def sign_order(oid: uuid.UUID, body: SignIn, ctx: TenantContext = Depends(requir
                                      route=d.get("route"), frequency=d["sig"][:100], source="prescribed", start_date=date.today(),
                                      indication=", ".join(o.indication_codes) or None, recorded_by_id=ctx.user.id))
     ctx.audit("order.signed", resource_type="order", resource_id=o.id, patient_id=o.patient_id,
-              details={"type": o.order_type, "override": bool(o.safety_override_reason), "warnings": len(warnings), "simulated_transmission": True})
+              details={"type": o.order_type, "override": bool(o.safety_override_reason), "warnings": len(warnings),
+                       "simulated_transmission": bool(o.transmission.get("simulated"))})
     ctx.db.commit()
     ctx.db.refresh(o)
     return order_out(o, ctx.db.get(Patient, o.patient_id))

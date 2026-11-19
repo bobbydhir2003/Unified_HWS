@@ -1,9 +1,10 @@
 """UI E2E: simulated fax → review queue → identity check → file to chart → visible in chart Documents tab."""
+import os
 import sys
 from playwright.sync_api import sync_playwright, expect
 OUT = sys.argv[1]; errors = []
 with sync_playwright() as p:
-    b = p.chromium.launch(channel="chrome", headless=True)
+    b = p.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True)
     pg = b.new_page(viewport={"width": 1440, "height": 900})
     pg.on("pageerror", lambda e: errors.append(str(e)))
     pg.goto("http://localhost:5173/login")

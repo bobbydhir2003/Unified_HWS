@@ -61,6 +61,12 @@ Server state lives in TanStack Query; there is no global client store.
 
 Celery with Redis. `CELERY_EAGER=true` runs tasks inline for local dev/tests. Beat currently schedules appointment reminders (delivery simulated to the outbox).
 
+## Integrations
+
+- `app/integrations/adapters.py` — typed protocols (`OrderTransmitter`, `Clearinghouse`, `MessageGateway`) and a registry chosen by settings. Business code never talks to vendors directly; only simulated implementations are registered.
+- `app/integrations/fhir.py` — FHIR R4 read API using the same `TenantContext` and patient-access checks; errors returned as `OperationOutcome`.
+- `app/core/hardening.py` — production configuration guard, rate limiter, metrics.
+
 ## AI
 
 `app/ai/provider.py` defines the provider interface. `get_provider()` returns:

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.permissions import permissions_for
 from app.core.security import create_token, hash_token, new_opaque_token, now
-from app.models import Clinic, OutboundMessage, Patient, ProviderProfile, User, UserSession
+from app.models import Clinic, Patient, ProviderProfile, User, UserSession
 from app.schemas.auth import ClinicBrief, MembershipOut, MeOut, TokenOut, UserOut
 from app.services.audit import client_ip
 
@@ -93,5 +93,7 @@ def issue_session(db: Session, user: User, request: Request, response: Response)
 
 
 def send_email(db: Session, to: str, subject: str, body: str, org_id: uuid.UUID | None = None) -> None:
-    """Development outbox: messages are stored, never delivered. Swap for SES/SendGrid adapter in production."""
-    db.add(OutboundMessage(organization_id=org_id, to_address=to, subject=subject, body=body, created_at=now()))
+    """Delivered through the configured message gateway (default: development outbox — stored, never sent)."""
+    from app.integrations.adapters import message_gateway
+
+    message_gateway().send(db, channel="email", to=to, subject=subject, body=body, org_id=org_id)

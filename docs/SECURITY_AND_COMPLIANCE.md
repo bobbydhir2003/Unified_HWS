@@ -16,7 +16,10 @@
 | Audit | Append-only `audit_events` (DB trigger) for sign-in, chart view, every clinical/admin write, denials |
 | Clinical integrity | Versioned notes; signed notes frozen by trigger; addenda only; AI content requires attestation before signing |
 | Logging | JSON logs with request id, method, path (no query string), status, latency — no bodies or PHI |
-| Transport headers | `nosniff`, `no-referrer`, `no-store`; nginx adds `X-Frame-Options: DENY` |
+| Transport & browser | API: `nosniff`, `no-referrer`, `no-store`. nginx (every location): CSP `default-src 'self'` with hash-pinned inline script and no `unsafe-eval`, HSTS, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, Permissions-Policy (camera/mic self only) — verified with zero violations |
+| Abuse protection | Per-IP sliding-window rate limits on login/MFA/reset/invitation and webhooks (429 + Retry-After) |
+| Safe configuration | Startup guard refuses `ENVIRONMENT=production` with weak secret, insecure cookies, eager tasks, local storage, http CORS, MFA not enforced |
+| Metrics | Prometheus endpoint keyed by route template — no ids or PHI |
 | Account enumeration | Forgot-password returns identical responses |
 | Documents | Magic-byte type validation, size cap, PHI-free object keys, served only through authorized API with `Content-Security-Policy: sandbox`, `nosniff`, `no-store`; views audited; filed documents inherit patient access rules; never auto-filed |
 | AI | Simulated by default; external provider blocked for PHI unless explicitly allowed; every call logged in `ai_jobs` with a PHI-sent flag; outputs are drafts requiring human confirmation |
@@ -31,7 +34,7 @@ Authentication, lockout, refresh rotation/revocation, MFA, reset non-enumeration
 ## Known gaps / planned hardening
 
 - PostgreSQL row-level security as a second isolation layer.
-- Rate limiting at the edge (login, search) — currently only lockout.
+- Edge/WAF rate limiting across replicas (in-process limiter exists).
 - CSRF: refresh endpoint relies on SameSite=Strict; add an origin check before cross-site deployments.
 - Field-level encryption for especially sensitive fields; KMS-managed keys.
 - Automated dependency/container scanning in CI; SAST.
