@@ -51,6 +51,8 @@ export const NAV: NavSection[] = [
     title: "AI & automation",
     items: [
       { to: "/ai", label: "AI workspace", icon: Sparkles, perm: "ai:use" },
+      { to: "/agents", label: "Agent Studio", icon: Bot, perm: "ai:use" },
+      { to: "/admin/ai-governance", label: "AI governance", icon: ShieldCheck, perm: "ai:manage" },
       { to: "/automation/monitors", label: "Monitors & rules", icon: Activity, any: ["automation:manage", "command:view"] },
       { to: "/automation", label: "Automation studio", icon: Workflow, perm: "automation:manage" },
       { to: "/receptionist", label: "AI receptionist", icon: PhoneCall, perm: "schedule:write" },

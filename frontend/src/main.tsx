@@ -34,6 +34,8 @@ const AIMonitoringPage = lazy(() => import("@/features/ai/AIPages").then((m) => 
 const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AutomationPage })));
 const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
 const CommandCenter = lazy(() => import("@/features/command/CommandCenter").then((m) => ({ default: m.CommandCenter })));
+const AgentStudio = lazy(() => import("@/features/ai/AgentStudio").then((m) => ({ default: m.AgentStudio })));
+const AIGovernancePage = lazy(() => import("@/features/ai/AgentStudio").then((m) => ({ default: m.AIGovernancePage })));
 const AIWorkspace = lazy(() => import("@/features/ai/AIWorkspace").then((m) => ({ default: m.AIWorkspace })));
 const OrSchedulePage = lazy(() => import("@/features/ops/OrRosterPages").then((m) => ({ default: m.OrSchedulePage })));
 const RosterPage = lazy(() => import("@/features/ops/OrRosterPages").then((m) => ({ default: m.RosterPage })));
@@ -160,6 +162,8 @@ const router = createBrowserRouter([
               { path: "telehealth/:appointmentId", element: <Perm perm="clinical:read"><VideoVisit /></Perm>, handle: { crumb: "Video visit" } },
               { path: "analytics", element: <Perm perm="analytics:read"><AnalyticsPage /></Perm>, handle: { crumb: "Analytics" } },
               { path: "command", element: <Perm perm="cases:read"><CommandCenter /></Perm>, handle: { crumb: "Command Center" } },
+              { path: "agents", element: <Perm perm="ai:use"><AgentStudio /></Perm>, handle: { crumb: "Agent Studio" } },
+              { path: "admin/ai-governance", element: <Perm perm="ai:manage"><AIGovernancePage /></Perm>, handle: { crumb: "AI governance" } },
               { path: "ai", element: <Perm perm="ai:use"><AIWorkspace /></Perm>, handle: { crumb: "AI workspace" } },
               { path: "or", element: <OrSchedulePage />, handle: { crumb: "Operating rooms" } },
               { path: "roster", element: <Perm perm="roster:self"><RosterPage /></Perm>, handle: { crumb: "Roster" } },

@@ -39,11 +39,12 @@ def test_tool_gate_and_proposals(as_user):
 
 
 def test_propose_task_executes_only_after_approval(as_user, app):
+    from sqlalchemy import select
+
     from app.api.deps import TenantContext  # noqa: F401
     from app.core.db import SessionLocal
     from app.engine import approvals as AP
     from app.models import ApprovalRequest, Organization, User
-    from sqlalchemy import select
 
     db = SessionLocal()
     try:
