@@ -406,6 +406,10 @@ def release_results(oid: uuid.UUID, ctx: TenantContext = Depends(require(P.ORDER
     o = _order(ctx, oid)
     if not o.results_reviewed_at:
         raise bad_request("Results must be reviewed before release")
+    from app.models import LabResult
+
+    if ctx.db.scalar(select(LabResult.id).where(LabResult.order_id == o.id, LabResult.status == "preliminary").limit(1)):
+        raise bad_request("Unverified (preliminary) results can't be released to the patient")
     if not o.released_to_patient_at:
         o.released_to_patient_at = now()
         _notify_patient_release(ctx, o)
@@ -446,15 +450,19 @@ def patient_orders(patient_id: uuid.UUID, encounter_id: uuid.UUID | None = None,
         q = q.where(Order.encounter_id == encounter_id)
     if order_type:
         q = q.where(Order.order_type == order_type)
-    return [order_out(o, p) for o in ctx.db.scalars(q.order_by(Order.created_at.desc()).limit(300)).all()]
+    out = [order_out(o, p) for o in ctx.db.scalars(q.order_by(Order.created_at.desc()).limit(300)).all()]
+    if ctx.is_patient_only:
+        for o in out:
+            o.results = [r for r in o.results if r.status == "final"]
+    return out
 
 
 @router.get("/patients/{patient_id}/results")
 def patient_results(patient_id: uuid.UUID, ctx: TenantContext = Depends(get_ctx)):
     p = get_patient(ctx, patient_id, P.CLINICAL_READ)
     q = select(LabResult, Order.title, Order.released_to_patient_at, Order.results_reviewed_at).join(Order, Order.id == LabResult.order_id).where(LabResult.patient_id == p.id)
-    if ctx.is_patient_only:
-        q = q.where(Order.released_to_patient_at.is_not(None))
+    if ctx.is_patient_only:  # patients see released, verified (final) values only
+        q = q.where(Order.released_to_patient_at.is_not(None), LabResult.status == "final")
     rows = ctx.db.execute(q.order_by(LabResult.resulted_at.desc())).all()
     return [{**ResultOut.model_validate(r, from_attributes=True).model_dump(), "order_id": r.order_id, "panel": title,
              "reviewed": reviewed is not None, "released": released is not None} for r, title, released, reviewed in rows]

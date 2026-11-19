@@ -64,6 +64,12 @@ class LabResult(UUIDPk, OrgScoped, Base):
     reference_range: Mapped[str | None] = mapped_column(String(60))
     flag: Mapped[str] = mapped_column(String(20), default="normal")  # normal|high|low|critical_high|critical_low|abnormal
     status: Mapped[str] = mapped_column(String(20), default="final")
+    entered_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    verified_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    supersedes_id: Mapped[uuid.UUID | None] = fk("lab_results.id", nullable=True, ondelete="SET NULL", index=False)
+    correction_reason: Mapped[str | None] = mapped_column(String(300))
+    specimen_id: Mapped[uuid.UUID | None] = fk("specimens.id", nullable=True, ondelete="SET NULL", index=False)
     resulted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     source: Mapped[str] = mapped_column(String(20), default="simulated")
 

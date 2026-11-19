@@ -131,7 +131,8 @@ def seed_med_orders(db, org: Organization) -> int:
 
 
 def seed_second_pharmacist(db, org: Organization, hosp: Clinic) -> bool:
-    """Two-person rule demo (waste/negative adjustments need a second pharmacist)."""
+    """Two-person rule demo (waste/negative adjustments need a second pharmacist; lab results a second technologist)."""
+    _staff(db, org, hosp, "lab2@harborview.dev", "Marcus", "Bell", "MLS", "lab_tech", "LAB")
     from app.core.security import hash_password
     from app.models import (
         Department,
@@ -160,6 +161,50 @@ def seed_second_pharmacist(db, org: Organization, hosp: Clinic) -> bool:
     return True
 
 
+def seed_lab_orders(db, org: Organization) -> int:
+    """Signed in-house lab orders for admitted patients, awaiting collection (lab worklist demo)."""
+    from app.data.catalogs import LABS
+
+    if db.scalar(select(Order.id).where(Order.organization_id == org.id, Order.order_type == "lab", Order.notes == "Synthetic inpatient lab").limit(1)):
+        return 0
+    stays = db.scalars(select(InpatientStay).where(InpatientStay.organization_id == org.id, InpatientStay.status == "admitted")
+                       .order_by(InpatientStay.admitted_at).limit(5)).all()
+    picks = [LABS[1], LABS[2], LABS[0], LABS[2], LABS[1]]
+    n = 0
+    for s, (code, name, _spec, _comps) in zip(stays, picks, strict=False):
+        prov = db.get(ProviderProfile, s.attending_provider_id) if s.attending_provider_id else None
+        if not prov:
+            continue
+        db.add(Order(organization_id=org.id, patient_id=s.patient_id, encounter_id=s.encounter_id, order_type="lab", status="signed",
+                     priority="stat" if n == 0 else "routine", title=name, code=code, details={"specimen": _spec}, ordered_by_id=prov.user_id,
+                     signed_by_id=prov.user_id, signed_at=now() - timedelta(minutes=30 + 20 * n), notes="Synthetic inpatient lab"))
+        n += 1
+    db.flush()
+    return n
+
+
+def _staff(db, org, hosp, email, first, last, title, role, dept_code) -> bool:
+    from app.core.security import hash_password
+    from app.models import Department, Membership, MembershipClinic, MembershipDepartment, MembershipRole, User
+    from app.seed import DEV_PASSWORD
+
+    if db.scalar(select(User.id).where(User.email == email)):
+        return False
+    u = User(email=email, first_name=first, last_name=last, title=title, password_hash=hash_password(DEV_PASSWORD))
+    db.add(u)
+    db.flush()
+    m = Membership(user_id=u.id, organization_id=org.id, all_clinics=False)
+    db.add(m)
+    db.flush()
+    m.roles.append(MembershipRole(role=role))
+    m.clinics.append(MembershipClinic(clinic_id=hosp.id))
+    dept = db.scalar(select(Department.id).where(Department.facility_id == hosp.id, Department.code == dept_code))
+    if dept:
+        m.departments.append(MembershipDepartment(department_id=dept))
+    db.flush()
+    return True
+
+
 def extend(db) -> list[str]:
     done = []
     for org in db.scalars(select(Organization).where(Organization.slug == "harborview")):
@@ -172,6 +217,8 @@ def extend(db) -> list[str]:
             done.append("inventory")
         if seed_med_orders(db, org):
             done.append("medication orders")
+        if seed_lab_orders(db, org):
+            done.append("lab orders")
     return done
 
 

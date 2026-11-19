@@ -3,5 +3,6 @@ from app.monitors import (
     beds,  # noqa: F401
     ed,  # noqa: F401
     insurance,  # noqa: F401
+    lab,  # noqa: F401
     pharmacy,  # noqa: F401
 )

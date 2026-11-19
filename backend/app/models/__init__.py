@@ -64,6 +64,7 @@ from app.models.inventory import (
     StockMovement,
     Supplier,
 )
+from app.models.lab import CriticalResultAlert, Specimen
 from app.models.orders import LabResult, Order
 from app.models.patients import Patient, PatientAccessGrant, PatientInsurance, PatientNote
 from app.models.portal import (
@@ -77,6 +78,8 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "CriticalResultAlert",
+    "Specimen",
     "InventoryItem",
     "InventoryLot",
     "MedicationVerification",
