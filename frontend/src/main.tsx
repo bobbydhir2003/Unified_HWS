@@ -35,6 +35,8 @@ const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({
 const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
 const CommandCenter = lazy(() => import("@/features/command/CommandCenter").then((m) => ({ default: m.CommandCenter })));
 const AIWorkspace = lazy(() => import("@/features/ai/AIWorkspace").then((m) => ({ default: m.AIWorkspace })));
+const OrSchedulePage = lazy(() => import("@/features/ops/OrRosterPages").then((m) => ({ default: m.OrSchedulePage })));
+const RosterPage = lazy(() => import("@/features/ops/OrRosterPages").then((m) => ({ default: m.RosterPage })));
 const RevenuePage = lazy(() => import("@/features/revenue/RevenuePage").then((m) => ({ default: m.RevenuePage })));
 const RadiologyPage = lazy(() => import("@/features/radiology/RadiologyPage").then((m) => ({ default: m.RadiologyPage })));
 const LabPage = lazy(() => import("@/features/lab/LabPage").then((m) => ({ default: m.LabPage })));
@@ -158,6 +160,8 @@ const router = createBrowserRouter([
               { path: "analytics", element: <Perm perm="analytics:read"><AnalyticsPage /></Perm>, handle: { crumb: "Analytics" } },
               { path: "command", element: <Perm perm="cases:read"><CommandCenter /></Perm>, handle: { crumb: "Command Center" } },
               { path: "ai", element: <Perm perm="ai:use"><AIWorkspace /></Perm>, handle: { crumb: "AI workspace" } },
+              { path: "or", element: <OrSchedulePage />, handle: { crumb: "Operating rooms" } },
+              { path: "roster", element: <Perm perm="roster:self"><RosterPage /></Perm>, handle: { crumb: "Roster" } },
               { path: "revenue", element: <Perm perm="billing:read"><RevenuePage /></Perm>, handle: { crumb: "Revenue integrity" } },
               { path: "radiology", element: <Perm perm="radiology:work"><RadiologyPage /></Perm>, handle: { crumb: "Radiology" } },
               { path: "lab", element: <Perm perm="clinical:read"><LabPage /></Perm>, handle: { crumb: "Laboratory" } },

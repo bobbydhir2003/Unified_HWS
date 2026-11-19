@@ -61,14 +61,20 @@ def or_schedule(day: date | None = None, ctx: TenantContext = Depends(get_ctx)):
                            .order_by(Location.sort_order)).all()
     if ctx.facility_ids is not None:
         rooms = [r for r in rooms if r.facility_id in ctx.facility_ids]
-    d = day or now().date()
-    start, end = datetime.combine(d, datetime.min.time()).astimezone(), datetime.combine(d + timedelta(days=1), datetime.min.time()).astimezone()
+    from zoneinfo import ZoneInfo
+
+    from app.models import Clinic
+
+    fac = ctx.db.get(Clinic, rooms[0].facility_id) if rooms else None
+    tz = ZoneInfo(fac.timezone if fac else "UTC")
+    d = day or now().astimezone(tz).date()
+    start, end = datetime.combine(d, datetime.min.time(), tz), datetime.combine(d + timedelta(days=1), datetime.min.time(), tz)
     cases = ctx.db.scalars(select(SurgicalCase).where(SurgicalCase.organization_id == ctx.org_id, SurgicalCase.or_room_id.in_([r.id for r in rooms]),
                                                       SurgicalCase.start_at < end, SurgicalCase.end_at > start).order_by(SurgicalCase.start_at)).all()
     names = {r.id: r.name for r in rooms}
     booked = {r.id: sum((min(c.end_at, end) - max(c.start_at, start)).total_seconds() / 3600 for c in cases if c.or_room_id == r.id and c.status != "cancelled")
               for r in rooms}
-    return {"day": d, "rooms": [{"id": r.id, "name": r.name, "booked_hours": round(booked[r.id], 1), "utilization_pct": round(100 * booked[r.id] / 10, 0)} for r in rooms],
+    return {"day": d, "timezone": str(tz), "rooms": [{"id": r.id, "name": r.name, "booked_hours": round(booked[r.id], 1), "utilization_pct": round(100 * booked[r.id] / 10, 0)} for r in rooms],
             "cases": [case_out(c, names) for c in cases], "utilization_basis": "booked hours ÷ 10-hour staffed day"}
 
 
