@@ -82,7 +82,7 @@ def test_board_counts_are_consistent(as_user):
     board = as_user("bedmanager@harborview.dev").get("/adt/board").json()
     for u in board["units"]:
         assert sum(u["counts"].values()) == len(u["beds"])
-        assert u["counts"]["occupied"] == sum(1 for b in u["beds"] if b["stay"])
+        assert u["counts"]["occupied"] == sum(1 for b in u["beds"] if b["stay"] or b["ed_visit"])
     assert as_user("dr.lake@lakeside.dev", "lakeside").get("/adt/board").status_code == 404
 
 

@@ -19,6 +19,7 @@ import { useFacilities } from "../admin/FacilitiesPage";
 import { AdmitDialog, BED_STYLE, BedStatusChip, losLabel, type StayT } from "./shared";
 
 type BedT = { id: string; code: string; name: string; room: string | null; status: string; status_reason: string | null; since: string | null;
+  ed_visit: null | { id: string; status: string; esi: number | null; patient_name: string };
   stay: null | { id: string; status: string; patient_name: string; patient_id: string | null; mrn: string | null; los_hours: number | null; isolation: string | null; discharge_ordered: boolean; attending: string | null; expected_discharge_date: string | null } };
 type Board = { facility: { id: string; name: string }; units: { id: string; code: string; name: string; beds: BedT[]; counts: Record<string, number> }[]; totals: Record<string, number>; occupancy_pct: number | null; pending_admissions: StayT[]; discharges_ordered: number };
 
@@ -68,6 +69,9 @@ export function BedBoard() {
                             <p className="text-muted-foreground">LOS {losLabel(b.stay.los_hours)}</p>
                             <div className="flex flex-wrap gap-1">{b.stay.discharge_ordered && <Badge variant="info" className="px-1 py-0 text-[10px]"><LogOut className="size-3" />Discharge</Badge>}{b.stay.isolation && <Badge variant="warning" className="px-1 py-0 text-[10px]"><ShieldAlert className="size-3" />{b.stay.isolation}</Badge>}</div>
                           </div>
+                        ) : b.ed_visit ? (
+                          <div className="mt-1.5 space-y-0.5"><p className="truncate text-[13px] font-medium">{b.ed_visit.patient_name}</p>
+                            <p className="text-muted-foreground">ED{b.ed_visit.esi ? ` · ESI ${b.ed_visit.esi}` : ""}{b.ed_visit.status === "boarding" ? " · boarding" : ""}</p></div>
                         ) : b.status === "cleaning" ? <p className="mt-1.5 flex items-center gap-1 text-muted-foreground"><Clock className="size-3" />{fromNow(b.since)}</p>
                           : b.status === "blocked" ? <p className="mt-1.5 line-clamp-2 text-muted-foreground">{b.status_reason}</p> : <p className="mt-1.5 text-muted-foreground">Ready</p>}
                       </button>))}

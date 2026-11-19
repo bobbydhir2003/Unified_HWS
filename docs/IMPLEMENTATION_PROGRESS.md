@@ -27,7 +27,7 @@ All work is local on branch `dev` (never pushed). Synthetic data only. Not HIPAA
 | B1/B2 Inpatient stays + ADT (admit/transfer/discharge order/discharge/cancel), DB exclusion constraint against double bed occupancy, one active stay per patient, bed state machine + history, housekeeping tasks, bed board (live), census, bed-flow monitors (turnover delay, admission waiting, discharge not departed) | ✅ | 0fd926c, 71786f8 |
 | B4 Nursing: inpatient encounter per stay (notes reuse: progress/nursing/discharge_summary), vitals, SBAR handoffs (append-only after acknowledgment), care team, nursing workspace | ✅ | 9c61195, 71786f8 |
 | B5 Discharge coordination: checklist w/ owner task fan-out on discharge order, data-verified items (signed summary, booked follow-up, approved instructions), attested manual items, instructions draft → clinician approval (approval gate), readiness gate (physician-only audited override) | ✅ | 9c61195, 71786f8 |
-| B3 Emergency department | ⏳ next | |
+| B3 Emergency department — **backend complete & tested; UI pending**: quick registration incl. temporary identities, nurse/physician-recorded ESI triage (no AI triage), bay rooming (DB-unique bay + one active visit per patient), provider assignment + ED encounter, physician-only dispositions, admit → boarding → auto-release on inpatient placement, identity reconciliation (merge moves records; append-only tables/signed notes accept *only* a patient_id change under `app.patient_merge`; audit log never rewritten), ED boarding + door-to-provider monitors, ED seed census; bed board shows ED occupants | 🟡 | 6679c53 + checkpoint |
 | B6 Pharmacy + Watchdog, B7 Lab, B8 Radiology, B9 Procurement, B10 Prior auth/claims, B11 OR + rostering, B12 portal | ⏳ | |
 B1 inpatient/ADT → B2 bed board → B3 ED → B4 nursing → B5 discharge agent → B6 pharmacy + Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims → B11 OR + rostering → B12 portal.
 Foundations already in place: locations with `bed_status`, hospital seed (Harborview General: ED 12 bays, 4B/4C/ICU beds, 4 ORs, pharmacy storage), department-scoped staff, engine + monitors.
@@ -35,9 +35,9 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 ## Milestone C — Intelligent Operations: not started
 
 ## Tests actually executed (2026-11-19)
-- Backend (latest): **95 passed** after B5 (adds test_adt, test_discharge). Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
+- Backend (latest, checkpoint 2026-11-19): **97 passed** (adds test_ed). After B5: 95. Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
 - Frontend: `npm run typecheck` and `npm run build` pass.
-- Browser (local dev, fresh seed, Chrome): api_smoke (no 4xx/5xx for any role) + all 8 original flows + `insurance_guardian_flow` + `command_center_flow` passed at Milestone A completion; `adt_flow` passed after B5.
+- Browser (local dev, fresh seed, Chrome): api_smoke (no 4xx/5xx for any role) + all 8 original flows + `insurance_guardian_flow` + `command_center_flow` passed at Milestone A completion; `adt_flow` passed after B5 and again at the B3 checkpoint; api_smoke clean (no 4xx/5xx) at checkpoint.
 - OpenAI: NOT validated against the live API (no key). Simulated provider used in every run above.
 
 ## Known issues / notes
@@ -47,9 +47,16 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - Monitors run org-wide each time an insurance event fires (fine at demo scale; scope per patient before large pilots).
 - Header still says "clinic" switcher; facility switcher UI to be finished with Command Center.
 
-## Next actions
-1. B3 Emergency department (quick registration w/ temporary aliases + identity reconciliation, tracking board, triage recorded by nurses, provider assignment, disposition → admission request, boarding monitor), then B6 pharmacy/inventory + Watchdog, B7 lab, B8 radiology, B9 procurement, B10 prior auth/claims, B11 OR/rostering, B12 portal; Milestone B E2E + regression.
-2. When an OpenAI key is available: set `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `AI_TEXT_MODEL` (+ vision/transcription), run AI workspace → "Check provider connection", then document AI / scribe / assistant on synthetic data and record results here.
+## Next actions (exact resume point)
+1. **B3 UI** (small): `frontend/src/features/ed/EdBoard.tsx` — tracking board from `GET /api/v1/ed/board` (visits sorted by ESI, timers, bays, metrics), quick-registration dialog (`POST /ed/arrivals`, incl. "unidentified"), triage dialog (`POST /ed/visits/{id}/triage`), room (`/room`), "Assign me" (`/assign`), disposition (`/disposition`, admit → boarding), reconcile identity (`/reconcile`, attestation); route `/ed` (perm `adt:read`), nav item in "Hospital"; E2E `e2e/ed_flow.py`; add to CI list.
+2. B6 pharmacy & inventory + Pharmacy Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims expansion → B11 OR + rostering (OR-Tools) → B12 portal (discharge instructions/summary, inpatient follow-ups).
+3. Milestone B end-to-end validation: the five B workflows + full regression; then Milestone C (complete Command Center, Agent Studio, cross-department automation, forecasting foundation, patient journey, AI governance, performance/accessibility).
+4. OpenAI live validation when a key is provided (see AI workspace → Check provider connection).
+
+## Resume checklist
+- `cd backend && uv run alembic upgrade head && uv run python -m app.seed --reset` (dev DB), API `uv run uvicorn app.main:app --port 8010 --reload --reload-dir app`, web `cd frontend && API_PROXY_TARGET=http://localhost:8010 npm run dev`.
+- Local Postgres needs role `undeclared_app` (already created on this machine; see Known issues).
+- Tests: `cd backend && uv run pytest -q` (97 expected), `cd frontend && npm run typecheck && npm run build`.
 
 ---
 

@@ -102,6 +102,10 @@ def bed_board(facility_id: uuid.UUID | None = None, ctx: TenantContext = Depends
     occ = ctx.db.execute(select(BedAssignment.bed_id, InpatientStay).join(InpatientStay, InpatientStay.id == BedAssignment.stay_id)
                          .where(BedAssignment.end_at.is_(None), InpatientStay.facility_id == f.id)).all()
     occ_map = {b: s for b, s in occ}
+    from app.models import EdVisit
+
+    ed_occ = {v.bed_id: v for v in ctx.db.scalars(select(EdVisit).where(EdVisit.facility_id == f.id, EdVisit.bed_id.is_not(None),
+                                                                        EdVisit.status.in_(("roomed", "boarding"))))}
 
     def unit_of(loc: Location) -> Location:
         while loc.parent_id and by_id.get(loc.parent_id) and by_id[loc.parent_id].kind != "unit":
@@ -120,6 +124,9 @@ def bed_board(facility_id: uuid.UUID | None = None, ctx: TenantContext = Depends
         d["beds"].append({"id": b.id, "code": b.code, "name": b.name, "room": room.name if room and room.kind == "room" else None,
                           "status": b.bed_status, "status_reason": b.bed_status_reason, "since": b.bed_status_changed_at,
                           "attributes": b.attributes,
+                          "ed_visit": None if b.id not in ed_occ else {
+                              "id": ed_occ[b.id].id, "status": ed_occ[b.id].status, "esi": ed_occ[b.id].esi_level,
+                              "patient_name": "Restricted patient" if ed_occ[b.id].patient.is_restricted else ed_occ[b.id].patient.full_name},
                           "stay": None if s is None else {
                               "id": s.id, "status": s.status, "patient_name": "Restricted patient" if restricted else s.patient.full_name,
                               "patient_id": None if restricted else s.patient_id, "mrn": None if restricted else s.patient.mrn,
