@@ -39,7 +39,17 @@ class Settings(BaseSettings):
     max_upload_mb: int = 25
 
     # AI. "simulated" never sends data off-box. "anthropic" requires a BAA before real PHI is used.
-    ai_provider: Literal["simulated", "anthropic"] = "simulated"
+    ai_provider: Literal["simulated", "anthropic", "openai"] = "simulated"
+    # OpenAI (backend secret only). Models are configuration, not code: set AI_TEXT_MODEL etc. to models your account offers.
+    openai_api_key: str | None = None
+    ai_text_model: str = ""
+    ai_vision_model: str = ""  # defaults to AI_TEXT_MODEL when empty
+    ai_transcription_model: str = ""
+    ai_timeout_seconds: float = 60.0
+    ai_max_retries: int = 2
+    ai_prices: dict[str, list[float]] = {}  # {"model-prefix": [usd_per_m_input, usd_per_m_output]} for cost tracking
+    # Synthetic-data organizations (settings.synthetic_data) may use external AI in development: their data is not PHI.
+    ai_allow_synthetic_external: bool = True
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-opus-5-5"
     ai_phi_allowed: bool = False

@@ -24,6 +24,7 @@ dependencies = [
   "anthropic>=2.10.0",
   "pypdf>=7.1.1",
   "fpdf2>=2.9.0",
+  "openai>=3.56.0",
 ]
 
 [dependency-groups]

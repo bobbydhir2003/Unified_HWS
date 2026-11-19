@@ -44,13 +44,16 @@ def ask_chart(patient_id: uuid.UUID, body: AskIn, ctx: TenantContext = Depends(r
         return {"answer": refused_text, "citations": [], "refused": True, "insufficient": False, "provider": "policy"}
     sources = build_sources(ctx.db, p)
     try:
-        a = get_assistant().answer(body.question, sources, body.history, contains_phi=True)
+        from app.ai.policy import contains_phi
+
+        a = get_assistant().answer(body.question, sources, body.history, contains_phi=contains_phi(ctx.db, ctx.org_id))
     except AIError as e:
         job.status, job.error, job.finished_at = "failed", str(e), now()
         ctx.db.commit()
         raise HTTPException(502, str(e)) from None
     job.status, job.provider, job.model, job.latency_ms = "succeeded", a.provider, a.model, a.latency_ms
     job.phi_sent_externally, job.input_tokens, job.output_tokens, job.finished_at = a.phi_sent_externally, a.input_tokens, a.output_tokens, now()
+    job.cost_usd = getattr(a, "cost_usd", None)
     # The question text may contain PHI; the audit records only that a query happened and how it was answered.
     ctx.audit("ai.chart_assistant", resource_type="patient", resource_id=p.id, patient_id=p.id,
               details={"provider": a.provider, "citations": len(a.citations), "sources_available": len(sources)})
@@ -379,3 +382,31 @@ def ai_jobs(kind: str | None = None, status: str | None = None, ctx: TenantConte
             "jobs": [{"id": j.id, "kind": j.kind, "status": j.status, "provider": j.provider, "model": j.model, "latency_ms": j.latency_ms,
                       "input_tokens": j.input_tokens, "output_tokens": j.output_tokens, "phi_sent_externally": j.phi_sent_externally,
                       "error": j.error, "created_at": j.created_at, "subject_type": j.subject_type} for j in rows]}
+
+
+# ======================= Provider status (no secrets ever returned) =======================
+
+@router.get("/ai/provider")
+def ai_provider_status(ctx: TenantContext = Depends(require(P.AI_USE))):
+    from app.ai.policy import contains_phi, provider_label
+
+    lab = provider_label()
+    return {**lab, "openai_key_configured": bool(settings.openai_api_key), "models": {
+        "text": settings.ai_text_model or None, "vision": settings.ai_vision_model or settings.ai_text_model or None,
+        "transcription": settings.ai_transcription_model or None},
+        "phi_allowed": settings.ai_phi_allowed, "org_is_synthetic": not contains_phi(ctx.db, ctx.org_id),
+        "cost_tracking": bool(settings.ai_prices), "live_validation": "pending" if lab["active"] == "simulated" else "see health check"}
+
+
+@router.post("/ai/provider/health")
+def ai_provider_health(ctx: TenantContext = Depends(require(P.CLINIC_MANAGE))):
+    from app.ai.openai_provider import OpenAICore, available
+
+    if settings.ai_provider != "openai":
+        return {"ok": None, "detail": f"Active provider is {settings.ai_provider}; nothing to check."}
+    if not available():
+        return {"ok": False, "detail": "OPENAI_API_KEY or AI_TEXT_MODEL not configured — simulation is in use."}
+    r = OpenAICore().health()
+    ctx.audit("ai.provider_health", details={"ok": r.get("ok")})
+    ctx.db.commit()
+    return r

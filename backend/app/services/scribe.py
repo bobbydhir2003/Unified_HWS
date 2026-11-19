@@ -53,6 +53,12 @@ def _job(db: Session, s: ScribeSession, kind: str, provider: str) -> AIJob:
     return j
 
 
+def _phi(db: Session, org_id) -> bool:
+    from app.ai.policy import contains_phi
+
+    return contains_phi(db, org_id)
+
+
 def transcribe(db: Session, session_id: uuid.UUID) -> None:
     s = db.get(ScribeSession, session_id)
     if not s or s.status != "transcribing" or not s.audio_storage_key:
@@ -60,7 +66,9 @@ def transcribe(db: Session, session_id: uuid.UUID) -> None:
     t = get_transcriber()
     job = _job(db, s, "scribe_transcription", t.name)
     try:
-        segs = t.transcribe(storage.get(s.audio_storage_key), s.audio_content_type or "")
+        audio = storage.get(s.audio_storage_key)
+        segs = (t.transcribe(audio, s.audio_content_type or "", contains_phi=_phi(db, s.organization_id)) if t.name == "openai"
+                else t.transcribe(audio, s.audio_content_type or ""))
         s.transcript = [x.model_dump() for x in segs]
         s.transcript_source, s.status, job.status = "audio", "transcribed", "succeeded"
         if not settings.scribe_retain_audio:
@@ -80,12 +88,14 @@ def draft(db: Session, session_id: uuid.UUID) -> None:
     d = get_drafter()
     job = _job(db, s, "scribe_note", d.name)
     try:
-        r = d.draft([Segment(**x) for x in s.transcript], _vitals_text(db, s.encounter_id), enc.chief_complaint, contains_phi=True)
+        r = d.draft([Segment(**x) for x in s.transcript], _vitals_text(db, s.encounter_id), enc.chief_complaint,
+                    contains_phi=_phi(db, s.organization_id))
         s.draft = {**r.draft.model_dump(), "provider": r.provider, "model": r.model}
         s.draft_count += 1
         s.status, s.error = "ready", None
         job.status, job.model, job.phi_sent_externally = "succeeded", r.model, r.phi_sent_externally
         job.input_tokens, job.output_tokens, job.latency_ms = r.input_tokens, r.output_tokens, r.latency_ms
+        job.cost_usd = getattr(r, "cost_usd", None)
     except AIError as e:
         s.status, s.error, job.status, job.error = "failed", str(e), "failed", str(e)
     except Exception as e:  # noqa: BLE001

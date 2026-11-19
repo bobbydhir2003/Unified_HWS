@@ -180,7 +180,9 @@ def process_document(db: Session, doc_id: uuid.UUID) -> None:
         text, text_source, pages = extract_text(data, doc.content_type)
         doc.extracted_text, doc.text_source, doc.page_count = text, text_source, pages
         provider = get_provider()
-        result = provider.analyze_document(text, data, doc.content_type, contains_phi=True)
+        from app.ai.policy import contains_phi
+
+        result = provider.analyze_document(text, data, doc.content_type, contains_phi=contains_phi(db, doc.organization_id))
         a = result.data
         doc.ai_output = a.model_dump()
         doc.ai_confidence = a.confidence
@@ -212,6 +214,7 @@ def process_document(db: Session, doc_id: uuid.UUID) -> None:
         job.status, job.model, job.provider = "succeeded", result.model, result.provider
         job.phi_sent_externally = result.phi_sent_externally
         job.input_tokens, job.output_tokens, job.latency_ms = result.input_tokens, result.output_tokens, result.latency_ms
+        job.cost_usd = getattr(result, "cost_usd", None)
         job.patient_id = doc.suggested_patient_id
     except AIError as e:
         doc.status, doc.processing_error = "failed", str(e)

@@ -897,6 +897,23 @@ wheels = [
 ]
 
 [[package]]
+name = "openai"
+version = "3.56.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "httpx2" },
+    { name = "jiter" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/71/dd/e734e29239f14c81e0ee33259bae420822b4f673cd7068b7231a40ab8821/openai-3.56.0.tar.gz", hash = "sha256:c99192c0a08f572042e50a74c42e325f70a44308fbb0c0c8f3aeb1ba0d52a567", size = 2424433, upload-time = "2026-11-19T20:57:15.425Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e9/fb/0fcc715f2c9a81a2665698ccfbbbe017fcbca850efa7ee8f43af0a301c24/openai-3.56.0-py3-none-any.whl", hash = "sha256:24043ea80048ed1cd6c263c4fc4192406d05c418e87e89310eecbf55a9021c32", size = 2451118, upload-time = "2026-11-19T20:57:13.245Z" },
+]
+
+[[package]]
 name = "opentelemetry-api"
 version = "1.45.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1573,6 +1590,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "fpdf2" },
     { name = "httpx" },
+    { name = "openai" },
     { name = "packaging" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
@@ -1603,6 +1621,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "fpdf2", specifier = ">=2.9.0" },
     { name = "httpx", specifier = ">=0.28" },
+    { name = "openai", specifier = ">=3.56.0" },
     { name = "packaging", specifier = ">=24" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.9" },

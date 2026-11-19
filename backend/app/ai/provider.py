@@ -288,4 +288,9 @@ class AnthropicProvider:
 def get_provider():
     if settings.ai_provider == "anthropic":
         return AnthropicProvider()
-    return SimulatedProvider()
+    if settings.ai_provider == "openai":
+        from app.ai.openai_provider import OpenAIDocumentProvider, available
+
+        if available():
+            return OpenAIDocumentProvider()
+    return SimulatedProvider()  # also the graceful fallback when OpenAI isn't configured (labeled "simulated")

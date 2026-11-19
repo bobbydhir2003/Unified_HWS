@@ -6,10 +6,10 @@ Every external dependency sits behind an adapter (`app/integrations/adapters.py`
 |---|---|---|---|
 | Email | Simulated (DB outbox, Admin › Message outbox) | `services/identity.send_email` | SES / SendGrid with BAA |
 | SMS reminders | Simulated (beat task writes outbox) | `tasks.send_appointment_reminders` | Twilio with BAA |
-| Insurance eligibility (270/271) | Simulated (member IDs ending in 0 → inactive) | `patients.check_eligibility` | Clearinghouse (e.g., Availity, Change) |
+| Insurance eligibility (270/271) | Simulated (member ID ends 0 → inactive, 9 → plan ends end of month, 8 → payer error); history in `eligibility_checks` | `integrations/adapters.SimulatedEligibility`, `services/insurance.py` | Clearinghouse (e.g., Availity, Change) |
 | Object storage | Local disk or S3 | `services/storage.py` | S3 with SSE-KMS, private bucket |
 | ICD-10-CM | Built-in common subset | `data/icd10_common.py` | Import annual CMS release into a table |
-| AI document analysis | Simulated (rule-based) default; Anthropic provider implemented, PHI-gated | `app/ai/provider.py` | Claude with BAA; set `AI_PROVIDER=anthropic`, `AI_PHI_ALLOWED=true` only after review |
+| AI (documents, scribe drafting, chart assistant, transcription, agents) | Simulated default; Anthropic and **OpenAI** providers implemented (OpenAI: Responses API, strict JSON-schema outputs, server-side tool loop, retries/timeouts, cost via `AI_PRICES`). **OpenAI live validation pending — no key configured during development; contract tests use a fake client.** PHI-gated; synthetic orgs exempt | `app/ai/provider.py` | Claude with BAA; set `AI_PROVIDER=anthropic`, `AI_PHI_ALLOWED=true` only after review |
 | Inbound fax | Webhook implemented (`POST /api/integrations/fax/{org_slug}/inbound`, `X-Fax-Secret`, multipart `file` + `from_number`); simulated faxes from UI | `routers/documents.py` | Any fax vendor with BAA that can POST multipart; per-org secret in `organizations.settings.fax_webhook_secret` |
 | OCR for scanned images | Not available in simulated mode | — | Vision-capable AI provider or Textract/tesseract |
 | Speech-to-text (scribe) | Not configured — adapter `NoTranscriber` raises a clear error | `app/ai/scribe.py:get_transcriber` | HIPAA-eligible ASR with diarization (BAA), implement `transcribe(audio, content_type) -> [Segment]` |

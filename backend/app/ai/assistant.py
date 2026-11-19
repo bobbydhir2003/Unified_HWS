@@ -249,6 +249,11 @@ class AnthropicAssistant:
 
 
 def get_assistant():
+    if settings.ai_provider == "openai":
+        from app.ai.openai_provider import OpenAIAssistant, available
+
+        if available():
+            return OpenAIAssistant()
     return AnthropicAssistant() if settings.ai_provider == "anthropic" else SimulatedAssistant()
 
 
