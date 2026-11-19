@@ -185,7 +185,14 @@ def seed_lab_orders(db, org: Organization) -> int:
 
 def _staff(db, org, hosp, email, first, last, title, role, dept_code) -> bool:
     from app.core.security import hash_password
-    from app.models import Department, Membership, MembershipClinic, MembershipDepartment, MembershipRole, User
+    from app.models import (
+        Department,
+        Membership,
+        MembershipClinic,
+        MembershipDepartment,
+        MembershipRole,
+        User,
+    )
     from app.seed import DEV_PASSWORD
 
     if db.scalar(select(User.id).where(User.email == email)):
