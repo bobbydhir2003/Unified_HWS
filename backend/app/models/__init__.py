@@ -1,3 +1,4 @@
+from app.models.agents import AgentConfig, AgentConfigVersion, AgentRun, AIFeedback
 from app.models.ai_settings import AIProviderSettings
 from app.models.automation import AutomationRun, AutomationWorkflow, Task, VoiceCall
 from app.models.base import Base
@@ -84,6 +85,10 @@ from app.models.scheduling_ops import Shift, StaffSkill, SurgicalCase, SwapReque
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "AgentConfig",
+    "AgentConfigVersion",
+    "AgentRun",
+    "AIFeedback",
     "Equipment",
     "MaintenanceLog",
     "StockPar",
