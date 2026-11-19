@@ -337,8 +337,9 @@ def create_note(encounter_id: uuid.UUID, body: NoteCreate, ctx: TenantContext = 
     e = _encounter(ctx, encounter_id, P.CLINICAL_WRITE)
     if e.status != "in_progress":
         raise bad_request("Encounter is closed")
-    if ctx.db.scalar(select(ClinicalNote.id).where(ClinicalNote.encounter_id == e.id, ClinicalNote.status == "draft")):
-        raise bad_request("This encounter already has a draft note")
+    if ctx.db.scalar(select(ClinicalNote.id).where(ClinicalNote.encounter_id == e.id, ClinicalNote.status == "draft",
+                                                   ClinicalNote.author_id == ctx.user.id, ClinicalNote.note_type == body.note_type)):
+        raise bad_request("You already have a draft note of this type for this encounter")
     content, source = NoteContent(), "manual"
     if body.template_id:
         t = _owned(ctx, ClinicalTemplate, body.template_id, "Template")
@@ -346,7 +347,7 @@ def create_note(encounter_id: uuid.UUID, body: NoteCreate, ctx: TenantContext = 
     if e.chief_complaint and not content.subjective:
         content.subjective = f"Chief complaint: {e.chief_complaint}\n"
     n = ClinicalNote(organization_id=ctx.org_id, encounter_id=e.id, patient_id=e.patient_id, author_id=ctx.user.id,
-                     title=body.title, content={}, current_version=0)
+                     title=body.title, note_type=body.note_type, content={}, current_version=0)
     ctx.db.add(n)
     ctx.db.flush()
     save_version(ctx, n, content, 0, source)

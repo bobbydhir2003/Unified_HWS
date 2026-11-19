@@ -120,12 +120,31 @@ def _occupy(db: Session, stay: InpatientStay, bed: Location, actor_id, reason: s
     stay.department_id = bed.department_id
 
 
+def ensure_encounter(db: Session, stay: InpatientStay) -> None:
+    """Inpatient documentation (progress, nursing, discharge summary notes) lives on one inpatient encounter."""
+    if stay.encounter_id:
+        return
+    if not stay.attending_provider_id:
+        raise AdtError("Assign an attending physician before admitting")
+    from app.models import Encounter
+
+    e = Encounter(organization_id=stay.organization_id, clinic_id=stay.facility_id, patient_id=stay.patient_id,
+                  provider_id=stay.attending_provider_id, encounter_type="inpatient", status="in_progress", chief_complaint=stay.reason[:300],
+                  started_at=stay.admitted_at or now())
+    db.add(e)
+    db.flush()
+    stay.encounter_id = e.id
+
+
 def admit(db: Session, stay: InpatientStay, bed: Location, *, actor_id) -> None:
     if stay.status != "pending":
         raise AdtError(f"Stay is {stay.status}; only pending admissions can be assigned a first bed")
     _check_bed(db, stay, bed)
+    if not stay.attending_provider_id:
+        raise AdtError("Assign an attending physician before admitting")
     _occupy(db, stay, bed, actor_id, "admit")
     stay.status, stay.admitted_at = "admitted", now()
+    ensure_encounter(db, stay)
     _event(db, stay, "admitted", actor_id, to=bed.id)
 
 
@@ -170,6 +189,12 @@ def discharge(db: Session, stay: InpatientStay, *, actor_id, note: str | None = 
         db.flush()
         set_bed_status(db, db.get(Location, cur.bed_id), "cleaning", actor_id=actor_id, reason="patient discharged", system=True)
     stay.status, stay.discharged_at = "discharged", now()
+    if stay.encounter_id:
+        from app.models import Encounter
+
+        e = db.get(Encounter, stay.encounter_id)
+        if e and e.status == "in_progress":
+            e.status, e.completed_at = "completed", now()
     _event(db, stay, "discharged", actor_id, frm=cur.bed_id if cur else None, note=note)
 
 

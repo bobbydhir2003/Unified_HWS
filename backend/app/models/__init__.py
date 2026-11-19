@@ -42,7 +42,16 @@ from app.models.identity import (
     User,
     UserSession,
 )
-from app.models.inpatient import AdtEvent, BedAssignment, BedStatusEvent, CareTeamMember, InpatientStay
+from app.models.inpatient import (
+    AdtEvent,
+    BedAssignment,
+    BedStatusEvent,
+    CareTeamMember,
+    DischargePlan,
+    DischargePlanItem,
+    HandoffNote,
+    InpatientStay,
+)
 from app.models.insurance import CoverageUpdateRequest, EligibilityCheck
 from app.models.orders import LabResult, Order
 from app.models.patients import Patient, PatientAccessGrant, PatientInsurance, PatientNote
@@ -57,6 +66,9 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "DischargePlan",
+    "DischargePlanItem",
+    "HandoffNote",
     "AdtEvent",
     "BedAssignment",
     "BedStatusEvent",

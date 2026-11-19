@@ -10,7 +10,18 @@ Invariants enforced by PostgreSQL (migration 0014):
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, Index, String, Text, func, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -43,6 +54,7 @@ class InpatientStay(UUIDPk, Timestamps, OrgScoped, Base):
     discharged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cancel_reason: Mapped[str | None] = mapped_column(String(300))
     ed_visit_id: Mapped[uuid.UUID | None] = mapped_column(index=True)
+    encounter_id: Mapped[uuid.UUID | None] = fk("encounters.id", nullable=True, ondelete="SET NULL")  # inpatient documentation
     data: Mapped[dict] = mapped_column(JSONB, default=dict)
     patient = relationship("Patient", lazy="joined")
     attending = relationship("ProviderProfile", lazy="joined")
@@ -114,3 +126,57 @@ class CareTeamMember(UUIDPk, OrgScoped, Base):
     user = relationship("User", lazy="joined")
 
     __table_args__ = (Index("uq_care_team_active", "stay_id", "user_id", "role", unique=True, postgresql_where=text("end_at is null")),)
+
+
+DISCHARGE_ITEM_STATUSES = ("pending", "in_progress", "done", "not_applicable")
+
+
+class DischargePlan(UUIDPk, Timestamps, OrgScoped, Base):
+    __tablename__ = "discharge_plans"
+    stay_id: Mapped[uuid.UUID] = fk("inpatient_stays.id")
+    status: Mapped[str] = mapped_column(String(12), default="active")  # active | complete | cancelled
+    target_departure_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    instructions_text: Mapped[str | None] = mapped_column(Text)  # clinician-approved patient instructions
+    instructions_source: Mapped[str | None] = mapped_column(String(20))  # manual | ai_draft_approved
+    instructions_approved_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    instructions_approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    items: Mapped[list["DischargePlanItem"]] = relationship(order_by="DischargePlanItem.sort_order", lazy="selectin")
+
+    __table_args__ = (Index("uq_discharge_plan_stay", "stay_id", unique=True),
+                      CheckConstraint("status in ('active','complete','cancelled')", name="status"))
+
+
+class DischargePlanItem(UUIDPk, OrgScoped, Base):
+    __tablename__ = "discharge_plan_items"
+    plan_id: Mapped[uuid.UUID] = fk("discharge_plans.id")
+    key: Mapped[str] = mapped_column(String(30))
+    label: Mapped[str] = mapped_column(String(200))
+    required: Mapped[bool] = mapped_column(Boolean, default=True)
+    owner_role: Mapped[str] = mapped_column(String(30))
+    verification: Mapped[str] = mapped_column(String(10), default="manual")  # auto (computed from data) | manual (attested)
+    status: Mapped[str] = mapped_column(String(15), default="pending")
+    sort_order: Mapped[int] = mapped_column(default=0)
+    note: Mapped[str | None] = mapped_column(String(500))
+    evidence: Mapped[dict] = mapped_column(JSONB, default=dict)
+    task_id: Mapped[uuid.UUID | None] = fk("tasks.id", nullable=True, ondelete="SET NULL", index=False)
+    completed_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (UniqueConstraint("plan_id", "key"),
+                      CheckConstraint("status in (" + ",".join(f"'{s}'" for s in DISCHARGE_ITEM_STATUSES) + ")", name="status"))
+
+
+class HandoffNote(UUIDPk, OrgScoped, Base):
+    """Nursing shift handoff (SBAR). Append-only; corrections are new notes."""
+
+    __tablename__ = "handoff_notes"
+    stay_id: Mapped[uuid.UUID] = fk("inpatient_stays.id")
+    author_id: Mapped[uuid.UUID] = fk("users.id", index=False)
+    shift: Mapped[str] = mapped_column(String(10))  # day | evening | night
+    situation: Mapped[str] = mapped_column(Text)
+    background: Mapped[str | None] = mapped_column(Text)
+    assessment: Mapped[str | None] = mapped_column(Text)
+    recommendation: Mapped[str | None] = mapped_column(Text)
+    acknowledged_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

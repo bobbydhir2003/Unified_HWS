@@ -135,7 +135,7 @@ def seed_inpatients(db, org, hosp, attendings: list, patients: list) -> None:
     pool = iter(patients)
     reasons = ["Community-acquired pneumonia", "CHF exacerbation", "Cellulitis of lower leg", "COPD exacerbation", "Post-op hip arthroplasty",
                "Diabetic ketoacidosis", "Sepsis, urinary source", "Acute kidney injury", "Small bowel obstruction", "GI bleed"]
-    for i, b in enumerate(ward_beds):
+    for b in ward_beds:
         r = rng.random()
         if r < 0.55:
             p = next(pool)
@@ -151,12 +151,19 @@ def seed_inpatients(db, org, hosp, attendings: list, patients: list) -> None:
             db.add(s)
             db.flush()
             db.add(BedAssignment(organization_id=org.id, stay_id=s.id, bed_id=b.id, patient_id=p.id, start_at=admitted, reason="admit"))
+            from app.services.adt import ensure_encounter
+
+            ensure_encounter(db, s)
             db.add(AdtEvent(organization_id=org.id, stay_id=s.id, patient_id=p.id, kind="admission_requested", at=s.requested_at, note=s.reason))
             db.add(AdtEvent(organization_id=org.id, stay_id=s.id, patient_id=p.id, kind="admitted", to_bed_id=b.id, at=admitted))
             b.bed_status, b.bed_status_changed_at = "occupied", admitted
             if s.expected_discharge_date <= date.today() and rng.random() < 0.6:
                 s.status, s.discharge_ordered_at, s.discharge_disposition = "discharge_ordered", now() - timedelta(minutes=rng.randint(20, 300)), "home"
                 db.add(AdtEvent(organization_id=org.id, stay_id=s.id, patient_id=p.id, kind="discharge_ordered", at=s.discharge_ordered_at, note="home"))
+                from app.services.discharge import ensure_plan, fan_out
+
+                plan = ensure_plan(db, s)
+                fan_out(db, s, plan)
         elif r < 0.62:
             since = now() - timedelta(minutes=rng.randint(15, 140))
             b.bed_status, b.bed_status_changed_at = "cleaning", since

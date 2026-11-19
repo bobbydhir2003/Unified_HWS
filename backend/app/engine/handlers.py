@@ -11,3 +11,4 @@ def template_workflows(db: Session, ev: DomainEvent) -> None:
     from app.services.automation import run_workflows
 
     run_workflows(db, ev.organization_id, ev.event_type, dict(ev.payload or {}))
+import app.services.discharge  # noqa: E402,F401  (registers discharge_coordinator handler)

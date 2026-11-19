@@ -80,20 +80,25 @@ class DischargeNotDeparted(Monitor):
     name = "Discharge ordered, patient not departed"
     description = "A discharge order is older than the target and the patient still occupies the bed."
     category = "discharge"
-    default_config = {"threshold_minutes": 180, "assign_role": "nurse"}
+    default_config = {"threshold_minutes": 120, "assign_role": "nurse"}
     config_help = {"threshold_minutes": "Open a case this long after the discharge order", "assign_role": "Role that owns departure"}
 
     def evaluate(self, db, org_id, cfg):
         stays = db.scalars(select(InpatientStay).where(InpatientStay.organization_id == org_id, InpatientStay.status == "discharge_ordered",
                                                        InpatientStay.discharge_ordered_at < now() - timedelta(minutes=int(cfg["threshold_minutes"])))).all()
         out = []
+        from app.services.discharge import readiness
+
         for s in stays:
             m = _mins(s.discharge_ordered_at)
+            r = readiness(db, s)
+            blockers = r["blocking"] if r else []
             out.append(Finding(dedupe_key=f"dc.delay:{s.id}", kind=self.key, category="discharge", severity="high" if m > 360 else "medium",
                                title=f"Discharge ordered {m // 60}h ago, not departed — {s.patient.full_name}", patient_id=s.patient_id,
                                facility_id=s.facility_id, department_id=s.department_id, subject_type="inpatient_stay", subject_id=str(s.id),
                                assign_role=cfg["assign_role"], link=f"/inpatients/{s.id}", sla_minutes=60,
-                               evidence={"minutes_since_order": m, "disposition": s.discharge_disposition}))
+                               summary=("Outstanding: " + "; ".join(blockers)) if blockers else "Checklist complete — patient ready to depart.",
+                               evidence={"minutes_since_order": m, "disposition": s.discharge_disposition, "blocking_items": blockers}))
         return out
 
     def clear(self, db, case, cfg):

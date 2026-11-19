@@ -132,6 +132,7 @@ class NoteContent(BaseModel):
 class NoteCreate(BaseModel):
     template_id: uuid.UUID | None = None
     title: str = "Progress note"
+    note_type: Literal["soap", "progress", "nursing", "discharge_summary", "consult"] = "soap"
 
 
 class NoteSave(BaseModel):
