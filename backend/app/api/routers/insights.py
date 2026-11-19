@@ -60,6 +60,9 @@ def _daily_count(db, col, org_col, org, days: int) -> dict[date, int]:
 
 def seasonal(history: dict[date, int], target: date) -> tuple[float, float, float, str]:
     """Mean of the same weekday in history (seasonal average); falls back to the overall mean. ±1.5 sd band."""
+    days = sorted(history)
+    first = next((d for d in days if history[d]), None)  # ignore days before the data starts (no recording ≠ zero activity)
+    history = {d: history[d] for d in days if first and d >= first}
     same = [v for d, v in history.items() if d.weekday() == target.weekday()]
     vals = same if len(same) >= 2 else list(history.values())
     method = "same-weekday mean" if len(same) >= 2 else "overall mean"

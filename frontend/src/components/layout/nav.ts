@@ -1,5 +1,5 @@
 import {
-  Activity, BedDouble, Wrench, CalendarClock, Scissors, FileCheck2, FlaskConical, ScanLine, KeyRound, Pill, Siren, HeartHandshake, Hospital, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
+  Activity, BedDouble, Wrench, CalendarClock, Scissors, FileCheck2, FlaskConical, ScanLine, KeyRound, Lightbulb, Pill, Siren, HeartHandshake, Hospital, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
   type LucideIcon, Mail, MessageSquare, PhoneCall, Receipt, ScrollText, ServerCog, Settings2, ShieldCheck, Stethoscope, Users, UsersRound, Workflow,
 } from "lucide-react";
 
@@ -51,6 +51,7 @@ export const NAV: NavSection[] = [
     title: "AI & automation",
     items: [
       { to: "/ai", label: "AI workspace", icon: Sparkles, perm: "ai:use" },
+      { to: "/insights", label: "Insights", icon: Lightbulb, perm: "analytics:read" },
       { to: "/agents", label: "Agent Studio", icon: Bot, perm: "ai:use" },
       { to: "/admin/ai-governance", label: "AI governance", icon: ShieldCheck, perm: "ai:manage" },
       { to: "/automation/monitors", label: "Monitors & rules", icon: Activity, any: ["automation:manage", "command:view"] },

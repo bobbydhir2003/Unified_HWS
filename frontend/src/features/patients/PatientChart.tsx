@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, CalendarPlus, ClipboardList, ClipboardPen, FileStack, Receipt, TestTube, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, ShieldAlert,
+  AlertTriangle, CalendarPlus, ClipboardList, ClipboardPen, FileStack, Receipt, TestTube, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, Route, ShieldAlert,
   ShieldCheck, Sparkles, Stethoscope, StickyNote, Trash2, Users,
 } from "lucide-react";
 import * as React from "react";
@@ -25,6 +25,7 @@ import { AppointmentDialog } from "@/features/schedule/AppointmentDialog";
 import { ApiError, del, get, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtDob, sexShort } from "@/lib/format";
+import { JourneyTab } from "@/features/insights/InsightsPages";
 import { CoveragePanel } from "@/features/insurance/InsuranceGuardian";
 import type { Allergy, Appointment, Encounter, Insurance, Medication, Patient, Problem, Vitals } from "@/lib/types";
 import { cn, titleCase } from "@/lib/utils";
@@ -151,6 +152,7 @@ const TABS = [
   { key: "orders", label: "Orders", icon: ClipboardPen, clinical: true },
   { key: "results", label: "Results", icon: TestTube, clinical: true },
   { key: "timeline", label: "Timeline", icon: History, clinical: true },
+  { key: "journey", label: "Journey", icon: Route },
   { key: "documents", label: "Documents", icon: FileStack, docs: true },
   { key: "appointments", label: "Appointments", icon: CalendarPlus },
   { key: "billing", label: "Billing", icon: Receipt, billing: true },
@@ -219,6 +221,7 @@ export function PatientChart() {
         {tab === "orders" && clinical && <PatientOrdersTab patientId={p.id} />}
         {tab === "results" && clinical && <PatientResultsTab patientId={p.id} />}
         {tab === "timeline" && clinical && <TimelineTab patientId={p.id} />}
+        {tab === "journey" && <JourneyTab patientId={p.id} />}
         {tab === "documents" && can("documents:read") && <PatientDocumentsTab patientId={p.id} />}
         {tab === "appointments" && <AppointmentsTab patientId={p.id} />}
         {tab === "billing" && can("billing:read") && <PatientBillingTab patientId={p.id} />}
