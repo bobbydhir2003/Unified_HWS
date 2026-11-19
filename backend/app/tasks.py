@@ -76,3 +76,39 @@ def scribe_draft_task(session_id: str) -> None:
         draft(db, uuid.UUID(session_id))
     finally:
         db.close()
+
+
+# ---------- Automation engine (Milestone A2) ----------
+
+@celery_app.task(name="app.tasks.dispatch_events")
+def dispatch_events_task() -> int:
+    """Outbox dispatcher. Idempotent and safe to run concurrently (SKIP LOCKED + per-handler uniqueness)."""
+    from app.engine.events import dispatch_pending
+
+    return dispatch_pending()
+
+
+@celery_app.task(name="app.tasks.run_monitors")
+def run_monitors_task() -> int:
+    from app.engine.monitors import run_all
+
+    db = SessionLocal()
+    try:
+        runs = run_all(db)
+        db.commit()
+        return len(runs)
+    finally:
+        db.close()
+
+
+@celery_app.task(name="app.tasks.escalate_cases")
+def escalate_cases_task() -> dict:
+    from app.engine.cases import escalate_due
+
+    db = SessionLocal()
+    try:
+        stats = escalate_due(db)
+        db.commit()
+        return stats
+    finally:
+        db.close()

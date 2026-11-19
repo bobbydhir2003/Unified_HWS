@@ -141,7 +141,17 @@ def _plan(wf: AutomationWorkflow, p: dict, db: Session) -> list[dict]:
 
 
 def emit(db: Session, org_id: uuid.UUID, event: str, payload: dict) -> None:
-    """Fire enabled workflows for this event. Never raises into the caller."""
+    """Record a domain event in the transactional outbox. Workflows run from the dispatcher after commit
+    (handler "workflows"), with retries and exactly-once effects — see app/engine/events.py."""
+    from app.engine.events import emit as outbox_emit
+
+    outbox_emit(db, org_id, event, payload)
+
+
+def run_workflows(db: Session, org_id: uuid.UUID, event: str, payload: dict) -> None:
+    """Fire enabled template workflows for this event. Called by the outbox dispatcher."""
+    if payload.get("patient_id") and not isinstance(payload["patient_id"], uuid.UUID):
+        payload = {**payload, "patient_id": uuid.UUID(str(payload["patient_id"]))}
     try:
         wfs = db.scalars(select(AutomationWorkflow).where(AutomationWorkflow.organization_id == org_id, AutomationWorkflow.trigger == event,
                                                           AutomationWorkflow.is_enabled.is_(True))).all()

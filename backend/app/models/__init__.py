@@ -15,6 +15,17 @@ from app.models.clinical import (
     VitalSigns,
 )
 from app.models.documents import AIJob, Document
+from app.models.engine import (
+    ApprovalRequest,
+    Case,
+    CaseEvent,
+    DomainEvent,
+    EventHandling,
+    MonitorConfig,
+    MonitorRun,
+    NotificationDelivery,
+    NotificationPreference,
+)
 from app.models.facility import Department, Location, MembershipDepartment
 from app.models.identity import (
     AuditEvent,
@@ -44,6 +55,15 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "ApprovalRequest",
+    "Case",
+    "CaseEvent",
+    "DomainEvent",
+    "EventHandling",
+    "MonitorConfig",
+    "MonitorRun",
+    "NotificationDelivery",
+    "NotificationPreference",
     "Department",
     "Location",
     "MembershipDepartment",

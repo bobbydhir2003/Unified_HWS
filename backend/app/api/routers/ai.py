@@ -186,7 +186,8 @@ class TaskIn(BaseModel):
     title: str = Field(min_length=2, max_length=200)
     description: str | None = Field(default=None, max_length=2000)
     patient_id: uuid.UUID | None = None
-    assigned_role: Literal["clinic_admin", "doctor", "nurse", "receptionist", "billing"] | None = None
+    assigned_role: Literal["clinic_admin", "hospital_admin", "doctor", "nurse", "receptionist", "billing", "insurance_specialist",
+                           "pharmacist", "lab_tech", "radiology_tech", "radiologist", "bed_manager"] | None = None
     assigned_user_id: uuid.UUID | None = None
     priority: Literal["low", "normal", "high", "urgent"] = "normal"
 
@@ -194,13 +195,17 @@ class TaskIn(BaseModel):
 def task_out(t: Task, pname: str | None = None) -> dict:
     return {"id": t.id, "title": t.title, "description": t.description, "patient_id": t.patient_id, "patient_name": pname,
             "assigned_role": t.assigned_role, "assigned_user_id": t.assigned_user_id, "priority": t.priority, "status": t.status,
-            "link": t.link, "source": t.source, "created_at": t.created_at, "completed_at": t.completed_at}
+            "link": t.link, "source": t.source, "created_at": t.created_at, "completed_at": t.completed_at, "case_id": t.case_id,
+            "due_at": t.due_at, "kind": t.kind, "acknowledged_at": t.acknowledged_at, "department_id": t.department_id}
 
 
 @router.get("/tasks")
 def list_tasks(scope: Literal["mine", "all"] = "mine", status: Literal["open", "done"] = "open", ctx: TenantContext = Depends(require(P.PATIENTS_READ))):
     q = select(Task, Patient.first_name + " " + Patient.last_name).outerjoin(Patient, Patient.id == Task.patient_id).where(
-        Task.organization_id == ctx.org_id, Task.status == status, or_(Patient.id.is_(None), Patient.is_restricted.is_(False)))
+        Task.organization_id == ctx.org_id, Task.status.in_(("open", "in_progress") if status == "open" else ("done",)),
+        or_(Patient.id.is_(None), Patient.is_restricted.is_(False)))
+    if ctx.department_ids is not None:
+        q = q.where(or_(Task.department_id.is_(None), Task.department_id.in_(ctx.department_ids)))
     if scope == "mine":
         q = q.where(or_(Task.assigned_user_id == ctx.user.id, (Task.assigned_user_id.is_(None) & Task.assigned_role.in_(ctx.roles))))
     prio = func.array_position(["urgent", "high", "normal", "low"], Task.priority)
@@ -223,14 +228,33 @@ def create_task(body: TaskIn, ctx: TenantContext = Depends(require(P.PATIENTS_RE
 
 
 @router.post("/tasks/{tid}/{action}")
-def task_action(tid: uuid.UUID, action: Literal["complete", "reopen"], ctx: TenantContext = Depends(require(P.PATIENTS_READ))):
+def task_action(tid: uuid.UUID, action: Literal["complete", "reopen", "acknowledge", "start", "claim"],
+                ctx: TenantContext = Depends(require(P.PATIENTS_READ))):
     t = ctx.db.get(Task, tid)
     if not t or t.organization_id != ctx.org_id:
         raise not_found("Task")
+    ctx.require_department(t.department_id)
     if action == "complete":
         t.status, t.completed_at, t.completed_by_id = "done", now(), ctx.user.id
-    else:
+    elif action == "reopen":
         t.status, t.completed_at, t.completed_by_id = "open", None, None
+    elif action == "acknowledge":
+        t.acknowledged_at, t.acknowledged_by_id = t.acknowledged_at or now(), t.acknowledged_by_id or ctx.user.id
+    elif action == "start":
+        t.status = "in_progress"
+        t.acknowledged_at, t.acknowledged_by_id = t.acknowledged_at or now(), t.acknowledged_by_id or ctx.user.id
+    elif action == "claim":
+        t.assigned_user_id = ctx.user.id
+    if t.case_id:
+        from app.engine.cases import log_event
+        from app.models import Case
+
+        c = ctx.db.get(Case, t.case_id)
+        if c:
+            log_event(ctx.db, c, "task", f"Task {action}: {t.title[:150]}", actor_id=ctx.user.id, data={"task_id": str(t.id)})
+    from app.services.realtime import publish
+
+    publish(ctx.db, ctx.org_id, "tasks", task_id=t.id)
     ctx.audit(f"task.{action}", resource_type="task", resource_id=t.id, patient_id=t.patient_id)
     ctx.db.commit()
     return task_out(t)
@@ -239,7 +263,7 @@ def task_action(tid: uuid.UUID, action: Literal["complete", "reopen"], ctx: Tena
 @router.get("/tasks-count")
 def tasks_count(ctx: TenantContext = Depends(require(P.PATIENTS_READ))):
     return {"open": ctx.db.scalar(select(func.count()).select_from(Task).where(
-        Task.organization_id == ctx.org_id, Task.status == "open",
+        Task.organization_id == ctx.org_id, Task.status.in_(("open", "in_progress")),
         or_(Task.assigned_user_id == ctx.user.id, (Task.assigned_user_id.is_(None) & Task.assigned_role.in_(ctx.roles)))))}
 
 

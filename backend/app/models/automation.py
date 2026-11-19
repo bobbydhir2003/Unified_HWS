@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Index, String, Text, func
+from sqlalchemy import CheckConstraint, DateTime, Index, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -59,11 +59,22 @@ class Task(UUIDPk, Timestamps, OrgScoped, Base):
     run_id: Mapped[uuid.UUID | None] = fk("automation_runs.id", nullable=True, ondelete="SET NULL")
     completed_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL")
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Automation engine links (Milestone A2)
+    case_id: Mapped[uuid.UUID | None] = fk("cases.id", nullable=True, ondelete="SET NULL")
+    dedupe_key: Mapped[str | None] = mapped_column(String(200))
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    facility_id: Mapped[uuid.UUID | None] = fk("clinics.id", nullable=True, ondelete="SET NULL", index=False)
+    department_id: Mapped[uuid.UUID | None] = fk("departments.id", nullable=True, ondelete="SET NULL")
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    acknowledged_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    kind: Mapped[str | None] = mapped_column(String(60))  # machine-readable task type, e.g. discharge.transport
 
     __table_args__ = (
         CheckConstraint("priority in ('low','normal','high','urgent')", name="priority"),
-        CheckConstraint("status in ('open','done','cancelled')", name="status"),
+        CheckConstraint("status in ('open','in_progress','done','cancelled')", name="status"),
         Index("ix_tasks_org_status", "organization_id", "status", "assigned_role"),
+        Index("uq_tasks_open_dedupe", "organization_id", "dedupe_key", unique=True,
+              postgresql_where=text("status in ('open','in_progress') and dedupe_key is not null")),
     )
 
 
