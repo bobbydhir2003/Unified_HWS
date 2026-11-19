@@ -42,7 +42,8 @@ class Settings(BaseSettings):
     ai_provider: Literal["simulated", "anthropic"] = "simulated"
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-opus-5-5"
-    ai_phi_allowed: bool = False  # must be explicitly enabled to send PHI to an external provider
+    ai_phi_allowed: bool = False
+    scribe_retain_audio: bool = False  # delete raw audio once transcribed (default: minimize retained PHI)  # must be explicitly enabled to send PHI to an external provider
 
     @property
     def is_production(self) -> bool:

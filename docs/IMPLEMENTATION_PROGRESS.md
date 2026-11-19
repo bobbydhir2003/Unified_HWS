@@ -12,8 +12,9 @@ _Last updated: 2026-11-19_
 | 3 Patients & scheduling | ✅ Complete |
 | 4 Core EHR | ✅ Complete |
 | 5 Document AI | ✅ Complete |
-| 6 AI scribe | ⏭ Next |
-| 7–12 | Not started |
+| 6 AI scribe | ✅ Complete |
+| 7 Clinical orders | ⏭ Next |
+| 8–12 | Not started |
 
 **Milestone reached:** a patient can go from registration → booking → check-in → rooming → encounter → vitals → SOAP note → diagnosis → signed note → completed visit → check-out, all persisted and audited.
 
@@ -26,6 +27,7 @@ _Last updated: 2026-11-19_
 - **Scheduling:** appointment types, provider weekly availability editor, open-slot finder, day/week/month calendar in clinic timezone with availability shading and click-to-book, booking/rescheduling with conflict detection (app + DB exclusion), availability override, status workflow (confirm, check-in, room, check-out, cancel w/ reason, no-show), front-desk board with wait timers, arrival notifications to providers, reminder task.
 - **EHR:** encounters (from appointment or unscheduled), vitals (imperial entry, trends chart, abnormal flags), problems/medications/allergies/history with entered-in-error, ICD-10 picker, encounter diagnoses (+ add to problem list), templates, SOAP notes with explicit versioned saves, optimistic concurrency, ⌘S, unsaved-change guard, sign (A/P required, AI attestation), DB-frozen signed notes, addenda, version history, encounter completion rules, patient timeline, "My visits".
 - **Document AI (phase 5):** `documents` + `ai_jobs` tables (migration 0003); upload with magic-byte validation, size limit, SHA-256 duplicate detection, object-storage keys free of PHI; Celery pipeline (PDF text layer → AI analysis → rule-based patient matching with confidence + reasons); review queue with status tabs/counts; side-by-side review (preview, AI draft with uncertainties and abnormal flags, editable type/title/date/summary, candidate list, patient search, identity comparison table, mandatory identity attestation); file-to-chart (documents:review only), reject with reason, reprocess; chart Documents tab (uploads from chart still go through review); filed documents on timeline; authenticated inbound fax webhook; synthetic sample/fax generator (exact / ambiguous / unknown identity). AI provider abstraction: `simulated` rule-based default (no network, labeled), `anthropic` provider (Claude Opus 5.5, structured JSON output, server-side refusal fallbacks) hard-blocked for PHI unless `AI_PHI_ALLOWED=true`.
+- **AI scribe (phase 6):** `scribe_sessions` (migration 0004) with recorded consent (verbal/written) before any capture; in-browser recording (start/pause/resume/stop, timer, live level, mic-permission errors) → upload (audio magic-byte check) → transcription adapter (none configured → honest failure, never invented text; audio deleted after transcription by default); typed/pasted transcript with speaker labels; synthetic demo conversation (synthetic orgs only, labeled); async drafting via Celery (simulated rule-based or Claude, PHI-gated); transcript editing + redraft; editable draft with uncertainties, allergy-discrepancy alert vs chart, mentioned meds/follow-up; insert into note as an `ai_scribe` version (append/replace, optimistic concurrency, blocked while the editor has unsaved edits) → signing requires AI attestation; every run logged in `ai_jobs`.
 - **Portal (minimal):** patient login sees own appointments, allergies, medications, latest vitals.
 
 ## Test results (2026-11-19)
@@ -35,12 +37,13 @@ _Last updated: 2026-11-19_
 | `ruff check app tests` | ✅ pass |
 | Backend import/startup | ✅ |
 | Migrations up → down → up, `alembic check` | ✅ no drift |
-| `pytest` (27 tests, incl. document upload validation, never-auto-file, matching, review permission, identity attestation, isolation, PHI gate, fax webhook auth; earlier: auth, MFA, lockout, sessions, authz, tenant isolation, restricted charts, portal scoping, audit immutability, duplicates, appointment conflicts, full visit + note integrity) | ✅ 27 passed |
+| `pytest` (31 tests, incl. scribe consent/role gates, honest STT failure, demo→draft→apply provenance, version/sign protection; incl. document upload validation, never-auto-file, matching, review permission, identity attestation, isolation, PHI gate, fax webhook auth; earlier: auth, MFA, lockout, sessions, authz, tenant isolation, restricted charts, portal scoping, audit immutability, duplicates, appointment conflicts, full visit + note integrity) | ✅ 31 passed |
 | Frontend `tsc --noEmit` (TS 7) | ✅ 0 errors |
 | Frontend `vite build` | ✅ (bundle 1.37 MB / 405 kB gz — warning) |
 | API smoke across all screens × 7 roles | ✅ 0 server errors (found & fixed INET serialization bug) |
 | Browser E2E (headless Chrome via Playwright): register → … → check-out | ✅ no page errors (found & fixed override-button and UTC-message bugs) |
 | Browser E2E: simulated fax → review → identity attestation → file → chart; unknown patient blocked | ✅ no page errors (found & fixed: Compose API port collided with local dev API) |
+| Browser E2E (fake mic device): scribe record → honest STT failure → demo → draft → allergy discrepancy → insert → attested sign → complete | ✅ (found & fixed: missing allergy-discrepancy warning, overflowing follow-up badge) |
 | `docker compose up --build` | ✅ all services healthy; Celery task round-trip verified |
 
 Browser E2E and API smoke scripts live in `e2e/` (manual; not yet in CI).
@@ -54,9 +57,10 @@ Browser E2E and API smoke scripts live in `e2e/` (manual; not yet in CI).
 - Portal is read-only and minimal until phase 8.
 - Port 8000 is used by another local service on the dev machine; local API uses 8010, Docker API 8011.
 - Scanned images have no OCR with the simulated provider (no tesseract installed); they're flagged unreadable with low confidence. The Anthropic provider reads images/PDFs directly but is PHI-gated.
+- No speech-to-text vendor is integrated; recorded audio can't be transcribed until one is configured (typed transcripts and the synthetic demo work).
 - The Anthropic provider path is unit-tested only for the PHI gate; it has not been exercised against the live API (no key configured, and it must not receive PHI without a BAA).
 
 ## Next steps
 
-1. Phase 6 — AI scribe on top of the same provider abstraction and the existing note-versioning (`source='ai_scribe'`).
+1. Phase 7 — Clinical orders: medication catalog + Rx drafts/approval, lab catalog/orders/results (simulated lab interface), imaging orders, referrals, order tracking.
 2. Route-level code splitting; run `e2e/` in CI.

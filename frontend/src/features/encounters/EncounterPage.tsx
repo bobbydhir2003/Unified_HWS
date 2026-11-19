@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  CheckCircle2, ClipboardCheck, FilePlus2, FileSignature, History, HeartPulse, Lock, Plus, Save, Stethoscope, X,
+  CheckCircle2, ClipboardCheck, FilePlus2, FileSignature, History, HeartPulse, Lock, Plus, Save, Sparkles, Stethoscope, X,
 } from "lucide-react";
 import * as React from "react";
 import { Link, useParams } from "react-router-dom";
@@ -17,6 +17,7 @@ import { Checkbox, Kbd, Skeleton } from "@/components/ui/misc";
 import { Dialog as D } from "radix-ui";
 import { AllergyStrip, type Summary } from "@/features/patients/PatientChart";
 import { VitalsDialog, VitalsSummary } from "@/features/patients/Vitals";
+import { ScribePanel } from "./ScribePanel";
 import { ApiError, get, patch, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { cToF, fmtDateTime, fmtDob, sexShort } from "@/lib/format";
@@ -53,7 +54,7 @@ function vitalsText(v: Vitals) {
   return `Vitals: ${parts.join(", ")}`;
 }
 
-function NoteEditor({ note, encounter, onChanged }: { note: Note; encounter: EncounterDetail; onChanged: () => void }) {
+function NoteEditor({ note, encounter, onChanged, onDirtyChange }: { note: Note; encounter: EncounterDetail; onChanged: () => void; onDirtyChange: (d: boolean) => void }) {
   const { can } = useAuth();
   const [content, setContent] = React.useState<NoteContent>(note.content);
   const [version, setVersion] = React.useState(note.current_version);
@@ -64,6 +65,7 @@ function NoteEditor({ note, encounter, onChanged }: { note: Note; encounter: Enc
   const [conflict, setConflict] = React.useState(false);
   const dirty = JSON.stringify(content) !== JSON.stringify(note.content) || version !== note.current_version;
   const blocker = useUnsavedChanges(dirty);
+  React.useEffect(() => { onDirtyChange(dirty); return () => onDirtyChange(false); }, [dirty, onDirtyChange]);
   const editable = encounter.status === "in_progress" && can("clinical:write");
 
   React.useEffect(() => { setContent(note.content); setVersion(note.current_version); setConflict(false); }, [note.id, note.current_version]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -310,6 +312,10 @@ export function EncounterPage() {
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [completing, setCompleting] = React.useState(false);
   const [cc, setCc] = React.useState<string | null>(null);
+  const [scribeOpen, setScribeOpen] = React.useState(false);
+  const [noteDirty, setNoteDirty] = React.useState(false);
+  const { membership } = useAuth();
+  const org = useQuery({ queryKey: ["organization", membership?.organization_id], queryFn: () => get<{ settings: { synthetic_data?: boolean } }>("/organization"), staleTime: 300_000 });
   const [followUp, setFollowUp] = React.useState<string | null>(null);
   useCrumb(enc ? `${enc.patient.name} · ${fmtDateTime(enc.started_at)}` : null);
 
@@ -344,6 +350,9 @@ export function EncounterPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {open && can("ai:use") && can("clinical:write") && note?.status !== "signed" && !scribeOpen && (
+              <Button variant="soft" size="sm" onClick={() => setScribeOpen(true)}><Sparkles />AI scribe</Button>
+            )}
             {note && <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}><History />Versions</Button>}
             {open && can("clinical:sign") && (
               <Button size="sm" variant="success" disabled={!canComplete} loading={completing}
@@ -378,6 +387,11 @@ export function EncounterPage() {
             </CardContent>
           </Card>
 
+          {scribeOpen && open && (
+            <ScribePanel encounterId={enc.id} patientId={enc.patient_id}
+              chartAllergies={summary.data?.clinical_access ? (summary.data.allergies ?? []).map((a) => a.substance) : null} noteId={note?.id} noteVersion={note?.current_version} noteDirty={noteDirty}
+              synthetic={!!org.data?.settings.synthetic_data} onApplied={refresh} onClose={() => setScribeOpen(false)} />
+          )}
           {!note ? (
             <Card>
               <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
@@ -398,7 +412,7 @@ export function EncounterPage() {
                 ) : <p className="text-[13px] text-muted-foreground">This visit was closed without a note.</p>}
               </CardContent>
             </Card>
-          ) : note.status === "signed" ? <SignedNote note={note} onChanged={refresh} /> : <NoteEditor note={note} encounter={enc} onChanged={refresh} />}
+          ) : note.status === "signed" ? <SignedNote note={note} onChanged={refresh} /> : <NoteEditor note={note} encounter={enc} onChanged={refresh} onDirtyChange={setNoteDirty} />}
         </div>
 
         <div className="space-y-4">

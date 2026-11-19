@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.api.routers import admin, auth, clinical, documents, health, patients, scheduling, workspace
+from app.api.routers import admin, auth, clinical, documents, health, patients, scheduling, scribe, workspace
 from app.core.config import settings
 from app.core.logging import configure_logging
 
@@ -64,3 +64,4 @@ app.include_router(scheduling.router, prefix=API)
 app.include_router(clinical.router, prefix=API)
 app.include_router(workspace.router, prefix=API)
 app.include_router(documents.router, prefix=API)
+app.include_router(scribe.router, prefix=API)

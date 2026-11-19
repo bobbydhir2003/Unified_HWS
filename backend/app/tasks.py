@@ -50,3 +50,29 @@ def process_document_task(doc_id: str) -> None:
         process_document(db, uuid.UUID(doc_id))
     finally:
         db.close()
+
+
+@celery_app.task(name="app.tasks.scribe_transcribe")
+def scribe_transcribe_task(session_id: str) -> None:
+    import uuid
+
+    from app.services.scribe import transcribe
+
+    db = SessionLocal()
+    try:
+        transcribe(db, uuid.UUID(session_id))
+    finally:
+        db.close()
+
+
+@celery_app.task(name="app.tasks.scribe_draft")
+def scribe_draft_task(session_id: str) -> None:
+    import uuid
+
+    from app.services.scribe import draft
+
+    db = SessionLocal()
+    try:
+        draft(db, uuid.UUID(session_id))
+    finally:
+        db.close()

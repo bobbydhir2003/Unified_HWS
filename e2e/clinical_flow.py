@@ -17,6 +17,10 @@ with sync_playwright() as p:
     pg.get_by_label("Sex assigned at birth").select_option("male")
     pg.get_by_label("Mobile phone").fill("(555) 301-"+suffix)
     pg.get_by_role("button", name="Register patient").click()
+    try:  # earlier runs leave similar test patients behind → the duplicate check (correctly) asks
+        pg.get_by_role("button", name="Not a duplicate — create new record").click(timeout=2500)
+    except Exception:
+        pass
     pg.wait_for_url("**/patients/*"); pg.wait_for_selector("text=MRN")
     print("registered", pg.url)
     # Book via banner (override hours so the run is time-independent)

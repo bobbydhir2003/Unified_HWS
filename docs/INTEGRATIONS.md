@@ -12,6 +12,7 @@ Every external dependency sits behind an adapter. Until a real, contracted and v
 | AI document analysis | Simulated (rule-based) default; Anthropic provider implemented, PHI-gated | `app/ai/provider.py` | Claude with BAA; set `AI_PROVIDER=anthropic`, `AI_PHI_ALLOWED=true` only after review |
 | Inbound fax | Webhook implemented (`POST /api/integrations/fax/{org_slug}/inbound`, `X-Fax-Secret`, multipart `file` + `from_number`); simulated faxes from UI | `routers/documents.py` | Any fax vendor with BAA that can POST multipart; per-org secret in `organizations.settings.fax_webhook_secret` |
 | OCR for scanned images | Not available in simulated mode | — | Vision-capable AI provider or Textract/tesseract |
+| Speech-to-text (scribe) | Not configured — adapter `NoTranscriber` raises a clear error | `app/ai/scribe.py:get_transcriber` | HIPAA-eligible ASR with diarization (BAA), implement `transcribe(audio, content_type) -> [Segment]` |
 | e-Prescribing | Planned (phase 7), simulated | — | Surescripts-certified partner |
 | Labs (HL7 v2 ORM/ORU) | Planned (phase 7), simulated | — | Lab interface engine / partner |
 | Clearinghouse claims (837/835) | Planned (phase 9), simulated | — | Clearinghouse partner |

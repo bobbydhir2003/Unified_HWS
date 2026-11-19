@@ -30,6 +30,7 @@ from app.models.identity import (
 )
 from app.models.patients import Patient, PatientAccessGrant, PatientInsurance, PatientNote
 from app.models.scheduling import Appointment, AppointmentType, ProviderAvailability
+from app.models.scribe import ScribeSession
 
 __all__ = [
     "AIJob",
@@ -63,6 +64,7 @@ __all__ = [
     "Problem",
     "ProviderAvailability",
     "ProviderProfile",
+    "ScribeSession",
     "User",
     "UserSession",
     "VitalSigns",
