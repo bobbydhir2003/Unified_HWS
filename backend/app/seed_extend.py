@@ -133,7 +133,14 @@ def seed_med_orders(db, org: Organization) -> int:
 def seed_second_pharmacist(db, org: Organization, hosp: Clinic) -> bool:
     """Two-person rule demo (waste/negative adjustments need a second pharmacist)."""
     from app.core.security import hash_password
-    from app.models import Department, Membership, MembershipClinic, MembershipDepartment, MembershipRole, User
+    from app.models import (
+        Department,
+        Membership,
+        MembershipClinic,
+        MembershipDepartment,
+        MembershipRole,
+        User,
+    )
     from app.seed import DEV_PASSWORD
 
     if db.scalar(select(User.id).where(User.email == "pharmacist2@harborview.dev")):
