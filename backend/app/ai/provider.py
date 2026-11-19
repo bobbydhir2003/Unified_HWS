@@ -46,6 +46,16 @@ class Finding(_Strict):
     reference_range: str | None
 
 
+class InsuranceCardFields(_Strict):
+    payer_name: str | None
+    plan_name: str | None
+    member_id: str | None
+    group_number: str | None
+    subscriber_name: str | None
+    effective_date: str | None  # YYYY-MM-DD
+    rx_bin: str | None
+
+
 class DocumentAnalysis(_Strict):
     doc_type: DocType
     title: str
@@ -58,6 +68,7 @@ class DocumentAnalysis(_Strict):
     diagnoses_stated: list[str]
     confidence: float  # 0..1, the model's/heuristic's confidence in the extraction overall
     uncertainties: list[str]
+    insurance_card: InsuranceCardFields | None = None  # only for doc_type == insurance_card
 
 
 @dataclass
@@ -85,6 +96,7 @@ Rules:
 - Copy patient identifiers exactly as printed; dates as YYYY-MM-DD; use null when absent or unreadable.
 - The summary is 1-3 plain sentences for clinic staff, describing what the document is and its stated conclusions.
 - List anything illegible, ambiguous or conflicting in `uncertainties`, and lower `confidence` (0-1) accordingly.
+- For insurance cards (doc_type insurance_card) fill `insurance_card` with the fields printed on the card; otherwise null.
 - A human reviews every result before it is filed; do not give medical advice."""
 
 
@@ -186,7 +198,22 @@ class SimulatedProvider:
             uncertainties.append("Patient name not found.")
         if not dob_m:
             uncertainties.append("Date of birth not found.")
+        card = None
+        if doc_type == "insurance_card":
+            eff = re.search(rf"Effective(?: Date)?\s*[:#]?\s*{_DATE}", text, re.IGNORECASE)
+            card = InsuranceCardFields(
+                payer_name=_field(text, "Payer", "Insurance Company", "Carrier"), plan_name=_field(text, "Plan", "Plan Name"),
+                member_id=(_field(text, "Member ID", "Member Number", "ID") or "").split()[0] or None,
+                group_number=(_field(text, "Group Number", "Group", "Group No") or "").split()[0] or None,
+                subscriber_name=_field(text, "Member Name", "Subscriber", "Name"),
+                effective_date=_norm_date(eff.group(1)) if eff else None, rx_bin=_field(text, "RX BIN", "RxBIN"))
+            if raw_name is None and card.subscriber_name:
+                parts = card.subscriber_name.split()
+                first, last = (parts[0], parts[-1]) if len(parts) >= 2 else (first, last)
+            if not card.member_id:
+                uncertainties.append("Member ID not found on the card.")
         data = DocumentAnalysis(
+            insurance_card=card,
             doc_type=doc_type, title=title, document_date=_norm_date(date_m.group(1)) if date_m else None, sender=sender,
             summary=summary[:600],
             patient=PatientIdentifiers(first_name=first, last_name=last, date_of_birth=_norm_date(dob_m.group(1)) if dob_m else None,

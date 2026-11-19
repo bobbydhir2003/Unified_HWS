@@ -76,6 +76,12 @@ class Appointment(UUIDPk, Timestamps, OrgScoped, Base):
     clinic: Mapped[Clinic] = relationship(lazy="joined")
     appointment_type: Mapped[AppointmentType | None] = relationship(lazy="joined")
 
+    # Insurance Guardian: staff decision that this visit may proceed without verified coverage (always with a reason).
+    coverage_override: Mapped[str | None] = mapped_column(String(20))  # self_pay | financial_counseling | charity | other
+    coverage_override_reason: Mapped[str | None] = mapped_column(String(300))
+    coverage_override_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    coverage_override_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     __table_args__ = (
         CheckConstraint("end_at > start_at", name="time_order"),
         CheckConstraint("status in (" + ",".join(f"'{s}'" for s in APPOINTMENT_STATUSES) + ")", name="status"),

@@ -68,7 +68,7 @@ class Finding:
 
 def log_event(db: Session, case: Case, kind: str, message: str, *, actor_id: uuid.UUID | None = None,
               actor_kind: str | None = None, data: dict | None = None) -> None:
-    db.add(CaseEvent(organization_id=case.organization_id, case_id=case.id, kind=kind, message=message[:500], actor_id=actor_id,
+    db.add(CaseEvent(organization_id=case.organization_id, case_id=case.id, at=now(), kind=kind, message=message[:500], actor_id=actor_id,
                      actor_kind=actor_kind or ("user" if actor_id else "system"), data=data or {}))
 
 

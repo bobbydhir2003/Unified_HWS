@@ -52,7 +52,9 @@ class Settings(BaseSettings):
 
     # Abuse protection (per client IP, per process). Put a WAF/edge limiter in front in production.
     rate_limit_enabled: bool = True
-    rls_enabled: bool = True  # PostgreSQL row-level security for tenant requests (app.core.rls)
+    rls_enabled: bool = True
+    eligibility_adapter: str = "simulated"
+    engine_inprocess_scheduler: bool = False  # dev without Celery beat: run dispatcher/monitors/escalations in the API process  # PostgreSQL row-level security for tenant requests (app.core.rls)
     rate_limit_auth_per_minute: int = 20  # delete raw audio once transcribed (default: minimize retained PHI)  # must be explicitly enabled to send PHI to an external provider
 
     @property

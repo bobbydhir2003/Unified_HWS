@@ -19,6 +19,7 @@ from app.api.routers import (
     documents,
     facilities,
     health,
+    insurance,
     live,
     messages,
     operations,
@@ -51,6 +52,10 @@ if _problems:  # fail fast: never boot production with unsafe configuration
     raise RuntimeError("Unsafe production configuration: " + "; ".join(_problems))
 
 limiter = RateLimiter()
+if settings.engine_inprocess_scheduler and not settings.is_production:
+    from app.engine.scheduler import start as _start_scheduler
+
+    _start_scheduler()
 metrics = Metrics()
 
 app = FastAPI(
@@ -121,7 +126,7 @@ async def prometheus_metrics(request: Request):
     return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
 
 
-ROUTERS = [health, auth, admin, facilities, live, operations, patients, scheduling, clinical, workspace, documents, scribe, orders, portal, messages,
+ROUTERS = [health, auth, admin, facilities, live, operations, insurance, patients, scheduling, clinical, workspace, documents, scribe, orders, portal, messages,
            telehealth, billing, ai, analytics]
 
 # Versioned API (documented). The unversioned /api prefix remains as a hidden compatibility alias so existing

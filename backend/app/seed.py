@@ -466,6 +466,9 @@ def seed(reset: bool = False) -> None:
         hstaff["ed_doc"] = member(db, ed_doc_u, org, "doctor")
         provider(db, ed_doc_u, org, "Emergency Medicine", "MD", "rose", "1356432980")
         seed_hospital(db, org, [downtown, north], hstaff)
+        from app.seed_hospital import seed_insurance_scenarios
+
+        seed_insurance_scenarios(db, org, downtown, chen, types["Follow-up"], portal_p, patients)
 
         # ---- Org 2: Lakeside Pediatrics (tenant isolation) ----
         org2 = Organization(name="Lakeside Pediatrics", slug="lakeside", settings={"synthetic_data": True, "mrn_seq": 500000})
@@ -485,6 +488,13 @@ def seed(reset: bool = False) -> None:
         org2.settings = {**org2.settings, "mrn_seq": 500008}
 
         db.commit()
+        # Initial automation pass so dashboards/worklists start with live cases (beat re-runs every 5 minutes).
+        from app.engine.events import dispatch_pending
+        from app.engine.monitors import run_all
+
+        run_all(db, [org.id])
+        db.commit()
+        dispatch_pending()
         print("Seeded synthetic data. Dev password for all accounts:", DEV_PASSWORD)
     finally:
         db.close()

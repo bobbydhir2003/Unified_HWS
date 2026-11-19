@@ -13,7 +13,7 @@ from app.engine import cases as C
 from app.engine.events import dispatch_pending, emit, handler
 from app.engine.monitors import REGISTRY, Monitor, register, run_monitor
 from app.engine.notifications import deliver
-from app.models import Case, CaseEvent, DomainEvent, EventHandling, NotificationDelivery, Organization, User
+from app.models import Case, CaseEvent, EventHandling, NotificationDelivery, Organization, User
 
 CALLS: list[str] = []
 FLAKY = {"fail_next": 0}

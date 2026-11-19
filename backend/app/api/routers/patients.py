@@ -219,16 +219,14 @@ def update_insurance(patient_id: uuid.UUID, ins_id: uuid.UUID, body: InsuranceIn
 
 @router.post("/{patient_id}/insurances/{ins_id}/eligibility", response_model=InsuranceOut)
 def check_eligibility(patient_id: uuid.UUID, ins_id: uuid.UUID, ctx: TenantContext = Depends(get_ctx)):
-    """SIMULATED eligibility check (no payer connection). Deterministic: member ids ending in 0 come back inactive."""
+    """Eligibility check via the configured gateway (SIMULATED by default: see SimulatedEligibility)."""
     p = get_patient(ctx, patient_id, P.PATIENTS_WRITE)
     ins = ctx.db.get(PatientInsurance, ins_id)
     if not ins or ins.patient_id != p.id:
         raise not_found("Insurance")
-    expired = ins.termination_date is not None and ins.termination_date < date.today()
-    ins.eligibility_status = "inactive" if expired or ins.member_id.endswith("0") else "active"
-    ins.eligibility_checked_at = now()
-    ctx.audit("patient.eligibility_checked", resource_type="insurance", resource_id=ins.id, patient_id=p.id,
-              details={"simulated": True, "result": ins.eligibility_status})
+    from app.services.insurance import run_check
+
+    run_check(ctx.db, ins, dos=date.today(), trigger="staff", actor_id=ctx.user.id)  # recorded in eligibility_checks history
     ctx.db.commit()
     return ins
 

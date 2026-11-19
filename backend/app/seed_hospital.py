@@ -72,3 +72,46 @@ def seed_hospital(db, org: Organization, clinics: list[Clinic], users: dict) -> 
             m.departments.append(MembershipDepartment(department_id=depts[c].id))
     db.flush()
     return {"hospital": hosp, "departments": depts}
+
+
+def seed_insurance_scenarios(db, org, clinic, provider, appt_type, portal_patient, others: list) -> None:
+    """Deterministic Insurance Guardian demo cases (the payer is simulated: see SimulatedEligibility)."""
+    from datetime import date, datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    from sqlalchemy import select
+
+    from app.models import Appointment, PatientInsurance
+
+    tz = ZoneInfo(clinic.timezone)
+
+    def visit(p, days, hour=7, minute=0):
+        d = date.today() + timedelta(days=days)
+        start = datetime(d.year, d.month, d.day, hour, minute, tzinfo=tz)
+        a = Appointment(organization_id=org.id, clinic_id=clinic.id, patient_id=p.id, provider_id=provider.id,
+                        appointment_type_id=appt_type.id, start_at=start, end_at=start + timedelta(minutes=20), status="scheduled",
+                        mode="in_person", reason="Follow-up visit")
+        db.add(a)
+        return a
+
+    def ins(p):
+        return db.scalar(select(PatientInsurance).where(PatientInsurance.patient_id == p.id))
+
+    # A. Portal patient: payer reports coverage inactive → patient asked to upload a new card.
+    ins(portal_patient).member_id = "SYN44718230"
+    visit(portal_patient, 4)
+    # B. Stored end date approaching and no payer response confirms continuation → renewal reminder.
+    #    (Pick a patient without upcoming visits, so no automatic eligibility check has run.)
+    from app.core.security import now as _now
+
+    future = set(db.scalars(select(Appointment.patient_id).where(Appointment.start_at > _now())))
+    renew = next(p for p in others[4:] if p.id not in future)
+    b = ins(renew)
+    b.member_id, b.termination_date = "SYN55102349", date.today() + timedelta(days=20)
+    # C. No insurance on file before a visit.
+    ins(others[2]).is_active = False
+    visit(others[2], 6, 7, 20)
+    # D. Payer unavailable (error) for a visit in ~36 hours → staff task, high severity.
+    ins(others[3]).member_id = "SYN66201178"
+    visit(others[3], 2, 7, 40)
+    db.flush()

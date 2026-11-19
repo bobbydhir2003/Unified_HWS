@@ -79,6 +79,12 @@ def make_sample(kind: str, patient: Patient | None, fidelity: str = "exact", see
                  "Discharge Medications:", "- Amoxicillin 875 mg twice daily for 5 days", "- Acetaminophen 500 mg every 6 hours as needed", "",
                  "Follow-up: Primary care within 7 days."]
         title = "discharge-summary.pdf"
+    elif kind == "insurance_card":
+        member = f"HMH{rng.randint(10_000_000, 99_999_999)}{rng.choice('1234567')}"
+        lines = ["# Member Insurance Card", "Payer: Harbor Mutual Health (synthetic)", "Plan: PPO Select", f"Member Name: {name}",
+                 f"Member ID: {member}", f"Group Number: G{rng.randint(1000, 9999)}", f"Effective Date: 01/01/{date.today().year}",
+                 "RX BIN: 610279", "Customer service: (555) 010-0100 - SYNTHETIC TEST CARD, NOT VALID FOR COVERAGE"]
+        title = "insurance-card.pdf"
     else:
         kind = "referral"
         lines = ["# Referral", *head, f"Date of Referral: {when}", "Referring Provider: Dr. Helen Abara, Riverside Cardiology (synthetic)", "",

@@ -39,4 +39,5 @@ def test_metrics_use_route_templates_not_ids(as_user, app):
 
 def test_system_status_reports_adapters(as_user):
     s = as_user("clinicadmin@harborview.dev").get("/system/status").json()
-    assert s["adapters"] == {"order_transmitter": "simulated", "clearinghouse": "simulated", "message_gateway": "outbox"}
+    assert s["adapters"] == {"order_transmitter": "simulated", "clearinghouse": "simulated", "message_gateway": "outbox",
+                           "eligibility": "simulated"}

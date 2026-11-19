@@ -205,9 +205,10 @@ def process_document(db: Session, doc_id: uuid.UUID) -> None:
         doc.status = "needs_review"
         from app.services.automation import emit
 
-        emit(db, doc.organization_id, "document.needs_review", {
-            "subject_type": "document", "subject_id": doc.id, "document_id": str(doc.id), "doc_type": doc.doc_type,
-            "confidence": doc.ai_confidence, "patient_id": None})
+        if doc.source != "portal":  # portal uploads belong to a coverage request with its own confirmation task
+            emit(db, doc.organization_id, "document.needs_review", {
+                "subject_type": "document", "subject_id": doc.id, "document_id": str(doc.id), "doc_type": doc.doc_type,
+                "confidence": doc.ai_confidence, "patient_id": None})
         job.status, job.model, job.provider = "succeeded", result.model, result.provider
         job.phi_sent_externally = result.phi_sent_externally
         job.input_tokens, job.output_tokens, job.latency_ms = result.input_tokens, result.output_tokens, result.latency_ms

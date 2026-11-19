@@ -59,6 +59,39 @@ class SimulatedClearinghouse:
         return f"SIM-837-{hashlib.sha1(f'{claim_id}{idempotency_key}'.encode()).hexdigest()[:10].upper()}"
 
 
+class EligibilityGateway(Protocol):
+    """X12 270/271 eligibility inquiry for one member and date of service."""
+
+    name: str
+
+    def inquire(self, *, payer_name: str, member_id: str, date_of_service, subscriber_name: str | None) -> dict: ...
+
+
+class SimulatedEligibility:
+    """Deterministic payer simulator (labeled `simulated` everywhere). It deliberately ignores the *stored* end date:
+    only the payer response decides coverage. Member IDs ending in 0 → inactive; 9 → active but the plan ends at the end
+    of the date-of-service month (renewal pending); 8 → payer unavailable (error); anything else → active."""
+
+    name = "simulated"
+
+    def inquire(self, *, payer_name: str, member_id: str, date_of_service, subscriber_name: str | None) -> dict:
+        import calendar
+        from datetime import date
+
+        trace = "SIM-" + hashlib.sha256(f"{member_id}{date_of_service}".encode()).hexdigest()[:10].upper()
+        last = member_id.strip()[-1:] if member_id else ""
+        if last == "8":
+            return {"result": "error", "message": "Payer system unavailable (simulated AAA*42)", "trace": trace}
+        if last == "0":
+            return {"result": "inactive", "message": "Coverage not active on date of service (simulated)", "trace": trace,
+                    "coverage_end": date(date_of_service.year, 1, 1).replace(year=date_of_service.year - 1, month=12, day=31)}
+        end = None
+        if last == "9":
+            end = date(date_of_service.year, date_of_service.month, calendar.monthrange(date_of_service.year, date_of_service.month)[1])
+        return {"result": "active", "message": "Active coverage (simulated)", "trace": trace, "coverage_start": date(date_of_service.year, 1, 1),
+                "coverage_end": end, "plan": f"{payer_name} (simulated benefits)", "copay_cents": 2500}
+
+
 class OutboxGateway:
     name = "outbox"
 
@@ -72,6 +105,7 @@ _REGISTRY = {
     "order_transmitter": {"simulated": SimulatedOrderTransmitter},
     "clearinghouse": {"simulated": SimulatedClearinghouse},
     "message_gateway": {"outbox": OutboxGateway},
+    "eligibility": {"simulated": SimulatedEligibility},
 }
 
 
@@ -94,6 +128,10 @@ def message_gateway() -> MessageGateway:
     return _get("message_gateway", settings.message_gateway_adapter)
 
 
+def eligibility_gateway() -> EligibilityGateway:
+    return _get("eligibility", settings.eligibility_adapter)
+
+
 def status() -> dict:
     return {"order_transmitter": settings.order_transmitter_adapter, "clearinghouse": settings.clearinghouse_adapter,
-            "message_gateway": settings.message_gateway_adapter}
+            "message_gateway": settings.message_gateway_adapter, "eligibility": settings.eligibility_adapter}
