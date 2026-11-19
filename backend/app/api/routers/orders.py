@@ -372,6 +372,11 @@ def simulate_result(oid: uuid.UUID, ctx: TenantContext = Depends(require(P.ORDER
     notify(ctx.db, ctx.org_id, signer, "critical_result" if critical else "result",
            f"{'CRITICAL ' if critical else ''}Result: {o.title} — {p.full_name}",
            f"{abnormal} abnormal value(s)" if o.order_type == "lab" else "Imaging report available", f"/patients/{p.id}/results")
+    from app.services.automation import emit
+
+    emit(ctx.db, ctx.org_id, "order.resulted", {
+        "subject_type": "order", "subject_id": o.id, "patient_id": o.patient_id, "patient_name": p.full_name, "title": o.title,
+        "abnormal": abnormal > 0, "critical": critical, "ordering_user_id": str(signer)})
     ctx.audit("order.resulted", resource_type="order", resource_id=o.id, patient_id=o.patient_id, details={"simulated": True, "critical": critical})
     ctx.db.commit()
     return order_out(o, p)

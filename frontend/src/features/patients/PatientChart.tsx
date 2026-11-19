@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle, CalendarPlus, ClipboardList, ClipboardPen, FileStack, Receipt, TestTube, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, ShieldAlert,
-  ShieldCheck, Stethoscope, StickyNote, Trash2, Users,
+  ShieldCheck, Sparkles, Stethoscope, StickyNote, Trash2, Users,
 } from "lucide-react";
 import * as React from "react";
 import { Link, NavLink, useNavigate, useParams } from "react-router-dom";
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/menu";
 import { Avatar, Skeleton } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { ChartAssistant } from "@/features/ai/ChartAssistant";
 import { PatientBillingTab } from "@/features/billing/BillingPage";
 import { PatientDocumentsTab } from "@/features/documents/DocumentReview";
 import { PatientOrdersTab, PatientResultsTab } from "@/features/orders/OrdersPages";
@@ -98,8 +99,8 @@ export function AllergyStrip({ summary }: { summary?: Summary }) {
   );
 }
 
-function PatientBanner({ p, summary, onEdit, onBook, onStartVisit, starting }: {
-  p: Patient; summary?: Summary; onEdit: () => void; onBook: () => void; onStartVisit: () => void; starting: boolean;
+function PatientBanner({ p, summary, onEdit, onBook, onStartVisit, onAsk, starting }: {
+  p: Patient; summary?: Summary; onEdit: () => void; onBook: () => void; onStartVisit: () => void; onAsk: () => void; starting: boolean;
 }) {
   const { can, membership } = useAuth();
   const ins = p.insurances.find((i) => i.is_active && i.priority === "primary");
@@ -125,6 +126,7 @@ function PatientBanner({ p, summary, onEdit, onBook, onStartVisit, starting }: {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {can("ai:use") && can("clinical:read") && <Button variant="soft" size="sm" onClick={onAsk}><Sparkles />Ask AI</Button>}
           {can("patients:write") && <Button variant="outline" size="sm" onClick={onEdit}><Pencil />Edit</Button>}
           {can("schedule:write") && <Button variant="outline" size="sm" onClick={onBook} disabled={p.status !== "active"}><CalendarPlus />Book</Button>}
           {can("clinical:write") && membership?.provider_id && (
@@ -165,6 +167,7 @@ export function PatientChart() {
   const [editOpen, setEditOpen] = React.useState(false);
   const [bookOpen, setBookOpen] = React.useState(false);
   const [starting, setStarting] = React.useState(false);
+  const [askOpen, setAskOpen] = React.useState(false);
   useCrumb(pq.data ? `${pq.data.first_name} ${pq.data.last_name}` : null);
 
   if (pq.error instanceof ApiError && pq.error.code === "restricted_chart") {
@@ -192,7 +195,7 @@ export function PatientChart() {
 
   return (
     <>
-      <PatientBanner p={p} summary={summary.data} onEdit={() => setEditOpen(true)} onBook={() => setBookOpen(true)} onStartVisit={startVisit} starting={starting} />
+      <PatientBanner p={p} summary={summary.data} onEdit={() => setEditOpen(true)} onBook={() => setBookOpen(true)} onStartVisit={startVisit} onAsk={() => setAskOpen(true)} starting={starting} />
       <nav className="-mx-1 mb-5 flex gap-1 overflow-x-auto border-b px-1 scrollbar-thin" aria-label="Chart sections">
         {tabs.map((t) => (
           <NavLink key={t.key} to={`/patients/${p.id}${t.key ? `/${t.key}` : ""}`} end
@@ -222,6 +225,7 @@ export function PatientChart() {
         {tab === "notes" && <AdminNotesTab patientId={p.id} />}
       </div>
       <EditPatientDialog patient={p} open={editOpen} onOpenChange={setEditOpen} />
+      <ChartAssistant patientId={p.id} patientName={`${p.first_name} ${p.last_name}`} open={askOpen} onOpenChange={setAskOpen} />
       <AppointmentDialog open={bookOpen} onOpenChange={setBookOpen} patient={{ id: p.id, name: `${p.first_name} ${p.last_name}`, mrn: p.mrn, date_of_birth: p.date_of_birth }} />
     </>
   );

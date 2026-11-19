@@ -19,6 +19,7 @@ PostgreSQL 16. UUID primary keys, `timestamptz` everywhere, Alembic migrations i
 | Audit | `audit_events` |
 | Patients | `patients`, `patient_insurances`, `patient_access_grants`, `patient_notes` |
 | Scheduling | `appointment_types`, `provider_availability`, `appointments` |
+| Automation & AI ops | `automation_workflows`, `automation_runs` (proposed actions, approval, log), `tasks`, `voice_calls` |
 | Billing | `fee_schedule`, `charges`, `claims`, `claim_events`, `claim_submissions`, `invoices`, `payments` (all money in integer cents) |
 | Portal & telehealth | `message_threads`, `secure_messages`, `intake_submissions`, `telehealth_sessions`, `telehealth_signals` |
 | Orders | `orders` (details JSONB validated per type, safety warnings/override, simulated transmission record, review/release), `lab_results` |
@@ -60,6 +61,7 @@ PostgreSQL 16. UUID primary keys, `timestamptz` everywhere, Alembic migrations i
 | `0005` | Orders (type/status/priority checks, `signed_requires_signer`), lab results |
 | `0006` | Message threads/messages, intake submissions, telehealth sessions/signals, `appointments.booked_via` |
 | `0007` | Billing: fee schedule, charges, claims, claim events/submissions (idempotency), invoices, payments (idempotency); amount CHECKs |
+| `0008` | Automation workflows/runs, tasks, voice calls |
 | `0003` | Documents, AI jobs (`CHECK status <> 'filed' OR patient_id IS NOT NULL`) |
 
 Objects managed by hand-written SQL (`ix_patients_name_trgm`, the exclusion constraint) are excluded from autogenerate in `alembic/env.py`.

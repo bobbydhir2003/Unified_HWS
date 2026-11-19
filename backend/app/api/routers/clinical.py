@@ -316,6 +316,10 @@ def complete_encounter(encounter_id: uuid.UUID, ctx: TenantContext = Depends(get
         appt = ctx.db.get(Appointment, e.appointment_id)
         if appt and appt.status == "in_progress":
             appt.status = "completed"
+    from app.services.automation import emit
+
+    emit(ctx.db, ctx.org_id, "encounter.completed", {"subject_type": "encounter", "subject_id": e.id, "patient_id": e.patient_id,
+                                                     "patient_name": e.patient.full_name, "follow_up": e.follow_up})
     ctx.audit("encounter.completed", resource_type="encounter", resource_id=e.id, patient_id=e.patient_id)
     ctx.db.commit()
     return _detail(ctx, e)

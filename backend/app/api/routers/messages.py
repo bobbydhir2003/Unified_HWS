@@ -48,6 +48,15 @@ def _pcp_user(ctx: TenantContext, p: Patient):
     return None
 
 
+def _emit_message(ctx: TenantContext, p: Patient, t: MessageThread, body: str) -> None:
+    from app.services.automation import emit, provider_user_id
+
+    pcp = provider_user_id(ctx.db, p.primary_provider_id)
+    emit(ctx.db, ctx.org_id, "message.received", {"subject_type": "message_thread", "subject_id": t.id, "thread_id": str(t.id),
+                                                  "subject": t.subject, "body": body, "patient_id": p.id, "patient_name": p.full_name,
+                                                  "pcp_user_id": str(pcp) if pcp else None})
+
+
 # ---------- Patient side ----------
 
 @router.get("/portal/messages")
@@ -68,6 +77,7 @@ def patient_new_thread(body: NewThread, pp=Depends(portal_patient)):
     ctx.db.add(SecureMessage(organization_id=ctx.org_id, thread_id=t.id, sender_id=ctx.user.id, sender_is_patient=True, body=body.body))
     if prov:
         notify(ctx.db, ctx.org_id, prov.user_id, "patient_message", f"Message from {p.full_name}", body.subject, f"/messages?thread={t.id}")
+    _emit_message(ctx, p, t, body.body)
     ctx.audit("message.sent", resource_type="message_thread", resource_id=t.id, patient_id=p.id, details={"by": "patient"})
     ctx.db.commit()
     ctx.db.refresh(t)
@@ -101,6 +111,7 @@ def patient_reply(tid: uuid.UUID, body: Reply, pp=Depends(portal_patient)):
     t.last_message_at = now()
     if (prov := _pcp_user(ctx, p)):
         notify(ctx.db, ctx.org_id, prov.user_id, "patient_message", f"Reply from {p.full_name}", t.subject, f"/messages?thread={t.id}")
+    _emit_message(ctx, p, t, body.body)
     ctx.audit("message.sent", resource_type="message_thread", resource_id=t.id, patient_id=p.id, details={"by": "patient"})
     ctx.db.commit()
     ctx.db.refresh(t)

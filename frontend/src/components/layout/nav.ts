@@ -1,5 +1,5 @@
 import {
-  Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, MessageSquare, Receipt, HeartPulse, LayoutDashboard, type LucideIcon, Mail, ScrollText,
+  Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, ListChecks, MessageSquare, PhoneCall, Receipt, Workflow, HeartPulse, LayoutDashboard, type LucideIcon, Mail, ScrollText,
   ServerCog, Settings2, Stethoscope, Users, UsersRound,
 } from "lucide-react";
 
@@ -13,11 +13,20 @@ export const NAV: NavSection[] = [
       { to: "/front-desk", label: "Front desk", icon: ClipboardList, perm: "schedule:read" },
       { to: "/schedule", label: "Schedule", icon: CalendarDays, perm: "schedule:read" },
       { to: "/patients", label: "Patients", icon: UsersRound, perm: "patients:read" },
+      { to: "/tasks", label: "Tasks", icon: ListChecks, perm: "patients:read" },
       { to: "/messages", label: "Messages", icon: MessageSquare, perm: "messages:use" },
       { to: "/orders", label: "Orders", icon: ClipboardPen, perm: "clinical:read" },
       { to: "/documents", label: "Documents", icon: FileStack, perm: "documents:read" },
       { to: "/billing", label: "Billing", icon: Receipt, perm: "billing:read" },
       { to: "/encounters", label: "My visits", icon: Stethoscope, perm: "clinical:read", providerOnly: true },
+    ],
+  },
+  {
+    title: "AI & automation",
+    items: [
+      { to: "/automation", label: "Automation studio", icon: Workflow, perm: "messages:use" },
+      { to: "/receptionist", label: "AI receptionist", icon: PhoneCall, perm: "schedule:write" },
+      { to: "/admin/ai", label: "AI monitoring", icon: Bot, perm: "clinic:manage" },
     ],
   },
   {

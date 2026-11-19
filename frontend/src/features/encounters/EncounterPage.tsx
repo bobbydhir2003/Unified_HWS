@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  CheckCircle2, ClipboardCheck, FilePlus2, FileSignature, History, HeartPulse, Lock, Plus, Save, Sparkles, Stethoscope, X,
+  Bot, CheckCircle2, ClipboardCheck, FilePlus2, FileSignature, History, HeartPulse, Lock, Plus, Save, Sparkles, Stethoscope, X,
 } from "lucide-react";
 import * as React from "react";
 import { Link, useParams } from "react-router-dom";
@@ -18,6 +18,7 @@ import { Dialog as D } from "radix-ui";
 import { AllergyStrip, type Summary } from "@/features/patients/PatientChart";
 import { VitalsDialog, VitalsSummary } from "@/features/patients/Vitals";
 import { ScribePanel } from "./ScribePanel";
+import { ChartAssistant } from "@/features/ai/ChartAssistant";
 import { EncounterOrdersCard } from "@/features/orders/OrdersPages";
 import { ApiError, get, patch, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -339,6 +340,7 @@ export function EncounterPage() {
   const [completing, setCompleting] = React.useState(false);
   const [cc, setCc] = React.useState<string | null>(null);
   const [scribeOpen, setScribeOpen] = React.useState(false);
+  const [askOpen, setAskOpen] = React.useState(false);
   const [noteDirty, setNoteDirty] = React.useState(false);
   const { membership } = useAuth();
   const org = useQuery({ queryKey: ["organization", membership?.organization_id], queryFn: () => get<{ settings: { synthetic_data?: boolean } }>("/organization"), staleTime: 300_000 });
@@ -379,6 +381,7 @@ export function EncounterPage() {
             {open && can("ai:use") && can("clinical:write") && note?.status !== "signed" && !scribeOpen && (
               <Button variant="soft" size="sm" onClick={() => setScribeOpen(true)}><Sparkles />AI scribe</Button>
             )}
+            {can("ai:use") && <Button variant="ghost" size="sm" onClick={() => setAskOpen(true)}><Bot />Ask chart</Button>}
             {note && <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}><History />Versions</Button>}
             {open && can("clinical:sign") && (
               <Button size="sm" variant="success" disabled={!canComplete} loading={completing}
@@ -480,6 +483,7 @@ export function EncounterPage() {
       </div>
       <VitalsDialog patientId={enc.patient_id} encounterId={enc.id} open={vitalsOpen} onOpenChange={setVitalsOpen} />
       {note && <VersionHistory noteId={note.id} open={historyOpen} onOpenChange={setHistoryOpen} />}
+      <ChartAssistant patientId={enc.patient_id} patientName={enc.patient.name} open={askOpen} onOpenChange={setAskOpen} />
     </>
   );
 }

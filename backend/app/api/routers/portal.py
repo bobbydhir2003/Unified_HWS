@@ -184,6 +184,11 @@ def submit_intake(appt_id: uuid.UUID, body: IntakeIn, pp=Depends(portal_patient)
     else:
         ctx.db.add(IntakeSubmission(organization_id=ctx.org_id, appointment_id=a.id, patient_id=p.id, answers=body.model_dump(),
                                     submitted_by_id=ctx.user.id))
+    from app.services.automation import emit
+
+    emit(ctx.db, ctx.org_id, "intake.submitted", {"subject_type": "appointment", "subject_id": a.id, "patient_id": p.id,
+                                                  "patient_name": p.full_name, "phq2": body.phq2_interest + body.phq2_mood,
+                                                  "provider_user_id": str(a.provider.user_id)})
     ctx.audit("intake.submitted", resource_type="appointment", resource_id=a.id, patient_id=p.id)
     ctx.db.commit()
     return {"message": "Thanks — your answers were sent to your care team."}

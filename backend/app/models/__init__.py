@@ -1,3 +1,4 @@
+from app.models.automation import AutomationRun, AutomationWorkflow, Task, VoiceCall
 from app.models.base import Base
 from app.models.billing import Charge, Claim, ClaimEvent, ClaimSubmission, FeeScheduleItem, Invoice, Payment
 from app.models.clinical import (
@@ -42,6 +43,10 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "VoiceCall",
+    "Task",
+    "AutomationWorkflow",
+    "AutomationRun",
     "Payment",
     "Invoice",
     "FeeScheduleItem",

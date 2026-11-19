@@ -203,6 +203,11 @@ def process_document(db: Session, doc_id: uuid.UUID) -> None:
             doc.suggested_patient_id = suggestion_from(cands)
         doc.match_candidates = cands
         doc.status = "needs_review"
+        from app.services.automation import emit
+
+        emit(db, doc.organization_id, "document.needs_review", {
+            "subject_type": "document", "subject_id": doc.id, "document_id": str(doc.id), "doc_type": doc.doc_type,
+            "confidence": doc.ai_confidence, "patient_id": None})
         job.status, job.model, job.provider = "succeeded", result.model, result.provider
         job.phi_sent_externally = result.phi_sent_externally
         job.input_tokens, job.output_tokens, job.latency_ms = result.input_tokens, result.output_tokens, result.latency_ms

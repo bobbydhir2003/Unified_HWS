@@ -20,7 +20,8 @@
 | Account enumeration | Forgot-password returns identical responses |
 | Documents | Magic-byte type validation, size cap, PHI-free object keys, served only through authorized API with `Content-Security-Policy: sandbox`, `nosniff`, `no-store`; views audited; filed documents inherit patient access rules; never auto-filed |
 | AI | Simulated by default; external provider blocked for PHI unless explicitly allowed; every call logged in `ai_jobs` with a PHI-sent flag; outputs are drafts requiring human confirmation |
-| Webhooks | Fax webhook authenticated with per-org secret (constant-time compare) |
+| AI guardrails | Chart assistant only sees records the user may access; refuses prescribing/ordering/diagnosis; every answer cites sources; automations limited to declared actions with approval for patient-facing ones; receptionist discloses AI, requires consent, verifies identity before disclosing anything, routes emergencies to 911 |
+| Webhooks | Fax and voice webhooks authenticated with per-org secret (constant-time compare) |
 | Simulation | Email/SMS go to an outbox; eligibility checks are deterministic simulations, labeled in UI |
 
 ## Regression tests (backend/tests)

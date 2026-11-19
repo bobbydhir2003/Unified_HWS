@@ -215,7 +215,7 @@ def seed(reset: bool = False) -> None:
 
         # ---- Org 1: Harborview Family Medicine ----
         org = Organization(name="Harborview Family Medicine", slug="harborview",
-                           settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": "dev-fax-secret-harborview"})
+                           settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": "dev-fax-secret-harborview", "voice_webhook_secret": "dev-voice-secret-harborview"})
         db.add(org)
         db.flush()
         tz = "America/New_York"
@@ -256,6 +256,9 @@ def seed(reset: bool = False) -> None:
 
         for code, desc, cents in CPT_DEFAULTS:
             db.add(FeeScheduleItem(organization_id=org.id, code=code, description=desc, price_cents=cents))
+        from app.services.automation import install_all
+
+        install_all(db, org.id, enabled=True)
         for name, spec, content in TEMPLATES:
             db.add(ClinicalTemplate(organization_id=org.id, name=name, specialty=spec, content=content))
         db.flush()

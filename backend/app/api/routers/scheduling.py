@@ -425,6 +425,12 @@ def change_status(appt_id: uuid.UUID, body: StatusAction, ctx: TenantContext = D
             raise bad_request("A cancellation reason is required")
         a.cancel_reason = body.reason
     a.status = target
+    if body.action == "no_show":
+        from app.services.automation import emit
+
+        emit(ctx.db, ctx.org_id, "appointment.no_show", {
+            "subject_type": "appointment", "subject_id": a.id, "patient_id": a.patient_id, "patient_name": a.patient.full_name,
+            "patient_first_name": a.patient.first_name, "when": f"{a.start_at:%b %d}"})
     ctx.audit(f"appointment.{body.action}", resource_type="appointment", resource_id=a.id, patient_id=a.patient_id)
     ctx.db.commit()
     ctx.db.refresh(a)

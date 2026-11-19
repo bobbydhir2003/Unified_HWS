@@ -38,6 +38,11 @@ for email in ["dr.chen@harborview.dev","frontdesk@harborview.dev","nurse.rivera@
     if "messages:use" in m["permissions"]: chk(c,"/messages")
     if "billing:read" in m["permissions"]:
         for path in ["/billing/summary","/billing/charge-queue","/claims","/invoices","/fee-schedule"]: chk(c,path)
+    chk(c,"/tasks"); chk(c,"/tasks-count")
+    if "messages:use" in m["permissions"]: chk(c,"/automation/runs")
+    if "automation:manage" in m["permissions"]: chk(c,"/automation/workflows"); chk(c,"/automation/templates")
+    if "schedule:write" in m["permissions"]: chk(c,"/receptionist/calls")
+    if "clinic:manage" in m["permissions"]: chk(c,"/ai/jobs")
     chk(c,"/organizations"); chk(c,"/auth/sessions")
     print("ok", email)
 c,m=login("patient@harborview.dev"); chk(c,f"/patients/{m['patient_id']}"); chk(c,f"/patients/{m['patient_id']}/summary")
