@@ -308,7 +308,7 @@ def seed(reset: bool = False) -> None:
         superadmin = user(db, "admin@undeclared.dev", "Platform", "Admin", superadmin=True)
 
         # ---- Org 1: Harborview Family Medicine ----
-        org = Organization(name="Harborview Family Medicine", slug="harborview",
+        org = Organization(name="Harborview Health", slug="harborview",
                            settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": "dev-fax-secret-harborview", "voice_webhook_secret": "dev-voice-secret-harborview"})
         db.add(org)
         db.flush()
@@ -449,6 +449,23 @@ def seed(reset: bool = False) -> None:
                     db.flush()
 
         seed_history(db, org, {chen.id: chen, okafor.id: okafor}, nurse_u)
+
+        # ---- Hospital (Milestone A/B): structure + department-scoped staff ----
+        from app.seed_hospital import seed_hospital
+
+        hstaff = {
+            "hospitaladmin": member(db, user(db, "hospitaladmin@harborview.dev", "Avery", "Grant"), org, "hospital_admin"),
+            "pharmacist": member(db, user(db, "pharmacist@harborview.dev", "Noah", "Fischer", "PharmD"), org, "pharmacist"),
+            "lab": member(db, user(db, "lab@harborview.dev", "Imani", "Brooks", "MLS"), org, "lab_tech"),
+            "radiology": member(db, user(db, "radiology@harborview.dev", "Elena", "Sato", "MD"), org, "radiologist", "radiology_tech"),
+            "bedmanager": member(db, user(db, "bedmanager@harborview.dev", "Chris", "Morgan", "RN"), org, "bed_manager"),
+            "insurance": member(db, user(db, "insurance@harborview.dev", "Riley", "Nguyen"), org, "insurance_specialist"),
+            "nurse_ms": member(db, user(db, "nurse.kim@harborview.dev", "Grace", "Kim", "RN"), org, "nurse"),
+        }
+        ed_doc_u = user(db, "dr.santos@harborview.dev", "Rafael", "Santos", "MD")
+        hstaff["ed_doc"] = member(db, ed_doc_u, org, "doctor")
+        provider(db, ed_doc_u, org, "Emergency Medicine", "MD", "rose", "1356432980")
+        seed_hospital(db, org, [downtown, north], hstaff)
 
         # ---- Org 2: Lakeside Pediatrics (tenant isolation) ----
         org2 = Organization(name="Lakeside Pediatrics", slug="lakeside", settings={"synthetic_data": True, "mrn_seq": 500000})

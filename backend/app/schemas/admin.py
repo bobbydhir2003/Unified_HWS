@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -45,6 +46,7 @@ class ClinicOut(ORM):
     postal_code: str | None
     rooms: list[str]
     is_active: bool
+    facility_type: str = "clinic"
 
 
 class ClinicIn(BaseModel):
@@ -58,6 +60,7 @@ class ClinicIn(BaseModel):
     postal_code: str | None = None
     rooms: list[str] = []
     is_active: bool = True
+    facility_type: Literal["clinic", "hospital", "urgent_care", "surgery_center", "lab", "pharmacy"] = "clinic"
 
 
 class ProviderInfo(ORM):
@@ -80,6 +83,7 @@ class StaffOut(BaseModel):
     is_active: bool
     all_clinics: bool
     clinic_ids: list[uuid.UUID]
+    department_ids: list[uuid.UUID] = []
     mfa_enabled: bool
     last_login_at: datetime | None
     provider: ProviderInfo | None
@@ -98,6 +102,7 @@ class StaffUpdate(BaseModel):
     is_active: bool | None = None
     all_clinics: bool | None = None
     clinic_ids: list[uuid.UUID] | None = None
+    department_ids: list[uuid.UUID] | None = None  # [] = all departments of the allowed facilities
     title: str | None = None
     provider: ProviderIn | None = None
 

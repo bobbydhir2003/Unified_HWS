@@ -58,6 +58,9 @@ def list_orgs(auth=Depends(get_auth_user), db=Depends(get_db)):
 
 @router.post("/organizations", response_model=OrgOut, status_code=201)
 def create_org(body: OrgCreate, ctx: TenantContext = Depends(require(P.ORG_MANAGE))):
+    from app.core.db import unbind_tenant
+
+    unbind_tenant(ctx.db)  # platform operation: creates rows in a new organization
     db = ctx.db
     if db.scalar(select(Organization.id).where(Organization.slug == body.slug)):
         raise conflict("An organization with that slug already exists")
@@ -143,7 +146,7 @@ def _staff_out(ctx: TenantContext, m: Membership) -> StaffOut:
     return StaffOut(
         membership_id=m.id, user_id=u.id, email=u.email, first_name=u.first_name, last_name=u.last_name,
         title=u.title, roles=m.role_names, is_active=m.is_active and u.is_active, all_clinics=m.all_clinics,
-        clinic_ids=[c.clinic_id for c in m.clinics], mfa_enabled=u.mfa_enabled, last_login_at=u.last_login_at,
+        clinic_ids=[c.clinic_id for c in m.clinics], department_ids=[d.department_id for d in m.departments], mfa_enabled=u.mfa_enabled, last_login_at=u.last_login_at,
         provider=ProviderInfo.model_validate(prov) if prov else None,
     )
 
@@ -169,7 +172,8 @@ def update_staff(membership_id: uuid.UUID, body: StaffUpdate, ctx: TenantContext
     if not m or m.organization_id != ctx.org_id:
         raise not_found("Staff member")
     if m.user_id == ctx.user.id and (body.is_active is False or (body.roles is not None and Role.CLINIC_ADMIN not in body.roles
-                                                                 and ctx.has_role(Role.CLINIC_ADMIN))):
+                                                                 and ctx.has_role(Role.CLINIC_ADMIN)
+                                                                 and Role.HOSPITAL_ADMIN not in body.roles)):
         raise bad_request("You can't deactivate yourself or remove your own admin role")
     if body.roles is not None:
         if Role.SUPER_ADMIN in body.roles and not ctx.can(P.ORG_MANAGE):
@@ -188,6 +192,14 @@ def update_staff(membership_id: uuid.UUID, body: StaffUpdate, ctx: TenantContext
         db.flush()
         for cid in valid:
             m.clinics.append(MembershipClinic(clinic_id=cid))
+    if body.department_ids is not None:
+        from app.models import Department, MembershipDepartment
+
+        valid_d = set(db.scalars(select(Department.id).where(Department.organization_id == ctx.org_id, Department.id.in_(body.department_ids))))
+        m.departments.clear()
+        db.flush()
+        for did in valid_d:
+            m.departments.append(MembershipDepartment(department_id=did))
     if body.title is not None:
         m.user.title = body.title or None
     if body.provider is not None:

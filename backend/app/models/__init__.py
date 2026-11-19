@@ -15,6 +15,7 @@ from app.models.clinical import (
     VitalSigns,
 )
 from app.models.documents import AIJob, Document
+from app.models.facility import Department, Location, MembershipDepartment
 from app.models.identity import (
     AuditEvent,
     Clinic,
@@ -43,6 +44,9 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "Department",
+    "Location",
+    "MembershipDepartment",
     "VoiceCall",
     "Task",
     "AutomationWorkflow",

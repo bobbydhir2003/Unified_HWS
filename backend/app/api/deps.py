@@ -13,7 +13,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.db import get_db
+from app.core.db import bind_tenant, get_db
 from app.core.errors import forbidden
 from app.core.permissions import Role, permissions_for
 from app.core.security import decode_token, now
@@ -59,8 +59,9 @@ class TenantContext:
     org_id: uuid.UUID
     roles: list[str]
     permissions: set[str]
-    clinic_ids: list[uuid.UUID] | None  # None = all clinics in the org
+    clinic_ids: list[uuid.UUID] | None  # None = all facilities in the org ("clinic" = facility)
     membership: Membership | None = None
+    department_ids: list[uuid.UUID] | None = None  # None = every department of the allowed facilities
     _provider: Any = field(default=None, repr=False)
 
     def can(self, perm: str) -> bool:
@@ -89,6 +90,25 @@ class TenantContext:
     def require_clinic(self, clinic_id: uuid.UUID | None) -> None:
         if not self.clinic_allowed(clinic_id):
             raise forbidden("You do not have access to this clinic")
+
+    # Facility vocabulary for hospital modules (same scope as clinics).
+    @property
+    def facility_ids(self) -> list[uuid.UUID] | None:
+        return self.clinic_ids
+
+    def facility_allowed(self, facility_id: uuid.UUID | None) -> bool:
+        return self.clinic_allowed(facility_id)
+
+    def require_facility(self, facility_id: uuid.UUID | None) -> None:
+        if not self.clinic_allowed(facility_id):
+            raise forbidden("You do not have access to this facility")
+
+    def department_allowed(self, department_id: uuid.UUID | None) -> bool:
+        return department_id is None or self.department_ids is None or department_id in self.department_ids
+
+    def require_department(self, department_id: uuid.UUID | None) -> None:
+        if not self.department_allowed(department_id):
+            raise forbidden("You do not have access to this department")
 
     @property
     def provider(self) -> ProviderProfile | None:
@@ -130,16 +150,19 @@ def get_ctx(
     if membership:
         roles = membership.role_names
         clinic_ids = None if membership.all_clinics else [c.clinic_id for c in membership.clinics]
+        department_ids = [d.department_id for d in membership.departments] or None
     elif user.is_superadmin:
-        roles, clinic_ids = [Role.SUPER_ADMIN.value], None
+        roles, clinic_ids, department_ids = [Role.SUPER_ADMIN.value], None, None
     else:
         raise forbidden("You are not a member of this organization")
     if user.is_superadmin and Role.SUPER_ADMIN.value not in roles:
         roles = sorted([*roles, Role.SUPER_ADMIN.value])
 
+    bind_tenant(db, org_id)  # PostgreSQL RLS: every statement from here on is limited to this organization
     return TenantContext(
         db=db, request=request, user=user, session_id=auth.session_id, org_id=org_id, roles=roles,
         permissions=permissions_for(roles), clinic_ids=clinic_ids, membership=membership,
+        department_ids=department_ids,
     )
 
 

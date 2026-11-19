@@ -43,6 +43,9 @@ export const session = {
   get org() {
     return orgId;
   },
+  get token() {
+    return accessToken;
+  },
   onUnauthorized(fn: () => void) {
     onUnauthorized = fn;
   },

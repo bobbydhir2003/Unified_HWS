@@ -15,6 +15,13 @@ ROLE_VALUES = (
     "receptionist",
     "billing",
     "patient",
+    "hospital_admin",
+    "pharmacist",
+    "lab_tech",
+    "radiology_tech",
+    "radiologist",
+    "bed_manager",
+    "insurance_specialist",
 )
 
 
@@ -41,9 +48,14 @@ class Clinic(UUIDPk, Timestamps, OrgScoped, Base):
     postal_code: Mapped[str | None] = mapped_column(String(20))
     rooms: Mapped[list[str]] = mapped_column(ARRAY(String(40)), default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    facility_type: Mapped[str] = mapped_column(String(20), default="clinic", server_default="clinic")
+    settings: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")  # per-facility feature flags/config
     organization: Mapped[Organization] = relationship(back_populates="clinics")
 
-    __table_args__ = (UniqueConstraint("organization_id", "code"),)
+    __table_args__ = (
+        UniqueConstraint("organization_id", "code"),
+        CheckConstraint("facility_type in ('clinic','hospital','urgent_care','surgery_center','lab','pharmacy')", name="facility_type"),
+    )
 
 
 class User(UUIDPk, Timestamps, Base):
@@ -85,6 +97,7 @@ class Membership(UUIDPk, Timestamps, OrgScoped, Base):
     organization: Mapped[Organization] = relationship(lazy="joined")
     roles: Mapped[list["MembershipRole"]] = relationship(cascade="all, delete-orphan", lazy="selectin")
     clinics: Mapped[list["MembershipClinic"]] = relationship(cascade="all, delete-orphan", lazy="selectin")
+    departments: Mapped[list["MembershipDepartment"]] = relationship(cascade="all, delete-orphan", lazy="selectin")  # noqa: F821
 
     __table_args__ = (UniqueConstraint("user_id", "organization_id"),)
 

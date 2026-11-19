@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLiveConnection } from "@/lib/live";
 import {
   Bell, Building, Check, ChevronRight, ChevronsLeft, ChevronsUpDown, FlaskConical, LogOut, Menu, Monitor, Moon, Search, Sun, UserRound,
 } from "lucide-react";
@@ -273,6 +274,7 @@ export function AppShell() {
   const { membership } = useAuth();
   const org = useQuery({ queryKey: ["organization", membership?.organization_id], queryFn: () => get<{ settings: { synthetic_data?: boolean } }>("/organization"), enabled: !!membership, staleTime: 300_000 });
   const synthetic = !!org.data?.settings.synthetic_data;
+  useLiveConnection(membership?.organization_id);
   const setCrumb = React.useCallback((path: string, label: string | null) => {
     setLabels((l) => {
       const n = { ...l };
