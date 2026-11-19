@@ -13,8 +13,10 @@ Every external dependency sits behind an adapter. Until a real, contracted and v
 | Inbound fax | Webhook implemented (`POST /api/integrations/fax/{org_slug}/inbound`, `X-Fax-Secret`, multipart `file` + `from_number`); simulated faxes from UI | `routers/documents.py` | Any fax vendor with BAA that can POST multipart; per-org secret in `organizations.settings.fax_webhook_secret` |
 | OCR for scanned images | Not available in simulated mode | — | Vision-capable AI provider or Textract/tesseract |
 | Speech-to-text (scribe) | Not configured — adapter `NoTranscriber` raises a clear error | `app/ai/scribe.py:get_transcriber` | HIPAA-eligible ASR with diarization (BAA), implement `transcribe(audio, content_type) -> [Segment]` |
-| e-Prescribing | Planned (phase 7), simulated | — | Surescripts-certified partner |
-| Labs (HL7 v2 ORM/ORU) | Planned (phase 7), simulated | — | Lab interface engine / partner |
+| e-Prescribing | Simulated channel on sign (`transmission.simulated=true`) | `routers/orders.py:sign_order` | Surescripts-certified eRx partner (NewRx/CancelRx/RxChange), EPCS for controlled substances |
+| Medication/lab/imaging catalogs | Built-in subsets | `data/catalogs.py` | Licensed drug database (RxNorm + interactions), lab compendium (LOINC), CPT licensing |
+| Labs / imaging (HL7 v2 ORM/ORU) | Simulated order transmission + simulated results endpoint (synthetic orgs) | `routers/orders.py` | Interface engine; map ORU → `lab_results` with `source='interface'` |
+| Referrals | Simulated fax delivery; manual status tracking | `routers/orders.py` | Direct messaging / fax vendor |
 | Clearinghouse claims (837/835) | Planned (phase 9), simulated | — | Clearinghouse partner |
 | Payments | Planned (phase 9), simulated | — | PCI-compliant processor (tokenized) |
 | Telehealth video | Planned (phase 8) | — | Established WebRTC SDK with BAA |

@@ -26,15 +26,18 @@ with sync_playwright() as p:
     # Book via banner (override hours so the run is time-independent)
     pg.get_by_role("button", name="Book").first.click()
     dlg=pg.get_by_role("dialog"); dlg.wait_for()
-    dlg.get_by_label("Time").fill(f"18:{random.randint(10,49)}")  # after hours → exercises the override path
     dlg.get_by_label("Reason for visit").fill("Cough x 5 days")
-    dlg.get_by_role("button", name="Book appointment").click()
-    try:
-        dlg.get_by_role("button", name="Book anyway (override hours)").click(timeout=3000)
-    except Exception: pass
-    pg.wait_for_timeout(1500)
-    if dlg.is_visible():
-        print("DIALOG ALERT:", dlg.get_by_role("alert").all_inner_texts()); pg.screenshot(path=f"{OUT}/e2e-fail.png"); sys.exit(1)
+    for attempt in range(8):  # after-hours slots (exercise the override); earlier runs may occupy some
+        dlg.get_by_label("Time").fill(f"{random.randint(18, 22)}:{random.choice(['00', '20', '40'])}")
+        dlg.get_by_role("button", name="Book appointment").click()
+        pg.wait_for_timeout(700)
+        if dlg.get_by_role("button", name="Book anyway (override hours)").is_visible():
+            dlg.get_by_role("button", name="Book anyway (override hours)").click()
+            pg.wait_for_timeout(700)
+        if not dlg.is_visible():
+            break
+    else:
+        print("DIALOG ALERT:", dlg.get_by_role("alert").all_inner_texts()); sys.exit(1)
     print("booked")
     # Front desk: find card, check in, room
     pg.goto("http://localhost:5173/front-desk"); pg.get_by_label("Filter queue").fill("Patient"+suffix)

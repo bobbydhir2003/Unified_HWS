@@ -18,6 +18,7 @@ import { Dialog as D } from "radix-ui";
 import { AllergyStrip, type Summary } from "@/features/patients/PatientChart";
 import { VitalsDialog, VitalsSummary } from "@/features/patients/Vitals";
 import { ScribePanel } from "./ScribePanel";
+import { EncounterOrdersCard } from "@/features/orders/OrdersPages";
 import { ApiError, get, patch, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { cToF, fmtDateTime, fmtDob, sexShort } from "@/lib/format";
@@ -428,6 +429,7 @@ export function EncounterPage() {
             </CardContent>
           </Card>
           <Diagnoses enc={enc} onChanged={refresh} />
+          {can("clinical:read") && <EncounterOrdersCard patientId={enc.patient_id} encounterId={enc.id} diagnosisCodes={enc.diagnoses.map((d) => d.code)} editable={open} />}
           {summary.data?.clinical_access && (
             <Card>
               <CardHeader className="pb-2"><CardTitle>Patient context</CardTitle><Link to={`/patients/${enc.patient_id}`} className="text-[12.5px] font-medium text-primary hover:underline">Full chart</Link></CardHeader>

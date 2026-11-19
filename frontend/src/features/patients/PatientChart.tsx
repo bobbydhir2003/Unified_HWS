@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, CalendarPlus, ClipboardList, FileStack, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, ShieldAlert,
+  AlertTriangle, CalendarPlus, ClipboardList, ClipboardPen, FileStack, TestTube, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, ShieldAlert,
   ShieldCheck, Stethoscope, StickyNote, Trash2, Users,
 } from "lucide-react";
 import * as React from "react";
@@ -18,6 +18,7 @@ import { Tooltip } from "@/components/ui/menu";
 import { Avatar, Skeleton } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { PatientDocumentsTab } from "@/features/documents/DocumentReview";
+import { PatientOrdersTab, PatientResultsTab } from "@/features/orders/OrdersPages";
 import { AppointmentDialog } from "@/features/schedule/AppointmentDialog";
 import { ApiError, del, get, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -143,6 +144,8 @@ const TABS = [
   { key: "allergies", label: "Allergies", icon: AlertTriangle, clinical: true },
   { key: "history", label: "History", icon: Users, clinical: true },
   { key: "vitals", label: "Vitals", icon: HeartPulse, clinical: true },
+  { key: "orders", label: "Orders", icon: ClipboardPen, clinical: true },
+  { key: "results", label: "Results", icon: TestTube, clinical: true },
   { key: "timeline", label: "Timeline", icon: History, clinical: true },
   { key: "documents", label: "Documents", icon: FileStack, docs: true },
   { key: "appointments", label: "Appointments", icon: CalendarPlus },
@@ -207,6 +210,8 @@ export function PatientChart() {
         {tab === "allergies" && clinical && <AllergiesTab patientId={p.id} />}
         {tab === "history" && clinical && <HistoryTab patientId={p.id} />}
         {tab === "vitals" && clinical && <VitalsTab patientId={p.id} />}
+        {tab === "orders" && clinical && <PatientOrdersTab patientId={p.id} />}
+        {tab === "results" && clinical && <PatientResultsTab patientId={p.id} />}
         {tab === "timeline" && clinical && <TimelineTab patientId={p.id} />}
         {tab === "documents" && can("documents:read") && <PatientDocumentsTab patientId={p.id} />}
         {tab === "appointments" && <AppointmentsTab patientId={p.id} />}

@@ -21,7 +21,9 @@ for email in ["dr.chen@harborview.dev","frontdesk@harborview.dev","nurse.rivera@
         for p in ["", "/summary","/appointments","/notes"]: chk(c,f"/patients/{pid}{p}")
         if "clinical:read" in m["permissions"]:
             for p in ["/allergies","/medications","/problems","/history","/vitals","/encounters","/timeline"]: chk(c,f"/patients/{pid}{p}")
-            chk(c,"/encounters"); chk(c,"/templates"); chk(c,"/codes/icd10",params={"q":"hyper"})
+            chk(c,"/encounters"); chk(c,"/templates"); chk(c,"/orders"); chk(c,"/orders-counts")
+            chk(c,f"/patients/{pid}/orders"); chk(c,f"/patients/{pid}/results"); chk(c,"/codes/icd10",params={"q":"hyper"})
+            if "orders:write" in m["permissions"]: chk(c,"/catalog/labs")
     if "schedule:read" in m["permissions"]:
         chk(c,"/providers"); chk(c,"/appointment-types"); chk(c,"/front-desk/queue",params={"clinic_id":clinic})
         chk(c,"/appointments",params={"start":(now-dt.timedelta(days=3)).isoformat(),"end":(now+dt.timedelta(days=30)).isoformat(),"clinic_id":clinic,"include_cancelled":True})

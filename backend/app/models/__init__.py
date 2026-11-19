@@ -28,6 +28,7 @@ from app.models.identity import (
     User,
     UserSession,
 )
+from app.models.orders import LabResult, Order
 from app.models.patients import Patient, PatientAccessGrant, PatientInsurance, PatientNote
 from app.models.scheduling import Appointment, AppointmentType, ProviderAvailability
 from app.models.scribe import ScribeSession
@@ -48,12 +49,14 @@ __all__ = [
     "EncounterDiagnosis",
     "HistoryEntry",
     "Invitation",
+    "LabResult",
     "Membership",
     "MembershipClinic",
     "MembershipRole",
     "NoteAddendum",
     "Notification",
     "Organization",
+    "Order",
     "OutboundMessage",
     "PasswordResetToken",
     "Patient",

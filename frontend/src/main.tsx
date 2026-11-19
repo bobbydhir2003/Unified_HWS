@@ -16,6 +16,7 @@ import { AcceptInvitePage, ForgotPasswordPage, LoginPage, ResetPasswordPage } fr
 import { Dashboard } from "@/features/dashboard/Dashboard";
 import { DocumentReview } from "@/features/documents/DocumentReview";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
+import { OrdersPage } from "@/features/orders/OrdersPages";
 import { EncounterPage } from "@/features/encounters/EncounterPage";
 import { EncountersList } from "@/features/encounters/EncountersList";
 import { PatientChart } from "@/features/patients/PatientChart";
@@ -119,6 +120,7 @@ const router = createBrowserRouter([
                   { path: ":patientId/*", element: <Perm perm="patients:read"><PatientChart /></Perm>, handle: { crumb: "Chart" } },
                 ],
               },
+              { path: "orders", element: <Perm perm="clinical:read"><OrdersPage /></Perm>, handle: { crumb: "Orders" } },
               {
                 path: "documents", handle: { crumb: "Documents" },
                 children: [
@@ -155,7 +157,7 @@ createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <TooltipProvider>
           <RouterProvider router={router} />
-          <Toaster position="bottom-right" richColors closeButton toastOptions={{ className: "font-sans" }} />
+          <Toaster position="bottom-center" richColors closeButton toastOptions={{ className: "font-sans" }} />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
