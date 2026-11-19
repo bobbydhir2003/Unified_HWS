@@ -170,3 +170,33 @@ def governance(days: int = 30, ctx: TenantContext = Depends(require(P.AI_MANAGE)
                        for k, m, n, f, c, lat in agents],
             "feedback": {"up": fb.get("up", 0), "down": fb.get("down", 0)},
             "recent_problems": [run_out(r) for r in failures]}
+
+
+def eval_out(r) -> dict:
+    return {"id": r.id, "suite": r.suite, "provider": r.provider, "model": r.model, "samples": r.samples, "score": r.score, "metrics": r.metrics,
+            "cases": r.cases, "created_at": r.created_at}
+
+
+@router.get("/ai/evaluations")
+def evaluations(suite: str | None = None, ctx: TenantContext = Depends(require(P.AI_MANAGE))):
+    """Evaluation history (C7). Synthetic labeled samples only; scores describe those samples, not clinical validity."""
+    from app.ai.evals import SUITES
+    from app.models import AIEvalRun
+
+    q = select(AIEvalRun).where(AIEvalRun.organization_id == ctx.org_id)
+    if suite:
+        q = q.where(AIEvalRun.suite == suite)
+    return {"suites": list(SUITES), "runs": [eval_out(r) for r in ctx.db.scalars(q.order_by(AIEvalRun.created_at.desc()).limit(50))]}
+
+
+@router.post("/ai/evaluations/{suite}", status_code=201)
+def run_evaluation(suite: str, ctx: TenantContext = Depends(require(P.AI_MANAGE))):
+    from app.ai.evals import SUITES
+
+    if suite not in SUITES:
+        raise not_found("Evaluation suite")
+    r = SUITES[suite](ctx)
+    ctx.db.flush()
+    ctx.audit("ai.evaluation_run", resource_type="ai_eval", resource_id=r.id, details={"suite": suite, "score": r.score, "provider": r.provider})
+    ctx.db.commit()
+    return eval_out(r)

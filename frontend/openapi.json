@@ -14704,6 +14704,136 @@
     ]
    }
   },
+  "/api/v1/ai/evaluations": {
+   "get": {
+    "description": "Evaluation history (C7). Synthetic labeled samples only; scores describe those samples, not clinical validity.",
+    "operationId": "evaluations_api_v1_ai_evaluations_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "suite",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Suite"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Evaluations",
+    "tags": [
+     "agents"
+    ]
+   }
+  },
+  "/api/v1/ai/evaluations/{suite}": {
+   "post": {
+    "operationId": "run_evaluation_api_v1_ai_evaluations__suite__post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "suite",
+      "required": true,
+      "schema": {
+       "title": "Suite",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Run Evaluation",
+    "tags": [
+     "agents"
+    ]
+   }
+  },
   "/api/v1/ai/feedback": {
    "post": {
     "operationId": "feedback_api_v1_ai_feedback_post",

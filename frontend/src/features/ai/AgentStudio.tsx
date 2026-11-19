@@ -132,8 +132,67 @@ export function AIGovernancePage() {
             <CardContent>{!g.recent_problems.length ? <p className="text-[13px] text-muted-foreground">None.</p> : (
               <ul className="divide-y">{g.recent_problems.map((r) => <li key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-[13px]"><Badge variant="danger">{r.status}</Badge><span className="font-medium">{titleCase(r.agent_key.replace(/_/g, " "))}</span><span className="flex-1 truncate text-muted-foreground">{r.error ?? r.output}</span><span className="text-xs text-muted-foreground">{fmtDateTime(r.started_at)}</span>
                 <Button size="xs" variant="outline" onClick={async () => { try { await post(`/agents/runs/${r.id}/retry`); toast.success("Retried"); qc.invalidateQueries({ queryKey: ["ai"] }); } catch (e) { toastError(e); } }}>Retry</Button></li>)}</ul>)}</CardContent></Card>
+          <EvaluationsCard />
         </div>
       )}
     </>
+  );
+}
+
+type EvalRun = { id: string; suite: string; provider: string; model: string | null; samples: number; score: number; metrics: Record<string, unknown>; cases: { id: string; passed?: boolean; correct?: number; total?: number; errors?: { field: string; expected: unknown; got: unknown }[]; failure?: string | null }[]; created_at: string };
+const SUITE_LABEL: Record<string, string> = { document_extraction_v1: "Document extraction", tool_gate_v1: "Agent tool safety gate" };
+
+function EvaluationsCard() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["ai", "evaluations"], queryFn: () => get<{ suites: string[]; runs: EvalRun[] }>("/ai/evaluations") });
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const [open, setOpen] = React.useState<EvalRun | null>(null);
+  const latest = (s: string) => q.data?.runs.find((r) => r.suite === s);
+  const run = async (s: string) => {
+    setBusy(s);
+    try { await post(`/ai/evaluations/${s}`); toast.success("Evaluation finished"); qc.invalidateQueries({ queryKey: ["ai", "evaluations"] }); } catch (e) { toastError(e); } finally { setBusy(null); }
+  };
+  return (
+    <Card>
+      <CardHeader><CardTitle>Evaluations</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-[13px] text-muted-foreground">Runs against synthetic labeled samples only. Scores describe these samples, not clinical accuracy.</p>
+        <div className="grid gap-3 md:grid-cols-2">
+          {(q.data?.suites ?? []).map((s) => {
+            const r = latest(s);
+            return (
+              <div key={s} className="rounded-lg border p-3" data-testid={`eval-${s}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13.5px] font-medium">{SUITE_LABEL[s] ?? s}</span>
+                  <Button size="xs" variant="outline" loading={busy === s} onClick={() => run(s)}>Run</Button>
+                </div>
+                {r ? (
+                  <button type="button" className="mt-2 block w-full text-left text-[13px] hover:underline" onClick={() => setOpen(r)}>
+                    <span className="text-lg font-semibold tabular">{Math.round(r.score * 100)}%</span> <span className="text-muted-foreground">on {r.samples} samples · {r.provider}{r.model ? ` / ${r.model}` : ""} · {fmtDateTime(r.created_at)}</span>
+                  </button>
+                ) : <p className="mt-2 text-[13px] text-muted-foreground">Not run yet.</p>}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>{open ? SUITE_LABEL[open.suite] ?? open.suite : ""}</DialogTitle><DialogDescription>Per-sample results. Expected values come from the synthetic labels.</DialogDescription></DialogHeader>
+          <ul className="max-h-[60vh] divide-y overflow-auto text-[13px]">
+            {open?.cases.map((c) => (
+              <li key={c.id} className="py-2">
+                <div className="flex items-center gap-2"><span className="font-mono text-xs">{c.id}</span>
+                  {c.passed !== undefined ? <Badge variant={c.passed ? "success" : "danger"}>{c.passed ? "refused as expected" : "NOT refused"}</Badge> : <Badge variant={c.correct === c.total ? "success" : "warning"}>{c.correct}/{c.total} fields</Badge>}
+                </div>
+                {c.errors?.map((e) => <p key={e.field} className="text-muted-foreground">{e.field}: expected <code>{String(e.expected)}</code>, got <code>{String(e.got)}</code></p>)}
+                {c.failure && <p className="text-destructive">{c.failure}</p>}
+              </li>
+            ))}
+          </ul>
+          <DialogFooter><Button variant="outline" onClick={() => setOpen(null)}>Close</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }

@@ -30,7 +30,7 @@ from app.models.engine import (
     NotificationPreference,
 )
 from app.models.facility import Department, Location, MembershipDepartment
-from app.models.forecast import Prediction
+from app.models.forecast import AIEvalRun, Prediction
 from app.models.identity import (
     AuditEvent,
     Clinic,
@@ -87,6 +87,7 @@ from app.models.scribe import ScribeSession
 
 __all__ = [
     "Prediction",
+    "AIEvalRun",
     "AgentConfig",
     "AgentConfigVersion",
     "AgentRun",

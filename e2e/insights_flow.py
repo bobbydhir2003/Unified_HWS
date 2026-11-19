@@ -30,6 +30,18 @@ with sync_playwright() as p:
     expect(pg.get_by_test_id("forecast-label")).to_contain_text("not validated")
     expect(pg.get_by_text("Inpatient census")).to_be_visible(timeout=15000)
     pg.screenshot(path=f"{SHOTS}/insights-01.png", full_page=True)
+    # AI governance → evaluations (synthetic samples).
+    pg.goto(f"{BASE}/admin/ai-governance")
+    card = pg.get_by_test_id("eval-tool_gate_v1")
+    expect(card).to_be_visible(timeout=10000)
+    card.get_by_role("button", name="Run").click()
+    expect(card.get_by_text("100%")).to_be_visible(timeout=15000)
+    ex = pg.get_by_test_id("eval-document_extraction_v1")
+    ex.get_by_role("button", name="Run").click()
+    expect(ex.get_by_text("samples")).to_be_visible(timeout=30000)
+    ex.get_by_text("samples").click()
+    expect(pg.get_by_role("dialog").get_by_text("dc-01")).to_be_visible()
+    pg.screenshot(path=f"{SHOTS}/insights-03-evals.png")
     b.close()
 
     b = p.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True)

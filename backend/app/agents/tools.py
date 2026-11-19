@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 
 from app.core.permissions import P
@@ -40,11 +40,15 @@ def tool(name: str, description: str, params: type[BaseModel], permission: str, 
     return deco
 
 
-class _None(BaseModel):
+class _Args(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # unknown arguments are rejected, never ignored
+
+
+class _None(_Args):
     pass
 
 
-class _Cases(BaseModel):
+class _Cases(_Args):
     category: str | None = Field(default=None, description="insurance, pharmacy, inventory, lab, bed, ed, discharge, billing, staffing, equipment …")
     limit: int = Field(default=10, ge=1, le=25)
 
@@ -63,7 +67,7 @@ def list_open_cases(ctx, a: _Cases) -> dict:
                        "overdue": c.overdue, "category": c.category} for c in rows]}
 
 
-class _CaseRef(BaseModel):
+class _CaseRef(_Args):
     ref: str = Field(description="Case reference such as C1042")
 
 
@@ -87,7 +91,7 @@ def get_case(ctx, a: _CaseRef) -> dict:
     return {**_case_brief(c), "summary": c.summary, "evidence": c.evidence, "recent_events": [e.message for e in ev]}
 
 
-class _PatientRef(BaseModel):
+class _PatientRef(_Args):
     patient_id: str
 
 
@@ -111,7 +115,7 @@ def get_patient_coverage(ctx, a: _PatientRef) -> dict:
     return {"state": st.state, "reason": st.reason, "payer": st.insurance.payer_name if st.insurance else None}
 
 
-class _StayRef(BaseModel):
+class _StayRef(_Args):
     stay_id: str
 
 
@@ -132,7 +136,7 @@ def get_discharge_status(ctx, a: _StayRef) -> dict:
             "items": [{"label": i["label"], "status": i["status"], "owner": i["owner_role"]} for i in r["items"]]}
 
 
-class _Item(BaseModel):
+class _Item(_Args):
     name: str
 
 
@@ -146,7 +150,7 @@ def get_inventory_item(ctx, a: _Item) -> dict:
     return {"item": it.name, "unit": it.unit, "reorder_point": it.reorder_point, **recommend_reorder(ctx.db, it)}
 
 
-class _Claim(BaseModel):
+class _Claim(_Args):
     claim_number: str
 
 
@@ -188,7 +192,7 @@ def get_recent_volume(ctx, a: _None) -> dict:
 
 # ---------- proposals (approval required) ----------
 
-class _ProposeTask(BaseModel):
+class _ProposeTask(_Args):
     title: str = Field(min_length=3, max_length=200)
     role: str = Field(description="Role to assign, e.g. nurse, pharmacist, insurance_specialist")
     case_ref: str | None = None
@@ -204,7 +208,7 @@ def propose_task(ctx, a: _ProposeTask, *, agent: str) -> dict:
     return {"proposal": "pending approval", "approval_id": str(req.id)}
 
 
-class _ProposeMsg(BaseModel):
+class _ProposeMsg(_Args):
     patient_id: str
     subject: str = Field(min_length=3, max_length=150)
     body: str = Field(min_length=10, max_length=1500)
