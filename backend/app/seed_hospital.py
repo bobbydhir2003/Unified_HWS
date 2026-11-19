@@ -115,3 +115,60 @@ def seed_insurance_scenarios(db, org, clinic, provider, appt_type, portal_patien
     ins(others[3]).member_id = "SYN66201178"
     visit(others[3], 2, 7, 40)
     db.flush()
+
+
+def seed_inpatients(db, org, hosp, attendings: list, patients: list) -> None:
+    """Synthetic census: ~55% of inpatient beds occupied with back-dated history, a few discharges ordered,
+    beds in cleaning/blocked, and pending admissions."""
+    import random
+    from datetime import date, timedelta
+
+    from sqlalchemy import select
+
+    from app.core.security import now
+    from app.models import AdtEvent, BedAssignment, BedStatusEvent, InpatientStay, Location
+
+    rng = random.Random(7)
+    beds = db.scalars(select(Location).where(Location.facility_id == hosp.id, Location.kind == "bed")
+                      .order_by(Location.code)).all()
+    ward_beds = [b for b in beds if not b.code.startswith("ED-")]
+    pool = iter(patients)
+    reasons = ["Community-acquired pneumonia", "CHF exacerbation", "Cellulitis of lower leg", "COPD exacerbation", "Post-op hip arthroplasty",
+               "Diabetic ketoacidosis", "Sepsis, urinary source", "Acute kidney injury", "Small bowel obstruction", "GI bleed"]
+    for i, b in enumerate(ward_beds):
+        r = rng.random()
+        if r < 0.55:
+            p = next(pool)
+            los_h = rng.randint(6, 120)
+            admitted = now() - timedelta(hours=los_h)
+            icu = b.code.startswith("ICU")
+            s = InpatientStay(organization_id=org.id, facility_id=hosp.id, department_id=b.department_id, requested_department_id=b.department_id,
+                              patient_id=p.id, attending_provider_id=rng.choice(attendings).id, status="admitted",
+                              admit_source=rng.choice(["ed", "ed", "direct", "elective"]), level_of_care="icu" if icu else "med_surg",
+                              reason=rng.choice(reasons), requested_at=admitted - timedelta(minutes=rng.randint(30, 240)), admitted_at=admitted,
+                              expected_discharge_date=(admitted + timedelta(days=rng.randint(2, 6))).date(),
+                              isolation="contact" if rng.random() < 0.1 else None)
+            db.add(s)
+            db.flush()
+            db.add(BedAssignment(organization_id=org.id, stay_id=s.id, bed_id=b.id, patient_id=p.id, start_at=admitted, reason="admit"))
+            db.add(AdtEvent(organization_id=org.id, stay_id=s.id, patient_id=p.id, kind="admission_requested", at=s.requested_at, note=s.reason))
+            db.add(AdtEvent(organization_id=org.id, stay_id=s.id, patient_id=p.id, kind="admitted", to_bed_id=b.id, at=admitted))
+            b.bed_status, b.bed_status_changed_at = "occupied", admitted
+            if s.expected_discharge_date <= date.today() and rng.random() < 0.6:
+                s.status, s.discharge_ordered_at, s.discharge_disposition = "discharge_ordered", now() - timedelta(minutes=rng.randint(20, 300)), "home"
+                db.add(AdtEvent(organization_id=org.id, stay_id=s.id, patient_id=p.id, kind="discharge_ordered", at=s.discharge_ordered_at, note="home"))
+        elif r < 0.62:
+            since = now() - timedelta(minutes=rng.randint(15, 140))
+            b.bed_status, b.bed_status_changed_at = "cleaning", since
+            db.add(BedStatusEvent(organization_id=org.id, bed_id=b.id, from_status="occupied", to_status="cleaning", reason="patient discharged", at=since))
+        elif r < 0.64:
+            b.bed_status, b.bed_status_reason, b.bed_status_changed_at = "blocked", "Broken bed rail — maintenance requested", now() - timedelta(hours=5)
+    for mins, reason, loc in [(150, "Pneumonia, hypoxic — needs med-surg bed", "med_surg"), (35, "Chest pain, rule out MI — telemetry", "telemetry")]:
+        p = next(pool)
+        req = now() - timedelta(minutes=mins)
+        s = InpatientStay(organization_id=org.id, facility_id=hosp.id, patient_id=p.id, attending_provider_id=attendings[0].id, status="pending",
+                          admit_source="ed", level_of_care=loc, reason=reason, requested_at=req)
+        db.add(s)
+        db.flush()
+        db.add(AdtEvent(organization_id=org.id, stay_id=s.id, patient_id=p.id, kind="admission_requested", at=req, note=reason))
+    db.flush()

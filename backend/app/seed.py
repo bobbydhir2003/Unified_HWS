@@ -465,7 +465,11 @@ def seed(reset: bool = False) -> None:
         ed_doc_u = user(db, "dr.santos@harborview.dev", "Rafael", "Santos", "MD")
         hstaff["ed_doc"] = member(db, ed_doc_u, org, "doctor")
         provider(db, ed_doc_u, org, "Emergency Medicine", "MD", "rose", "1356432980")
-        seed_hospital(db, org, [downtown, north], hstaff)
+        hospital = seed_hospital(db, org, [downtown, north], hstaff)
+        from app.seed_hospital import seed_inpatients
+
+        ed_doc = db.scalar(select(ProviderProfile).where(ProviderProfile.user_id == ed_doc_u.id))
+        seed_inpatients(db, org, hospital["hospital"], [ed_doc, okafor], [x for x in patients[5:] if not x.is_restricted])
         from app.seed_hospital import seed_insurance_scenarios
 
         seed_insurance_scenarios(db, org, downtown, chen, types["Follow-up"], portal_p, patients)

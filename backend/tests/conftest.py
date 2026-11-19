@@ -3,6 +3,7 @@ import os
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://undeclared:undeclared@localhost:5432/undeclared_test")
 os.environ["CELERY_EAGER"] = "true"
 os.environ["ENVIRONMENT"] = "test"
+os.environ["ENGINE_INPROCESS_SCHEDULER"] = "false"  # tests drive the engine explicitly
 os.environ["RATE_LIMIT_ENABLED"] = "false"  # covered explicitly in test_hardening.py
 os.environ["STORAGE_LOCAL_PATH"] = "./var/test-storage"
 
