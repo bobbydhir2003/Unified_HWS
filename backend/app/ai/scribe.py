@@ -62,7 +62,9 @@ class NoTranscriber:
 
 
 def get_transcriber():
-    if settings.ai_provider == "openai" and settings.ai_transcription_model:
+    from app.ai.config import active_provider, effective
+
+    if active_provider() == "openai" and effective().transcription_model:
         from app.ai.openai_provider import OpenAITranscriber, available
 
         if available():
@@ -223,9 +225,11 @@ class AnthropicDrafter:
 
 
 def get_drafter():
-    if settings.ai_provider == "openai":
+    from app.ai.config import active_provider
+
+    if active_provider() == "openai":
         from app.ai.openai_provider import OpenAIDrafter, available
 
         if available():
             return OpenAIDrafter()
-    return AnthropicDrafter() if settings.ai_provider == "anthropic" else SimulatedDrafter()
+    return AnthropicDrafter() if active_provider() == "anthropic" else SimulatedDrafter()

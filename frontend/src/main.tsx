@@ -41,6 +41,7 @@ const NursingPage = lazy(() => import("@/features/inpatient/InpatientPages").the
 const WorklistPage = lazy(() => import("@/features/ops/WorklistPage").then((m) => ({ default: m.WorklistPage })));
 const MonitorsPage = lazy(() => import("@/features/ops/MonitorsPage").then((m) => ({ default: m.MonitorsPage })));
 const InsuranceGuardianPage = lazy(() => import("@/features/insurance/InsuranceGuardian").then((m) => ({ default: m.InsuranceGuardianPage })));
+const AISettingsPage = lazy(() => import("@/features/admin/AISettingsPage").then((m) => ({ default: m.AISettingsPage })));
 const FacilitiesPage = lazy(() => import("@/features/admin/FacilitiesPage").then((m) => ({ default: m.FacilitiesPage })));
 const TasksPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.TasksPage })));
 const AnalyticsPage = lazy(() => import("@/features/analytics/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })));
@@ -163,6 +164,7 @@ const router = createBrowserRouter([
               { path: "worklist", element: <Perm perm="cases:read"><WorklistPage /></Perm>, handle: { crumb: "My work" } },
               { path: "insurance", element: <Perm perm="cases:read"><InsuranceGuardianPage /></Perm>, handle: { crumb: "Insurance Guardian" } },
               { path: "automation/monitors", element: <Perm perm="cases:read"><MonitorsPage /></Perm>, handle: { crumb: "Monitors & rules" } },
+              { path: "admin/ai-settings", element: <Perm perm="org:manage"><AISettingsPage /></Perm>, handle: { crumb: "AI settings" } },
               { path: "admin/facilities", element: <Perm perm="clinic:manage"><FacilitiesPage /></Perm>, handle: { crumb: "Facilities" } },
               { path: "tasks", element: <Perm perm="patients:read"><TasksPage /></Perm>, handle: { crumb: "Tasks" } },
               { path: "automation", element: <Perm perm="messages:use"><AutomationPage /></Perm>, handle: { crumb: "Automation studio" } },

@@ -8,6 +8,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 
+from app.ai.config import active_provider
 from app.api.deps import TenantContext, get_ctx, require
 from app.core.config import settings
 from app.core.db import get_db
@@ -272,7 +273,7 @@ def reprocess(doc_id: uuid.UUID, ctx: TenantContext = Depends(require(P.DOCUMENT
     if d.status not in ("failed", "needs_review"):
         raise bad_request("Only failed or unreviewed documents can be reprocessed")
     d.status = "processing"
-    ctx.db.add(AIJob(organization_id=ctx.org_id, kind="document_analysis", provider=settings.ai_provider,
+    ctx.db.add(AIJob(organization_id=ctx.org_id, kind="document_analysis", provider=active_provider(),
                      subject_type="document", subject_id=d.id, created_by_id=ctx.user.id))
     ctx.audit("document.reprocessed", resource_type="document", resource_id=d.id)
     ctx.db.commit()

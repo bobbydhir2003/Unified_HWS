@@ -249,12 +249,14 @@ class AnthropicAssistant:
 
 
 def get_assistant():
-    if settings.ai_provider == "openai":
+    from app.ai.config import active_provider
+
+    if active_provider() == "openai":
         from app.ai.openai_provider import OpenAIAssistant, available
 
         if available():
             return OpenAIAssistant()
-    return AnthropicAssistant() if settings.ai_provider == "anthropic" else SimulatedAssistant()
+    return AnthropicAssistant() if active_provider() == "anthropic" else SimulatedAssistant()
 
 
 def refusal(question: str) -> str | None:

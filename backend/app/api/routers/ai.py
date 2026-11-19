@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 
 from app.ai.assistant import build_sources, get_assistant, refusal
+from app.ai.config import active_provider, effective
 from app.ai.provider import AIError
 from app.api.deps import TenantContext, require
 from app.core.config import settings
@@ -33,7 +34,7 @@ class AskIn(BaseModel):
 @router.post("/patients/{patient_id}/assistant")
 def ask_chart(patient_id: uuid.UUID, body: AskIn, ctx: TenantContext = Depends(require(P.AI_USE, P.CLINICAL_READ))):
     p = get_patient(ctx, patient_id, P.CLINICAL_READ)  # restricted charts, tenant and role checks apply first
-    job = AIJob(organization_id=ctx.org_id, kind="chart_qa", provider=settings.ai_provider, subject_type="patient", subject_id=p.id,
+    job = AIJob(organization_id=ctx.org_id, kind="chart_qa", provider=active_provider(), subject_type="patient", subject_id=p.id,
                 patient_id=p.id, status="running", created_by_id=ctx.user.id)
     ctx.db.add(job)
     refused_text = refusal(body.question)
@@ -378,7 +379,7 @@ def ai_jobs(kind: str | None = None, status: str | None = None, ctx: TenantConte
         if s == "succeeded" and lat is not None:
             d["avg_latency_ms"] = round(float(lat))
     phi_external = ctx.db.scalar(select(func.count()).select_from(AIJob).where(AIJob.organization_id == ctx.org_id, AIJob.phi_sent_externally.is_(True)))
-    return {"provider": settings.ai_provider, "phi_allowed": settings.ai_phi_allowed, "phi_sent_externally_total": phi_external, "summary": summary,
+    return {"provider": active_provider(), "phi_allowed": settings.ai_phi_allowed, "phi_sent_externally_total": phi_external, "summary": summary,
             "jobs": [{"id": j.id, "kind": j.kind, "status": j.status, "provider": j.provider, "model": j.model, "latency_ms": j.latency_ms,
                       "input_tokens": j.input_tokens, "output_tokens": j.output_tokens, "phi_sent_externally": j.phi_sent_externally,
                       "error": j.error, "created_at": j.created_at, "subject_type": j.subject_type,
@@ -395,9 +396,10 @@ def ai_provider_status(ctx: TenantContext = Depends(require(P.AI_USE))):
     from app.ai.policy import contains_phi, provider_label
 
     lab = provider_label()
-    return {**lab, "openai_key_configured": bool(settings.openai_api_key), "models": {
-        "text": settings.ai_text_model or None, "vision": settings.ai_vision_model or settings.ai_text_model or None,
-        "transcription": settings.ai_transcription_model or None},
+    e = effective()
+    return {**lab, "openai_key_configured": bool(e.api_key), "key_source": e.source, "models": {
+        "text": e.text_model or None, "vision": e.vision_model or None, "transcription": e.transcription_model or None,
+        "realtime": e.realtime_model or None},
         "phi_allowed": settings.ai_phi_allowed, "org_is_synthetic": not contains_phi(ctx.db, ctx.org_id),
         "cost_tracking": bool(settings.ai_prices), "live_validation": "pending" if lab["active"] == "simulated" else "see health check"}
 
@@ -406,8 +408,8 @@ def ai_provider_status(ctx: TenantContext = Depends(require(P.AI_USE))):
 def ai_provider_health(ctx: TenantContext = Depends(require(P.CLINIC_MANAGE))):
     from app.ai.openai_provider import OpenAICore, available
 
-    if settings.ai_provider != "openai":
-        return {"ok": None, "detail": f"Active provider is {settings.ai_provider}; nothing to check."}
+    if effective().provider != "openai":
+        return {"ok": None, "detail": f"Active provider is {effective().provider}; nothing to check."}
     if not available():
         return {"ok": False, "detail": "OPENAI_API_KEY or AI_TEXT_MODEL not configured — simulation is in use."}
     r = OpenAICore().health()

@@ -26,6 +26,7 @@ def test_production_guard_rejects_unsafe_config():
     problems = production_problems(bad)
     assert any("SECRET_KEY" in p for p in problems) and any("COOKIE_SECURE" in p for p in problems)
     good = Settings(environment="production", secret_key="x" * 48, cookie_secure=True, celery_eager=False, storage_backend="s3",
+                    credentials_encryption_key="Wm9vZ2xlQ2hyb21lRGV2VG9vbHNQbGF5d3JpZ2h0cz0=",
                     cors_origins=["https://app.example.org"], enforce_mfa=True)
     assert production_problems(good) == []
 

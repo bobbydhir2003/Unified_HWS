@@ -19,6 +19,8 @@ def production_problems(s: Settings) -> list[str]:
     problems = []
     if s.secret_key in INSECURE_SECRETS or len(s.secret_key) < 32:
         problems.append("SECRET_KEY is a development default or shorter than 32 characters")
+    if not s.credentials_encryption_key:
+        problems.append("CREDENTIALS_ENCRYPTION_KEY must be set (encrypts stored AI provider keys)")
     if not s.cookie_secure:
         problems.append("COOKIE_SECURE must be true (HTTPS only)")
     if s.celery_eager:

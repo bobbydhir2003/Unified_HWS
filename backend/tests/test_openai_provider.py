@@ -33,6 +33,10 @@ def core(monkeypatch):
     monkeypatch.setattr(settings, "openai_api_key", "test-key")
     monkeypatch.setattr(settings, "ai_text_model", "fake-model")
     monkeypatch.setattr(settings, "ai_prices", {"fake": [2.0, 8.0]})
+    monkeypatch.setattr(settings, "ai_provider", "openai")
+    from app.ai.config import invalidate
+
+    invalidate()
     c = op.OpenAICore()
     return c
 
@@ -82,6 +86,9 @@ def test_tool_loop_executes_server_side_and_is_bounded(core):
 def test_falls_back_to_labeled_simulation_without_key(monkeypatch):
     monkeypatch.setattr(settings, "ai_provider", "openai")
     monkeypatch.setattr(settings, "openai_api_key", None)
+    from app.ai.config import invalidate
+
+    invalidate()
     assert isinstance(get_provider(), SimulatedProvider)
 
 
@@ -89,6 +96,40 @@ def test_status_endpoint_never_leaks_secret(as_user, monkeypatch):
     monkeypatch.setattr(settings, "ai_provider", "openai")
     monkeypatch.setattr(settings, "openai_api_key", "sk-secret-value")
     monkeypatch.setattr(settings, "ai_text_model", "")
+    from app.ai.config import invalidate
+
+    invalidate()
     r = as_user("clinicadmin@harborview.dev").get("/ai/provider")
     assert r.status_code == 200 and "sk-secret" not in r.text
     assert r.json()["active"] == "simulated" and r.json()["openai_key_configured"] is True and r.json()["org_is_synthetic"] is True
+
+
+def test_ai_settings_key_is_write_only_encrypted_and_super_admin_only(as_user):
+    from sqlalchemy import select
+
+    from app.ai.config import effective, invalidate
+    from app.core.db import SessionLocal
+    from app.models import AIProviderSettings
+
+    secret = "sk-test-SYNTHETIC-0000000000000000wxyz"
+    assert as_user("hospitaladmin@harborview.dev").put("/admin/ai-settings", json={"api_key": secret, "text_model": "m"}).status_code == 403
+    sa = as_user("admin@undeclared.dev")
+    r = sa.put("/admin/ai-settings", json={"provider": "openai", "api_key": secret, "text_model": "gpt-4.1-mini"})
+    assert r.status_code == 200 and secret not in r.text and r.json()["key"]["hint"] == "…wxyz"
+    assert secret not in sa.get("/admin/ai-settings").text
+    assert sa.put("/admin/ai-settings", json={"provider": "openai", "text_model": "bad model!"}).status_code == 422
+    db = SessionLocal()
+    try:
+        row = db.scalar(select(AIProviderSettings))
+        assert row.api_key_encrypted and secret not in row.api_key_encrypted  # encrypted at rest
+    finally:
+        db.close()
+    invalidate()
+    assert effective().api_key == secret and effective().source == "ui"
+    audit = sa.get("/audit", params={"action": "ai.settings_updated"}).text
+    assert secret not in audit
+    # Remove: back to simulation, so later tests are unaffected.
+    sa.delete("/admin/ai-settings/key")
+    sa.put("/admin/ai-settings", json={"provider": "simulated"})
+    invalidate()
+    assert effective().api_key is None

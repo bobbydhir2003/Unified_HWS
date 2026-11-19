@@ -286,9 +286,11 @@ class AnthropicProvider:
 
 
 def get_provider():
-    if settings.ai_provider == "anthropic":
+    from app.ai.config import active_provider
+
+    if active_provider() == "anthropic":
         return AnthropicProvider()
-    if settings.ai_provider == "openai":
+    if active_provider() == "openai":
         from app.ai.openai_provider import OpenAIDocumentProvider, available
 
         if available():

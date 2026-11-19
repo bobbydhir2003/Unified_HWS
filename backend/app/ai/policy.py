@@ -19,9 +19,10 @@ def contains_phi(db: Session, org_id: uuid.UUID) -> bool:
 
 def provider_label() -> dict:
     """What the UI should say about the active AI path. Never includes secrets."""
+    from app.ai.config import effective
     from app.ai.openai_provider import available
 
-    configured = settings.ai_provider
+    configured = effective().provider
     if configured == "openai" and not available():
         return {"configured": "openai", "active": "simulated", "live": False,
                 "note": "OpenAI selected but OPENAI_API_KEY / AI_TEXT_MODEL not set — using the rule-based simulation."}

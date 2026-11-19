@@ -18,6 +18,7 @@ All work is local on branch `dev` (never pushed). Synthetic data only. Not HIPAA
 | A4 OpenAI provider: Responses API, strict structured outputs, bounded server-side tool loop, transcription, retries/timeouts, cost (`AI_PRICES`), PHI gate + synthetic-org policy, labeled fallback, status/health (no secrets). **Live validation pending (no key)**; contract tests with fake client | ✅ | e50f1fd |
 | A5 Document AI vision / scribe transcription + drafting / chart assistant routed through OpenAI when configured; AI workspace page; AI activity with cost | ✅ | (milestone commit) |
 | A6 Early Command Center: 8 DB-derived tiles with sources, problem queue (search/severity/department/SLA filters), category×severity matrix, department worklists, automation health, live (SSE) + wall display | ✅ | (milestone commit) |
+| A4b AI Settings (Super Admin): write-only OpenAI key (Fernet-encrypted at rest, masked hint only, never logged/returned), provider switch, text/vision/transcription/realtime models, per-agent models, Test connection (authenticates + checks every configured model id via `models.list()`), remove key; UI settings override env. Suggested ids (gpt-4.1-mini, gpt-4o-mini-transcribe, gpt-4o-mini-realtime-preview) are **unverified suggestions** until tested with a real key | ✅ | (A4b commit) |
 | A-demo: `tests/test_milestone_a_journey.py` (registration → inactive coverage detected → fixed → payer re-verified → case auto-closed → check-in → AI scribe → attested sign → completion → follow-up task → claim) + Insurance Guardian & Command Center browser flows | ✅ | (milestone commit) |
 
 ## Milestone B — Unified Hospital (in progress)
@@ -35,10 +36,10 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 ## Milestone C — Intelligent Operations: not started
 
 ## Tests actually executed (2026-11-19)
-- Backend (latest, checkpoint 2026-11-19): **97 passed** (adds test_ed). After B5: 95. Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
+- Backend (latest): **98 passed** (adds AI settings test). After B3: 97; after B5: 95. Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
 - Frontend: `npm run typecheck` and `npm run build` pass.
 - Browser (local dev, fresh seed, Chrome): api_smoke (no 4xx/5xx for any role) + all 8 original flows + `insurance_guardian_flow` + `command_center_flow` passed at Milestone A completion; `adt_flow` passed after B5 and again at the B3 checkpoint; api_smoke clean (no 4xx/5xx) at checkpoint.
-- OpenAI: NOT validated against the live API (no key). Simulated provider used in every run above.
+- OpenAI: NOT validated against the live API (no key). Simulated provider used in every run above. To validate: Super Admin → AI settings → enter key → Test connection.
 
 ## Known issues / notes
 - Local Postgres user `undeclared` isn't superuser: role `undeclared_app` was created once by the local admin (`CREATE ROLE undeclared_app NOLOGIN; GRANT undeclared_app TO undeclared`). Migration 0010 raises a clear error if missing. Docker/CI users are superusers (auto-created).
@@ -48,7 +49,7 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - Header still says "clinic" switcher; facility switcher UI to be finished with Command Center.
 
 ## Next actions (exact resume point)
-1. ~~B3 UI~~ done. **Next: A4b AI Settings** (Super Admin enters/replaces OpenAI key → encrypted at rest, test connection, text/vision/transcription/realtime model config, per-agent model selection), then B6. Former B3 note: `frontend/src/features/ed/EdBoard.tsx` — tracking board from `GET /api/v1/ed/board` (visits sorted by ESI, timers, bays, metrics), quick-registration dialog (`POST /ed/arrivals`, incl. "unidentified"), triage dialog (`POST /ed/visits/{id}/triage`), room (`/room`), "Assign me" (`/assign`), disposition (`/disposition`, admit → boarding), reconcile identity (`/reconcile`, attestation); route `/ed` (perm `adt:read`), nav item in "Hospital"; E2E `e2e/ed_flow.py`; add to CI list.
+1. ~~B3 UI~~ and ~~A4b AI Settings~~ done. **Next: B6 pharmacy & inventory + Pharmacy Watchdog.** (Former B3 note:) `frontend/src/features/ed/EdBoard.tsx` — tracking board from `GET /api/v1/ed/board` (visits sorted by ESI, timers, bays, metrics), quick-registration dialog (`POST /ed/arrivals`, incl. "unidentified"), triage dialog (`POST /ed/visits/{id}/triage`), room (`/room`), "Assign me" (`/assign`), disposition (`/disposition`, admit → boarding), reconcile identity (`/reconcile`, attestation); route `/ed` (perm `adt:read`), nav item in "Hospital"; E2E `e2e/ed_flow.py`; add to CI list.
 2. B6 pharmacy & inventory + Pharmacy Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims expansion → B11 OR + rostering (OR-Tools) → B12 portal (discharge instructions/summary, inpatient follow-ups).
 3. Milestone B end-to-end validation: the five B workflows + full regression; then Milestone C (complete Command Center, Agent Studio, cross-department automation, forecasting foundation, patient journey, AI governance, performance/accessibility).
 4. OpenAI live validation when a key is provided (see AI workspace → Check provider connection).

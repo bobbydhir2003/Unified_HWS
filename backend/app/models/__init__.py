@@ -1,3 +1,4 @@
+from app.models.ai_settings import AIProviderSettings
 from app.models.automation import AutomationRun, AutomationWorkflow, Task, VoiceCall
 from app.models.base import Base
 from app.models.billing import Charge, Claim, ClaimEvent, ClaimSubmission, FeeScheduleItem, Invoice, Payment
@@ -67,6 +68,7 @@ from app.models.scheduling import Appointment, AppointmentType, ProviderAvailabi
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "AIProviderSettings",
     "EdVisit",
     "TriageAssessment",
     "DischargePlan",

@@ -1,5 +1,5 @@
 import {
-  Activity, BedDouble, Siren, HeartHandshake, Hospital, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
+  Activity, BedDouble, KeyRound, Siren, HeartHandshake, Hospital, BarChart3, Bot, Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, Inbox, LayoutDashboard, ListChecks, Radar, Sparkles,
   type LucideIcon, Mail, MessageSquare, PhoneCall, Receipt, ScrollText, ServerCog, Settings2, ShieldCheck, Stethoscope, Users, UsersRound, Workflow,
 } from "lucide-react";
 
@@ -61,6 +61,7 @@ export const NAV: NavSection[] = [
       { to: "/admin/outbox", label: "Message outbox", icon: Mail, perm: "users:manage" },
       { to: "/admin/system", label: "System status", icon: ServerCog, perm: "clinic:manage" },
       { to: "/admin/organizations", label: "Organizations", icon: HeartPulse, perm: "org:manage" },
+      { to: "/admin/ai-settings", label: "AI settings", icon: KeyRound, perm: "org:manage" },
     ],
   },
 ];

@@ -12,6 +12,7 @@ from datetime import date
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.ai.config import active_provider
 from app.ai.provider import AIError, get_provider
 from app.core.config import settings
 from app.core.security import now
@@ -64,7 +65,7 @@ def create_document(db: Session, *, org_id: uuid.UUID, data: bytes, filename: st
         uploaded_by_id=uploaded_by_id, sender=sender, suggested_patient_id=patient_hint_id,
     )
     db.add(doc)
-    job = AIJob(organization_id=org_id, kind="document_analysis", provider=settings.ai_provider, subject_type="document",
+    job = AIJob(organization_id=org_id, kind="document_analysis", provider=active_provider(), subject_type="document",
                 subject_id=doc_id, created_by_id=uploaded_by_id)
     db.add(job)
     db.flush()
@@ -168,7 +169,7 @@ def process_document(db: Session, doc_id: uuid.UUID) -> None:
     job = db.scalar(select(AIJob).where(AIJob.subject_id == doc.id, AIJob.status.in_(("queued", "running")))
                     .order_by(AIJob.created_at.desc()))
     if job is None:
-        job = AIJob(organization_id=doc.organization_id, kind="document_analysis", provider=settings.ai_provider,
+        job = AIJob(organization_id=doc.organization_id, kind="document_analysis", provider=active_provider(),
                     subject_type="document", subject_id=doc.id)
         db.add(job)
     job.status = "running"
