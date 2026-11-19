@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, CalendarPlus, ClipboardList, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, ShieldAlert,
+  AlertTriangle, CalendarPlus, ClipboardList, FileStack, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, ShieldAlert,
   ShieldCheck, Stethoscope, StickyNote, Trash2, Users,
 } from "lucide-react";
 import * as React from "react";
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/menu";
 import { Avatar, Skeleton } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { PatientDocumentsTab } from "@/features/documents/DocumentReview";
 import { AppointmentDialog } from "@/features/schedule/AppointmentDialog";
 import { ApiError, del, get, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -143,6 +144,7 @@ const TABS = [
   { key: "history", label: "History", icon: Users, clinical: true },
   { key: "vitals", label: "Vitals", icon: HeartPulse, clinical: true },
   { key: "timeline", label: "Timeline", icon: History, clinical: true },
+  { key: "documents", label: "Documents", icon: FileStack, docs: true },
   { key: "appointments", label: "Appointments", icon: CalendarPlus },
   { key: "demographics", label: "Demographics", icon: Users },
   { key: "notes", label: "Front-desk notes", icon: StickyNote },
@@ -167,7 +169,7 @@ export function PatientChart() {
   if (!pq.data) return <div className="space-y-4"><Skeleton className="h-28 rounded-xl" /><Skeleton className="h-9 w-2/3" /><LoadingRows /></div>;
   const p = pq.data;
   const clinical = can("clinical:read");
-  const tabs = TABS.filter((t) => !t.clinical || clinical);
+  const tabs = TABS.filter((t) => (!t.clinical || clinical) && (!("docs" in t) || can("documents:read")));
 
   const startVisit = async () => {
     setStarting(true);
@@ -206,6 +208,7 @@ export function PatientChart() {
         {tab === "history" && clinical && <HistoryTab patientId={p.id} />}
         {tab === "vitals" && clinical && <VitalsTab patientId={p.id} />}
         {tab === "timeline" && clinical && <TimelineTab patientId={p.id} />}
+        {tab === "documents" && can("documents:read") && <PatientDocumentsTab patientId={p.id} />}
         {tab === "appointments" && <AppointmentsTab patientId={p.id} />}
         {tab === "demographics" && <DemographicsTab p={p} />}
         {tab === "notes" && <AdminNotesTab patientId={p.id} />}
@@ -311,7 +314,7 @@ function VisitsTab({ patientId }: { patientId: string }) {
 }
 
 type TimelineItem = { type: string; id: string; at: string; title: string; detail: string | null; status?: string; by?: string; encounter_id?: string };
-const TL_ICON: Record<string, typeof Stethoscope> = { encounter: Stethoscope, note: FileText, vitals: HeartPulse, appointment: CalendarPlus, problem: ClipboardList, allergy: AlertTriangle };
+const TL_ICON: Record<string, typeof Stethoscope> = { document: FileStack, encounter: Stethoscope, note: FileText, vitals: HeartPulse, appointment: CalendarPlus, problem: ClipboardList, allergy: AlertTriangle };
 
 function TimelineTab({ patientId }: { patientId: string }) {
   const [filter, setFilter] = React.useState<string>("all");
@@ -320,7 +323,7 @@ function TimelineTab({ patientId }: { patientId: string }) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap gap-1.5">
-        {["all", "encounter", "note", "vitals", "appointment", "problem", "allergy"].map((f) => (
+        {["all", "encounter", "note", "vitals", "document", "appointment", "problem", "allergy"].map((f) => (
           <Button key={f} size="xs" variant={filter === f ? "default" : "outline"} onClick={() => setFilter(f)}>{f === "all" ? "All" : titleCase(f)}</Button>
         ))}
       </div>
@@ -328,7 +331,7 @@ function TimelineTab({ patientId }: { patientId: string }) {
         <ol className="relative ml-3 border-l pl-6">
           {items.map((i) => {
             const Icon = TL_ICON[i.type] ?? FileText;
-            const href = i.type === "encounter" ? `/encounters/${i.id}` : i.type === "note" && i.encounter_id ? `/encounters/${i.encounter_id}` : null;
+            const href = i.type === "document" ? `/documents/${i.id}` : i.type === "encounter" ? `/encounters/${i.id}` : i.type === "note" && i.encounter_id ? `/encounters/${i.encounter_id}` : null;
             const body = (
               <>
                 <p className="text-[13.5px] font-medium">{i.title}{i.status && <span className="ml-2 text-xs font-normal text-muted-foreground">{titleCase(i.status)}</span>}</p>

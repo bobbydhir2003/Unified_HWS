@@ -18,7 +18,9 @@
 | Logging | JSON logs with request id, method, path (no query string), status, latency — no bodies or PHI |
 | Transport headers | `nosniff`, `no-referrer`, `no-store`; nginx adds `X-Frame-Options: DENY` |
 | Account enumeration | Forgot-password returns identical responses |
-| Storage | Documents (phase 5) in object storage, served only through authorized API; S3 adapter uses SSE |
+| Documents | Magic-byte type validation, size cap, PHI-free object keys, served only through authorized API with `Content-Security-Policy: sandbox`, `nosniff`, `no-store`; views audited; filed documents inherit patient access rules; never auto-filed |
+| AI | Simulated by default; external provider blocked for PHI unless explicitly allowed; every call logged in `ai_jobs` with a PHI-sent flag; outputs are drafts requiring human confirmation |
+| Webhooks | Fax webhook authenticated with per-org secret (constant-time compare) |
 | Simulation | Email/SMS go to an outbox; eligibility checks are deterministic simulations, labeled in UI |
 
 ## Regression tests (backend/tests)

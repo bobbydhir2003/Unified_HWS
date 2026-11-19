@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # AI. "simulated" never sends data off-box. "anthropic" requires a BAA before real PHI is used.
     ai_provider: Literal["simulated", "anthropic"] = "simulated"
     anthropic_api_key: str | None = None
-    anthropic_model: str = "claude-sonnet-5-5"
+    anthropic_model: str = "claude-opus-5-5"
     ai_phi_allowed: bool = False  # must be explicitly enabled to send PHI to an external provider
 
     @property

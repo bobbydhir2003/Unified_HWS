@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 export type PatientPick = { id: string; name: string; mrn: string; date_of_birth: string; sex_at_birth?: string };
 
-function PatientPicker({ value, onChange }: { value: PatientPick | null; onChange: (p: PatientPick | null) => void }) {
+export function PatientPicker({ value, onChange }: { value: PatientPick | null; onChange: (p: PatientPick | null) => void }) {
   const [q, setQ] = React.useState("");
   const [dq, setDq] = React.useState("");
   React.useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 200); return () => clearTimeout(t); }, [q]);

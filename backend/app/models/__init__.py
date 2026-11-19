@@ -12,6 +12,7 @@ from app.models.clinical import (
     Problem,
     VitalSigns,
 )
+from app.models.documents import AIJob, Document
 from app.models.identity import (
     AuditEvent,
     Clinic,
@@ -31,6 +32,8 @@ from app.models.patients import Patient, PatientAccessGrant, PatientInsurance, P
 from app.models.scheduling import Appointment, AppointmentType, ProviderAvailability
 
 __all__ = [
+    "AIJob",
+    "Document",
     "Allergy",
     "Appointment",
     "AppointmentType",

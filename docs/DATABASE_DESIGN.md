@@ -19,6 +19,7 @@ PostgreSQL 16. UUID primary keys, `timestamptz` everywhere, Alembic migrations i
 | Audit | `audit_events` |
 | Patients | `patients`, `patient_insurances`, `patient_access_grants`, `patient_notes` |
 | Scheduling | `appointment_types`, `provider_availability`, `appointments` |
+| Documents & AI | `documents` (status, AI draft fields, match candidates, reviewer), `ai_jobs` (provider, model, PHI-sent flag, tokens, latency, error) |
 | Clinical | `encounters`, `encounter_diagnoses`, `vital_signs`, `allergies`, `patient_medications`, `problems`, `history_entries`, `clinical_templates`, `clinical_notes`, `clinical_note_versions`, `note_addenda` |
 
 ## Integrity enforced by the database
@@ -50,5 +51,6 @@ PostgreSQL 16. UUID primary keys, `timestamptz` everywhere, Alembic migrations i
 |---|---|
 | `0001` | Core schema (identity, patients, scheduling, clinical) + extensions + integrity triggers + exclusion constraint |
 | `0002` | Notifications |
+| `0003` | Documents, AI jobs (`CHECK status <> 'filed' OR patient_id IS NOT NULL`) |
 
 Objects managed by hand-written SQL (`ix_patients_name_trgm`, the exclusion constraint) are excluded from autogenerate in `alembic/env.py`.

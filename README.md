@@ -11,7 +11,7 @@ docker compose up --build
 ```
 
 - Web: http://localhost:8080
-- API docs: http://localhost:8010/api/docs
+- API docs: http://localhost:8011/api/docs
 
 The API container runs migrations and loads the synthetic seed on start (`SEED_ON_START=true` in `.env.docker`).
 

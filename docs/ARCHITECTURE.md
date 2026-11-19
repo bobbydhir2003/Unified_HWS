@@ -61,6 +61,15 @@ Server state lives in TanStack Query; there is no global client store.
 
 Celery with Redis. `CELERY_EAGER=true` runs tasks inline for local dev/tests. Beat currently schedules appointment reminders (delivery simulated to the outbox).
 
-## AI (planned, phase 5+)
+## AI
 
-`app/ai/provider.py` will expose a provider interface with a deterministic `simulated` provider (default, no network) and an `anthropic` provider that is refused for PHI unless `AI_PHI_ALLOWED=true`. All AI outputs are stored as drafts requiring human approval.
+`app/ai/provider.py` defines the provider interface. `get_provider()` returns:
+
+- `SimulatedProvider` (default): deterministic, local, rule-based. Labeled "Rule-based simulation" in the UI.
+- `AnthropicProvider`: Claude (`claude-opus-5-5` by default) via the official SDK, structured JSON output validated by Pydantic, server-side refusal fallbacks, typed error handling. Raises `AIPolicyError` for PHI unless `AI_PHI_ALLOWED=true`.
+
+Every call is recorded in `ai_jobs` (provider, model, whether PHI left the system, tokens, latency, errors). AI output is always a draft: documents land in `needs_review`; patient matching is rule-based and transparent (score + reasons) and only *suggests* when the top candidate is strong and clearly ahead.
+
+### Document pipeline
+
+`POST /documents` → magic-byte validation → object storage (`{org}/documents/{id}/{sha256}`) → `documents` row + `ai_jobs` row → Celery `process_document` → text extraction (pypdf) → provider analysis → `match_patients` → `needs_review`. Filing (`POST /documents/{id}/file`) requires `documents:review` and an explicit identity attestation.

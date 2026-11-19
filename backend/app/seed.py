@@ -215,7 +215,7 @@ def seed(reset: bool = False) -> None:
 
         # ---- Org 1: Harborview Family Medicine ----
         org = Organization(name="Harborview Family Medicine", slug="harborview",
-                           settings={"synthetic_data": True, "mrn_seq": 100000})
+                           settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": "dev-fax-secret-harborview"})
         db.add(org)
         db.flush()
         tz = "America/New_York"

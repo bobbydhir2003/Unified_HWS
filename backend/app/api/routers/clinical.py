@@ -461,6 +461,11 @@ def timeline(patient_id: uuid.UUID, ctx: TenantContext = Depends(get_ctx)):
     for al in ctx.db.scalars(select(Allergy).where(Allergy.patient_id == p.id, Allergy.status != "entered_in_error")).all():
         items.append({"type": "allergy", "id": str(al.id), "at": al.created_at, "title": f"Allergy: {al.substance}",
                       "detail": al.reaction, "status": al.severity})
+    from app.models import Document
+
+    for d in ctx.db.scalars(select(Document).where(Document.patient_id == p.id, Document.status == "filed")).all():
+        items.append({"type": "document", "id": str(d.id), "at": d.reviewed_at or d.created_at, "title": d.title or "Document",
+                      "detail": d.summary, "status": (d.doc_type or "other")})
     items.sort(key=lambda i: i["at"] or datetime.min, reverse=True)
     return items[:300]
 

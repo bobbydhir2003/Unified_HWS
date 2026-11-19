@@ -27,6 +27,9 @@ for email in ["dr.chen@harborview.dev","frontdesk@harborview.dev","nurse.rivera@
         chk(c,"/appointments",params={"start":(now-dt.timedelta(days=3)).isoformat(),"end":(now+dt.timedelta(days=30)).isoformat(),"clinic_id":clinic,"include_cancelled":True})
         prov=c.get("/providers").json()[0]["id"]
         chk(c,f"/providers/{prov}/slots",params={"clinic_id":clinic,"day":(now+dt.timedelta(days=7)).date().isoformat()})
+    if "documents:read" in m["permissions"]:
+        chk(c,"/documents"); chk(c,"/documents/counts")
+        if "patients:read" in m["permissions"]: chk(c,f"/patients/{pid}/documents")
     if "users:manage" in m["permissions"]: chk(c,"/staff"); chk(c,"/invitations"); chk(c,"/outbox")
     if "audit:read" in m["permissions"]: chk(c,"/audit")
     if "clinic:manage" in m["permissions"]: chk(c,"/system/status"); chk(c,"/clinics",params={"include_inactive":True})

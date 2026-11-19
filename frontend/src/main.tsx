@@ -14,6 +14,8 @@ import { ClinicsPage, SchedulingSetupPage } from "@/features/admin/ClinicsPages"
 import { StaffPage } from "@/features/admin/StaffPage";
 import { AcceptInvitePage, ForgotPasswordPage, LoginPage, ResetPasswordPage } from "@/features/auth/AuthPages";
 import { Dashboard } from "@/features/dashboard/Dashboard";
+import { DocumentReview } from "@/features/documents/DocumentReview";
+import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { EncounterPage } from "@/features/encounters/EncounterPage";
 import { EncountersList } from "@/features/encounters/EncountersList";
 import { PatientChart } from "@/features/patients/PatientChart";
@@ -115,6 +117,13 @@ const router = createBrowserRouter([
                   { index: true, element: <Perm perm="patients:read"><PatientsList /></Perm> },
                   { path: "new", element: <Perm perm="patients:write"><NewPatientPage /></Perm>, handle: { crumb: "Register patient" } },
                   { path: ":patientId/*", element: <Perm perm="patients:read"><PatientChart /></Perm>, handle: { crumb: "Chart" } },
+                ],
+              },
+              {
+                path: "documents", handle: { crumb: "Documents" },
+                children: [
+                  { index: true, element: <Perm perm="documents:read"><DocumentsPage /></Perm> },
+                  { path: ":documentId", element: <Perm perm="documents:read"><DocumentReview /></Perm>, handle: { crumb: "Review" } },
                 ],
               },
               {

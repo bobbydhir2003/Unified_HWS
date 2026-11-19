@@ -37,3 +37,16 @@ def send_appointment_reminders() -> int:
         return len(appts)
     finally:
         db.close()
+
+
+@celery_app.task(name="app.tasks.process_document", autoretry_for=(), acks_late=True)
+def process_document_task(doc_id: str) -> None:
+    import uuid
+
+    from app.services.documents import process_document
+
+    db = SessionLocal()
+    try:
+        process_document(db, uuid.UUID(doc_id))
+    finally:
+        db.close()
