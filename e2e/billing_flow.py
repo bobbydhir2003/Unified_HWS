@@ -12,8 +12,14 @@ with sync_playwright() as pw:
     pg.fill("input[type=email]", "billing@harborview.dev"); pg.fill("input[type=password]", "Undeclared!2026"); pg.click("button[type=submit]")
     pg.wait_for_url(lambda u: '/login' not in u)
     pg.goto("http://localhost:5173/billing?tab=capture"); pg.wait_for_selector("tbody tr")
-    # Pick a visit with a payer (insured) from the queue
-    row = pg.locator("tbody tr", has_not_text="Self-pay").first
+    # Pick an insured visit whose coverage the payer hasn't reported inactive (such claims are correctly held)
+    import httpx
+    api = httpx.Client(base_url="http://localhost:5173/api/v1")
+    t = api.post("/auth/login", json={"email": "billing@harborview.dev", "password": "Undeclared!2026"}).json()
+    api.headers.update({"Authorization": "Bearer " + t["access_token"], "X-Organization-Id": t["me"]["memberships"][0]["organization_id"]})
+    good = next(e for e in api.get("/billing/charge-queue").json() if e["payer"] and
+                api.get(f"/patients/{e['patient']['id']}/coverage").json()["state"] not in ("verified_inactive", "no_coverage"))
+    row = pg.locator("tbody tr", has_text=good["patient"]["name"]).first
     patient = row.locator("td").nth(1).locator("span").first.inner_text()
     row.click(); pg.wait_for_selector("text=Suggested codes")
     pg.screenshot(path=f"{OUT}/billing-01-capture.png")

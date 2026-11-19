@@ -21,7 +21,7 @@ All work is local on branch `dev` (never pushed). Synthetic data only. Not HIPAA
 | A4b AI Settings (Super Admin): write-only OpenAI key (Fernet-encrypted at rest, masked hint only, never logged/returned), provider switch, text/vision/transcription/realtime models, per-agent models, Test connection (authenticates + checks every configured model id via `models.list()`), remove key; UI settings override env. Suggested ids (gpt-4.1-mini, gpt-4o-mini-transcribe, gpt-4o-mini-realtime-preview) are **unverified suggestions** until tested with a real key | ✅ | (A4b commit) |
 | A-demo: `tests/test_milestone_a_journey.py` (registration → inactive coverage detected → fixed → payer re-verified → case auto-closed → check-in → AI scribe → attested sign → completion → follow-up task → claim) + Insurance Guardian & Command Center browser flows | ✅ | (milestone commit) |
 
-## Milestone B — Unified Hospital (in progress)
+## Milestone B — Unified Hospital ✅ complete (2026-11-19)
 
 | Package | Status | Commit |
 |---|---|---|
@@ -47,6 +47,12 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - Production builds: Vite plugin adds a `/*! … */` legal banner to every JS chunk and `<meta name="copyright">`/`<meta name="author">` (verified: all 87 chunks contain it).
 - Metadata: `frontend/package.json` (`author`, `license: "UNLICENSED"` = proprietary, npm convention), `backend/pyproject.toml` (`authors`, proprietary classifier), root `COPYRIGHT` file, README section, headers in `backend/app/main.py`, `frontend/src/main.tsx`, `vite.config.ts`, legal modules.
 - Third-party licenses/notices untouched. **Flags for the owner:** (1) no LICENSE existed before — `UNLICENSED`/All rights reserved is a proprietary stance, confirm it's intended; (2) git commits are authored by "Bobby Dhir" while copyright is attributed to Sidra Riaz Awan — if these are different people, document ownership/assignment in a written agreement; (3) much of the code was produced with AI assistance — protection for AI-generated material varies by jurisdiction; seek legal advice; (4) the abbreviated CPT® list is AMA-licensed content — production use needs an AMA license.
+
+## Milestone B validation (2026-11-19, local dev stack, no reseed, Chrome)
+- Backend `pytest`: **116 passed**; ruff clean; `alembic check` clean through 0023.
+- Browser flows, all passing: insurance_guardian, clinical, documents, scribe, orders, portal_telehealth, billing, ai, analytics, command_center, adt, ed, pharmacy, lab, radiology (15) + api_smoke (no 4xx/5xx for any role).
+- The five Milestone B workflows are covered end to end: ED → admission → bed → transfer → discharge (`test_ed`, `adt_flow`, `ed_flow`); expiring medication → Watchdog case → task → two-person approved waste → verified resolution (`test_pharmacy`, `pharmacy_flow`); lab order → collection → independent verification → clinician result (`test_lab`, `lab_flow`); discharge → missing items → department tasks → completed discharge (`test_discharge`); prior auth → staff review → simulated approval → billing (`test_revenue`).
+- Fixed during validation: outpatient charge-capture queue now excludes inpatient/ED encounters (they're coded in Revenue › Coding queue); billing E2E selects a visit whose coverage isn't payer-inactive (those claims are now correctly held).
 
 ## Tests actually executed (2026-11-19)
 - Backend (latest): **116 passed** (adds test_equipment). After B12: 114. After B11: 112. After B10: 109. After B8: 105. After B7: 104. After B6: 102. After A4b: 98. After B3: 97; after B5: 95. Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.

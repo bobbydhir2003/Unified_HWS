@@ -193,7 +193,8 @@ def charge_queue(days: int = Query(90, le=365), ctx: TenantContext = Depends(req
     invoiced = select(Invoice.encounter_id).where(Invoice.encounter_id.is_not(None), Invoice.status != "void")
     encs = ctx.db.scalars(select(Encounter).join(Patient, Patient.id == Encounter.patient_id).where(
         Encounter.organization_id == ctx.org_id, Encounter.status == "completed", Encounter.completed_at >= now() - timedelta(days=days),
-        Encounter.id.not_in(billed), Encounter.id.not_in(invoiced), Patient.is_restricted.is_(False))
+        Encounter.id.not_in(billed), Encounter.id.not_in(invoiced), Patient.is_restricted.is_(False),
+        Encounter.encounter_type.not_in(("inpatient", "emergency")))  # hospital encounters → Revenue › Coding queue
         .order_by(Encounter.completed_at.desc()).limit(200)).all()
     pending = dict(ctx.db.execute(select(Charge.encounter_id, func.sum(Charge.amount_cents)).where(
         Charge.encounter_id.in_([e.id for e in encs]), Charge.status == "pending").group_by(Charge.encounter_id)).all())
