@@ -25,6 +25,11 @@ jobs:
       - name: Migrations round-trip
         run: uv run alembic upgrade head && uv run alembic downgrade base && uv run alembic upgrade head && uv run alembic check
       - run: uv run pytest -q
+      - name: Generated API types are current
+        run: |
+          uv run python scripts/export_openapi.py
+          cd ../frontend && npx -y openapi-typescript@7.13.0 openapi.json -o src/lib/api-schema.d.ts
+          git diff --exit-code -- openapi.json src/lib/api-schema.d.ts
 
   frontend:
     runs-on: ubuntu-latest

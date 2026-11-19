@@ -60,6 +60,8 @@ LIMITED_PREFIXES = {
 
 
 def rate_limit_bucket(path: str) -> str | None:
+    if path.startswith("/api/v1/"):
+        path = "/api/" + path[len("/api/v1/"):]
     for prefix, bucket in LIMITED_PREFIXES.items():
         if path.startswith(prefix):
             return bucket

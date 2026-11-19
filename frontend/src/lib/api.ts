@@ -65,7 +65,7 @@ function buildUrl(path: string, params?: Opts["params"]) {
     else qs.set(k, String(v));
   }
   const q = qs.toString();
-  return `/api${path}${q ? `?${q}` : ""}`;
+  return `/api/v1${path}${q ? `?${q}` : ""}`;
 }
 
 async function doFetch(path: string, opts: Opts) {
@@ -89,7 +89,7 @@ async function doFetch(path: string, opts: Opts) {
 
 export async function refreshSession<T = unknown>(): Promise<T | null> {
   if (!refreshing) {
-    refreshing = fetch("/api/auth/refresh", { method: "POST", credentials: "include" })
+    refreshing = fetch("/api/v1/auth/refresh", { method: "POST", credentials: "include" })
       .then(async (r) => {
         if (!r.ok) return null;
         const data = await r.json();
@@ -124,3 +124,7 @@ export const post = <T>(path: string, body?: unknown, headers?: Record<string, s
 export const put = <T>(path: string, body: unknown) => api<T>(path, { method: "PUT", body });
 export const patch = <T>(path: string, body: unknown) => api<T>(path, { method: "PATCH", body });
 export const del = <T>(path: string) => api<T>(path, { method: "DELETE" });
+
+/** Generated OpenAPI types (`npm run gen:api`). `Schema<"PatientOut">` → response/request model type. */
+import type { components } from "./api-schema";
+export type Schema<K extends keyof components["schemas"]> = components["schemas"][K];

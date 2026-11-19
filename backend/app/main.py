@@ -52,9 +52,9 @@ metrics = Metrics()
 
 app = FastAPI(
     title="Undeclared API",
-    version="0.1.0",
-    docs_url="/api/docs" if not settings.is_production else None,
-    openapi_url="/api/openapi.json" if not settings.is_production else None,
+    version="1.0.0",
+    docs_url="/api/v1/docs" if not settings.is_production else None,
+    openapi_url="/api/v1/openapi.json" if not settings.is_production else None,
 )
 app.add_middleware(
     CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=True,
@@ -89,7 +89,7 @@ async def request_context(request: Request, call_next):
 @app.exception_handler(StarletteHTTPException)
 async def http_error_handler(request: Request, exc: StarletteHTTPException):
     """FHIR clients expect OperationOutcome resources; everyone else gets the standard {"detail": ...}."""
-    if request.url.path.startswith("/api/fhir/"):
+    if request.url.path.startswith(("/api/fhir/", "/api/v1/fhir/")):
         msg = exc.detail if isinstance(exc.detail, str) else (exc.detail or {}).get("message", "Error")
         code = {401: "login", 403: "forbidden", 404: "not-found"}.get(exc.status_code, "processing")
         return JSONResponse(status_code=exc.status_code, media_type="application/fhir+json",
@@ -118,21 +118,14 @@ async def prometheus_metrics(request: Request):
     return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
 
 
-API = "/api"
-app.include_router(health.router, prefix=API)
-app.include_router(auth.router, prefix=API)
-app.include_router(admin.router, prefix=API)
-app.include_router(patients.router, prefix=API)
-app.include_router(scheduling.router, prefix=API)
-app.include_router(clinical.router, prefix=API)
-app.include_router(workspace.router, prefix=API)
-app.include_router(documents.router, prefix=API)
-app.include_router(scribe.router, prefix=API)
-app.include_router(orders.router, prefix=API)
-app.include_router(portal.router, prefix=API)
-app.include_router(messages.router, prefix=API)
-app.include_router(telehealth.router, prefix=API)
-app.include_router(billing.router, prefix=API)
-app.include_router(ai.router, prefix=API)
-app.include_router(analytics.router, prefix=API)
-app.include_router(fhir.router, prefix=API)
+ROUTERS = [health, auth, admin, patients, scheduling, clinical, workspace, documents, scribe, orders, portal, messages,
+           telehealth, billing, ai, analytics]
+
+# Versioned API (documented). The unversioned /api prefix remains as a hidden compatibility alias so existing
+# clients, webhooks and bookmarks keep working; new clients must use /api/v1.
+for r in ROUTERS:
+    app.include_router(r.router, prefix="/api/v1")
+app.include_router(fhir.router, prefix="/api/v1")
+for r in ROUTERS:
+    app.include_router(r.router, prefix="/api", include_in_schema=False)
+app.include_router(fhir.router, prefix="/api", include_in_schema=False)

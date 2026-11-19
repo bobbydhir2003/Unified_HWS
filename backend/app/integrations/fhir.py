@@ -145,7 +145,7 @@ def lab_res(r: LabResult) -> dict:
 
 
 def _bundle(request: Request, resources: list[dict]) -> JSONResponse:
-    base = str(request.base_url).rstrip("/") + "/api/fhir/R4"
+    base = str(request.base_url).rstrip("/") + "/api/v1/fhir/R4"
     return _resp({"resourceType": "Bundle", "type": "searchset", "total": len(resources), "timestamp": _iso(now()),
                   "link": [{"relation": "self", "url": str(request.url)}],
                   "entry": [{"fullUrl": f"{base}/{r['resourceType']}/{r['id']}", "resource": r, "search": {"mode": "match"}} for r in resources]})

@@ -50,7 +50,7 @@ class Api:
 
     def __getattr__(self, method):
         def call(path, **kw):
-            return getattr(self.c, method)(f"/api{path}", headers={**self.headers, **kw.pop("headers", {})}, **kw)
+            return getattr(self.c, method)(f"/api/v1{path}", headers={**self.headers, **kw.pop("headers", {})}, **kw)
         return call
 
 

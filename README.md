@@ -11,7 +11,7 @@ docker compose up --build
 ```
 
 - Web: http://localhost:8080
-- API docs: http://localhost:8011/api/docs
+- API docs: http://localhost:8011/api/v1/docs
 
 The API container runs migrations and loads the synthetic seed on start (`SEED_ON_START=true` in `.env.docker`).
 
@@ -76,7 +76,7 @@ cd frontend && npm run typecheck && npm run build
 ## Operations & interoperability
 
 - Metrics: `GET /api/metrics` (Prometheus) · readiness: `GET /api/health/ready`
-- FHIR R4 (read): `GET /api/fhir/R4/metadata`, `/Patient/{id}`, `/Observation?patient={id}&category=laboratory`, …
+- FHIR R4 (read): `GET /api/v1/fhir/R4/metadata`, `/Patient/{id}`, `/Observation?patient={id}&category=laboratory`, …
 - Backups: `ops/backup.sh <dir>` / `ops/restore.sh <dump>` (see docs/OPERATIONS.md)
 - AWS reference infrastructure: `infra/aws/` (not applied — see docs/DEPLOYMENT.md)
 - Browser E2E: `e2e/` (Playwright; also in CI)

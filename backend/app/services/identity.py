@@ -62,12 +62,12 @@ def build_me(db: Session, user: User) -> MeOut:
 def set_refresh_cookie(response: Response, token: str) -> None:
     response.set_cookie(
         REFRESH_COOKIE, token, httponly=True, secure=settings.cookie_secure, samesite="strict",
-        path="/api/auth", max_age=settings.refresh_token_days * 86400,
+        path="/api", max_age=settings.refresh_token_days * 86400,
     )
 
 
 def clear_refresh_cookie(response: Response) -> None:
-    response.delete_cookie(REFRESH_COOKIE, path="/api/auth")
+    response.delete_cookie(REFRESH_COOKIE, path="/api")
 
 
 def access_token_for(user: User, session_id: uuid.UUID) -> str:
