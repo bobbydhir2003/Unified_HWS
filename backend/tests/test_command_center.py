@@ -31,7 +31,7 @@ def test_hospital_tiles_and_handoff(as_user):
     tiles = {t["key"]: t for t in h["tiles"]}
     board = admin.get("/adt/board").json()
     assert tiles["beds"]["value"] == board["totals"]["available"]
-    assert sum(d["occupied"] for d in h["occupancy_by_department"]) == board["totals"]["occupied"]
+    assert sum(d["occupied"] for d in h["occupancy_by_department"] if d["kind"] != "emergency") == board["totals"]["occupied"]
     assert all(t["source"] for t in h["tiles"])
     ho = admin.get("/command/handoff").json()
     refs = {i["ref"] for items in ho["sections"].values() for i in items}

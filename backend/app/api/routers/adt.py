@@ -62,6 +62,15 @@ def _bed(ctx: TenantContext, bid: uuid.UUID) -> Location:
     return b
 
 
+def _inpatient_bed(ctx: TenantContext, bid: uuid.UUID) -> Location:
+    """A bed an inpatient can be admitted or transferred to. ED bays are treatment spaces, not inpatient beds."""
+    b = _bed(ctx, bid)
+    dept = ctx.db.get(Department, b.department_id) if b.department_id else None
+    if dept is not None and dept.kind == "emergency":
+        raise bad_request("ED bays can't be used as inpatient beds — choose a bed on an inpatient unit")
+    return b
+
+
 def _err(ctx: TenantContext, fn):
     try:
         fn()
@@ -112,10 +121,12 @@ def bed_board(facility_id: uuid.UUID | None = None, ctx: TenantContext = Depends
             loc = by_id[loc.parent_id]
         return by_id.get(loc.parent_id, loc) if loc.parent_id else loc
 
+    dept_kind = dict(ctx.db.execute(select(Department.id, Department.kind).where(Department.facility_id == f.id)).all())
     units: dict[uuid.UUID, dict] = {}
     for b in (x for x in locs if x.kind == "bed"):
         u = unit_of(b)
         d = units.setdefault(u.id, {"id": u.id, "code": u.code, "name": u.name, "department_id": u.department_id, "beds": [],
+                                    "inpatient": dept_kind.get(u.department_id or b.department_id) != "emergency",
                                     "counts": {"available": 0, "occupied": 0, "reserved": 0, "cleaning": 0, "blocked": 0}})
         d["counts"][b.bed_status] += 1
         s = occ_map.get(b.id)
@@ -136,9 +147,11 @@ def bed_board(facility_id: uuid.UUID | None = None, ctx: TenantContext = Depends
     pending = ctx.db.scalars(select(InpatientStay).where(InpatientStay.facility_id == f.id, InpatientStay.status == "pending")
                              .order_by(InpatientStay.requested_at)).all()
     unit_list = sorted(units.values(), key=lambda u: u["code"])
-    totals = {k: sum(u["counts"][k] for u in unit_list) for k in ("available", "occupied", "reserved", "cleaning", "blocked")}
+    # Inpatient capacity only; ED bays are shown on the board but counted separately.
+    totals = {k: sum(u["counts"][k] for u in unit_list if u["inpatient"]) for k in ("available", "occupied", "reserved", "cleaning", "blocked")}
+    ed_totals = {k: sum(u["counts"][k] for u in unit_list if not u["inpatient"]) for k in ("available", "occupied", "reserved", "cleaning", "blocked")}
     staffed = sum(totals.values()) - totals["blocked"]
-    return {"facility": {"id": f.id, "name": f.name}, "generated_at": now(), "units": unit_list, "totals": totals,
+    return {"facility": {"id": f.id, "name": f.name}, "generated_at": now(), "units": unit_list, "totals": totals, "ed_totals": ed_totals,
             "occupancy_pct": round(100 * totals["occupied"] / staffed, 1) if staffed else None,
             "pending_admissions": [stay_out(ctx, s, bed=None) for s in pending],
             "discharges_ordered": sum(1 for s in occ_map.values() if s.status == "discharge_ordered")}
@@ -236,7 +249,7 @@ def request_admission(body: AdmitIn, ctx: TenantContext = Depends(require(P.ADT_
                                 source=body.admit_source, level_of_care=body.level_of_care, expected_discharge_date=body.expected_discharge_date,
                                 isolation=body.isolation, actor_id=ctx.user.id)
         if body.bed_id:
-            A.admit(ctx.db, s, _bed(ctx, body.bed_id), actor_id=ctx.user.id)
+            A.admit(ctx.db, s, _inpatient_bed(ctx, body.bed_id), actor_id=ctx.user.id)
         holder["s"] = s
     _err(ctx, go)
     ctx.db.commit()
@@ -251,7 +264,7 @@ class BedIn(BaseModel):
 @router.post("/adt/stays/{sid}/assign-bed")
 def assign_bed(sid: uuid.UUID, body: BedIn, ctx: TenantContext = Depends(require(P.ADT_WRITE))):
     s = _stay(ctx, sid)
-    _err(ctx, lambda: A.admit(ctx.db, s, _bed(ctx, body.bed_id), actor_id=ctx.user.id))
+    _err(ctx, lambda: A.admit(ctx.db, s, _inpatient_bed(ctx, body.bed_id), actor_id=ctx.user.id))
     ctx.db.commit()
     return stay_out(ctx, s)
 
@@ -259,7 +272,7 @@ def assign_bed(sid: uuid.UUID, body: BedIn, ctx: TenantContext = Depends(require
 @router.post("/adt/stays/{sid}/transfer")
 def transfer(sid: uuid.UUID, body: BedIn, ctx: TenantContext = Depends(require(P.ADT_WRITE))):
     s = _stay(ctx, sid)
-    _err(ctx, lambda: A.transfer(ctx.db, s, _bed(ctx, body.bed_id), actor_id=ctx.user.id, note=body.note))
+    _err(ctx, lambda: A.transfer(ctx.db, s, _inpatient_bed(ctx, body.bed_id), actor_id=ctx.user.id, note=body.note))
     ctx.db.commit()
     return stay_out(ctx, s)
 

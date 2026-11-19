@@ -83,7 +83,7 @@ export function InpatientDetail() {
           <Button variant="outline" asChild><Link to={`/patients/${s.patient.id}`}>Open chart</Link></Button>
           {s.encounter_id && <Button variant="outline" asChild><Link to={`/encounters/${s.encounter_id}`}><FileText />Documentation</Link></Button>}
           {s.status === "admitted" && can("orders:sign") && <Button onClick={() => setDialog("order")}><LogOut />Order discharge</Button>}
-          {s.status === "discharge_ordered" && can("adt:write") && <Button disabled={!!r && !r.ready && !can("orders:sign")} title={r && !r.ready && !can("orders:sign") ? "Checklist incomplete — a physician can override" : undefined} onClick={() => setDialog(r && !r.ready ? "override" : "discharge")}><CheckCircle2 />Complete discharge</Button>}
+          {s.status === "discharge_ordered" && can("adt:write") && <Button disabled={!r || (!r.ready && !can("orders:sign"))} title={r && !r.ready && !can("orders:sign") ? "Checklist incomplete — a physician can override" : undefined} onClick={() => setDialog(r && !r.ready ? "override" : "discharge")}><CheckCircle2 />Complete discharge</Button>}
         </div>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="p-4"><KeyValue label="Status" value={<StayStatusBadge status={s.status} />} /></Card>

@@ -1,6 +1,6 @@
 # Implementation progress
 
-_Last updated: 2026-11-19_
+_Last updated: 2026-11-19 (handoff checkpoint)_
 
 # Undeclared HMS expansion — Milestones A, B, C
 
@@ -39,7 +39,7 @@ All work is local on branch `dev` (never pushed). Synthetic data only. Not HIPAA
 B1 inpatient/ADT → B2 bed board → B3 ED → B4 nursing → B5 discharge agent → B6 pharmacy + Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims → B11 OR + rostering → B12 portal.
 Foundations already in place: locations with `bed_status`, hospital seed (Harborview General: ED 12 bays, 4B/4C/ICU beds, 4 ORs, pharmacy storage), department-scoped staff, engine + monitors.
 
-## Milestone C — Intelligent Operations (in progress)
+## Milestone C — Intelligent Operations (core packages C1–C8 + 13-step demo complete; open items listed below)
 
 | Package | Status | Commit |
 |---|---|---|
@@ -52,7 +52,12 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 | C6 admin reports: `GET /reports/briefing` (numbered metrics M1… each with its source, high/critical cases C####, top discharge blocker; optional AI narrative kept only if every sentence cites valid refs), `GET /reports/discharge-bottlenecks`; **Insights** page (`/insights`) | ✅ | same |
 | C7 AI evaluations: `ai_eval_runs` (migration 0026); suites `document_extraction_v1` (8 synthetic labeled documents incl. no-identifier and scanned cases; per-field accuracy, invented-value count) and `tool_gate_v1` (allow-list, unknown tool, malformed/extra arguments, missing permission must all be refused); `GET/POST /ai/evaluations`; Evaluations card in AI governance with per-sample drill-down. Found + fixed: tool arguments with unknown fields were silently ignored → now rejected. Known simulated-extractor misses (recorded, not hidden): discharge summary date picks admission date; insurance card effective date read as document date; correspondence typed "other" (score 93%) | ✅ | (C7 commit) |
 | C8 performance & reliability: SQL-statement budgets + 2 s time guard for hot endpoints (cases, command summary, ADT/ED boards, forecasts, briefing, governance, patients) and a flat-query check for the patient journey (`test_performance`); composite indexes for time-window queries (migration 0027: ai_jobs, ed_visits, inpatient_stays admitted/discharged); census history now one query (verified identical to the per-day version on dev data); journey N+1 removed; forecast storage check batched. Reliability: dead-letter test (handler fails MAX_ATTEMPTS → `dead`, visible in `/engine/health`, replay restricted to automation managers, effect applied exactly once). Measured on dev stack: all hot endpoints < 25 ms median at demo scale (not a load test) | ✅ | (C8 commit) |
-| Final 13-step synthetic hospital demo + full regression | ⏳ | |
+| Final 13-step synthetic hospital demo: `backend/tests/test_milestone_c_demo.py` drives one synthetic patient through the real API — ED arrival → triage/rooming/provider → admission request → bed assignment → Command Center tiles change (inpatients, awaiting bed, discharges) → medication shortage → Watchdog case routed to pharmacist + purchase request (requester can't approve; hospital admin approves) → discharge order → missing items with owner tasks (premature discharge refused) → pharmacist/nurse/physician/front desk complete items (signed discharge summary, clinician-approved instructions, booked follow-up) → discharge → facility charges in coding queue + patient journey → Hospital Operations Agent run with tool trace + sourced briefing → audit trail contains every step and approval. **Passes.** Bugs found and fixed by it: ED rooming wasn't audited (now `ed.roomed`); inpatient admission/transfer accepted **ED bays** as inpatient beds (now refused; bed-board dialogs offer inpatient units only); "Available beds" totals counted ED bays (now inpatient beds only, `ed_totals` separate; Command Center matches); "Complete discharge" clickable before readiness loaded (opened the non-override dialog) | ✅ | (demo commit) |
+
+### Milestone C — still open (not claimed complete)
+- **Realtime Voice:** model is selectable/stored in Super Admin → AI settings and checked by Test connection, but **no live voice session uses it yet** (no ephemeral-token endpoint, no browser voice UI). The AI receptionist runs simulated.
+- **Final role-based UI/UX refinement pass** across the 11 roles (layout/accessibility audit, dark mode review, empty states) — not done as a dedicated pass.
+- **OpenAI live validation:** pending — no key configured; every AI path above ran on the simulated/rule-based provider (labeled in the UI).
 
 ## Copyright attribution (owner request, 2026-11-19)
 - Notice **© 2026 Sidra Riaz Awan. All rights reserved.** shown in the staff app footer, patient portal footer, sign-in page, user menu → **About & legal** page (`/about`, public), and in OpenAPI metadata.
@@ -68,7 +73,7 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - Fixed during validation: outpatient charge-capture queue now excludes inpatient/ED encounters (they're coded in Revenue › Coding queue); billing E2E selects a visit whose coverage isn't payer-inactive (those claims are now correctly held).
 
 ## Tests actually executed (2026-11-19)
-- Backend (latest): **136 passed** (adds test_performance ×10, dead-letter test). After C7: 125 (adds evaluation suites test). After C4–C6: 124 (adds test_insights; `insights_flow` browser flow passes). After C2: 121 (adds test_agents). After C1: 117. After B9: 116. After B12: 114. After B11: 112. After B10: 109. After B8: 105. After B7: 104. After B6: 102. After A4b: 98. After B3: 97; after B5: 95. Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
+- Backend (latest, 2026-11-19 end of session): **138 passed** (adds 13-step demo + ED-bay guard). ruff clean; `alembic check` clean through 0027. Browser: all flows pass on the dev DB except `insurance_guardian_flow`, which needs a **fresh seed** (it consumes the portal patient's one seeded inactive-coverage scenario; CI seeds fresh). `adt_flow` made re-runnable (creates its own pending admission/free beds via normal APIs). api_smoke clean. After C8: 136 (adds test_performance ×10, dead-letter test). After C7: 125 (adds evaluation suites test). After C4–C6: 124 (adds test_insights; `insights_flow` browser flow passes). After C2: 121 (adds test_agents). After C1: 117. After B9: 116. After B12: 114. After B11: 112. After B10: 109. After B8: 105. After B7: 104. After B6: 102. After A4b: 98. After B3: 97; after B5: 95. Earlier at Milestone A: **90 passed** (new: test_facilities_rls, test_engine, test_insurance_guardian, test_openai_provider, test_command_center, test_milestone_a_journey). `ruff` clean. `alembic check` clean through 0013.
 - Frontend: `npm run typecheck` and `npm run build` pass.
 - Browser (local dev, fresh seed, Chrome): api_smoke (no 4xx/5xx for any role) + all 8 original flows + `insurance_guardian_flow` + `command_center_flow` passed at Milestone A completion; `adt_flow` passed after B5 and again at the B3 checkpoint; api_smoke clean (no 4xx/5xx) at checkpoint.
 - OpenAI: NOT validated against the live API (no key). Simulated provider used in every run above. To validate: Super Admin → AI settings → enter key → Test connection.
@@ -82,10 +87,11 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - Header still says "clinic" switcher; facility switcher UI to be finished with Command Center.
 
 ## Next actions (exact resume point)
-1. A, B, C1–C8 done. **Next:** the **final 13-step synthetic hospital demo test**, full regression (pytest + all E2E flows + api_smoke), and commit "Milestone C complete".
-2. B6 pharmacy & inventory + Pharmacy Watchdog → B7 lab → B8 radiology → B9 procurement → B10 prior auth/claims expansion → B11 OR + rostering (OR-Tools) → B12 portal (discharge instructions/summary, inpatient follow-ups).
-3. Milestone B end-to-end validation: the five B workflows + full regression; then Milestone C (complete Command Center, Agent Studio, cross-department automation, forecasting foundation, patient journey, AI governance, performance/accessibility).
-4. OpenAI live validation when a key is provided (see AI workspace → Check provider connection).
+Latest commit: see `git log -1` (13-step demo commit on top of `17384a2` C8). First unfinished package: **Realtime Voice live session**.
+1. **Realtime Voice:** backend `POST /ai/realtime/session` (ai:use + feature flag) that mints a short-lived OpenAI Realtime client secret server-side using the stored key and the configured realtime model (never return the permanent key); browser WebRTC voice panel for the AI receptionist using that ephemeral token; synthetic data only; simulated fallback when no key. Verify the realtime model id with Test connection before enabling.
+2. **UI/UX refinement pass** per role (Super Admin, Hospital Admin, Doctor, Nurse, Receptionist, Billing, Pharmacist, Lab, Radiology, Bed Manager, Patient): check each landing page, nav, empty/loading states, keyboard focus, dark mode, mobile width; fix dead buttons.
+3. Re-run full regression (`uv run pytest -q`, every `e2e/*_flow.py` + `api_smoke`), then commit "Milestone C complete" only if 1–2 are done.
+4. OpenAI live validation when a key is provided (Super Admin → AI settings → Test connection), synthetic data only; then run AI governance → Evaluations against the live provider.
 
 ## Resume checklist
 - New module demo data for an existing dev DB: `uv run python -m app.seed_extend` (additive, idempotent).

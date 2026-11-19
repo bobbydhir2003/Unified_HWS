@@ -1,4 +1,4 @@
-"""Hospital flow (synthetic data, fresh seed): pending admission → bed placement → transfer → discharge order →
+"""Hospital flow (synthetic data; re-runnable — creates a pending admission if none): pending admission → bed placement → transfer → discharge order →
 checklist → discharge (audited override) → bed goes to cleaning."""
 import os
 import re
@@ -10,6 +10,39 @@ BASE = os.environ.get("WEB", "http://localhost:5173")
 SHOTS = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("SHOTS", "shots")
 os.makedirs(SHOTS, exist_ok=True)
 errors: list[str] = []
+
+
+def ensure_pending_admission() -> None:
+    """Re-runnable on a long-lived dev database: if no patient awaits a bed, create one the real way
+    (ED arrival → triage → physician admits) through the API. Additive synthetic data only."""
+    import uuid
+
+    import httpx
+
+    def client(email):
+        c = httpx.Client(base_url=f"{BASE}/api/v1", timeout=30)
+        c.headers["Authorization"] = "Bearer " + c.post("/auth/login", json={"email": email, "password": "Undeclared!2026"}).json()["access_token"]
+        return c
+
+    bedm = client("bedmanager@harborview.dev")
+    board = bedm.get("/adt/board").json()
+    # The flow needs a few free inpatient beds: housekeeping finishes beds that are waiting for cleaning.
+    free = [b for u in board["units"] if u.get("inpatient", True) for b in u["beds"] if b["status"] == "available"]
+    cleaning = [b for u in board["units"] if u.get("inpatient", True) for b in u["beds"] if b["status"] == "cleaning"]
+    for b in cleaning[: max(0, 4 - len(free))]:
+        bedm.post(f"/beds/{b['id']}/status", json={"to": "available", "reason": "Cleaning complete"}).raise_for_status()
+    if board["pending_admissions"]:
+        return
+    front, nurse, doc = client("frontdesk@harborview.dev"), client("nurse.kim@harborview.dev"), client("dr.santos@harborview.dev")
+    pt = front.post("/patients", json={"first_name": "Avery", "last_name": f"Board{uuid.uuid4().hex[:5]}", "date_of_birth": "1972-02-02",
+                                       "sex_at_birth": "female", "confirm_not_duplicate": True}).json()
+    v = nurse.post("/ed/arrivals", json={"patient_id": pt["id"], "chief_complaint": "Cellulitis, needs IV antibiotics"}).json()
+    nurse.post(f"/ed/visits/{v['id']}/triage", json={"esi_level": 3})
+    r = doc.post(f"/ed/visits/{v['id']}/disposition", json={"disposition": "admit", "admit_reason": "Cellulitis", "level_of_care": "med_surg"})
+    r.raise_for_status()
+
+
+ensure_pending_admission()
 
 with sync_playwright() as p:
     b = p.chromium.launch(channel=os.environ.get("E2E_BROWSER_CHANNEL", "chrome") or None, headless=True)

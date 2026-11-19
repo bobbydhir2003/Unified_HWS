@@ -164,7 +164,7 @@ def hospital_section(ctx: TenantContext, fids) -> dict:
     for d in by_dept.values():
         staffed = sum(d[k] for k in ("available", "occupied", "cleaning", "reserved"))
         d["occupancy_pct"] = round(100 * d["occupied"] / staffed) if staffed else None
-    tot = {k: sum(d[k] for d in by_dept.values()) for k in ("available", "occupied", "cleaning", "blocked")}
+    tot = {k: sum(d[k] for d in by_dept.values() if d["kind"] != "emergency") for k in ("available", "occupied", "cleaning", "blocked")}  # inpatient beds
     stays = dict(db.execute(select(InpatientStay.status, func.count()).where(InpatientStay.facility_id.in_(hosp_ids),
                                                                              InpatientStay.status.in_(("pending", "admitted", "discharge_ordered")))
                             .group_by(InpatientStay.status)).all())

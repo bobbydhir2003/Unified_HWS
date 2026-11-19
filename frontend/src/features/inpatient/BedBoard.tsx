@@ -21,7 +21,7 @@ import { AdmitDialog, BED_STYLE, BedStatusChip, losLabel, type StayT } from "./s
 type BedT = { id: string; code: string; name: string; room: string | null; status: string; status_reason: string | null; since: string | null;
   ed_visit: null | { id: string; status: string; esi: number | null; patient_name: string };
   stay: null | { id: string; status: string; patient_name: string; patient_id: string | null; mrn: string | null; los_hours: number | null; isolation: string | null; discharge_ordered: boolean; attending: string | null; expected_discharge_date: string | null } };
-type Board = { facility: { id: string; name: string }; units: { id: string; code: string; name: string; beds: BedT[]; counts: Record<string, number> }[]; totals: Record<string, number>; occupancy_pct: number | null; pending_admissions: StayT[]; discharges_ordered: number };
+type Board = { facility: { id: string; name: string }; units: { id: string; code: string; name: string; inpatient: boolean; beds: BedT[]; counts: Record<string, number> }[]; totals: Record<string, number>; ed_totals?: Record<string, number>; occupancy_pct: number | null; pending_admissions: StayT[]; discharges_ordered: number };
 
 export function BedBoard() {
   const facs = useFacilities();
@@ -118,7 +118,7 @@ function BedDialog({ bed, board, onClose }: { bed: BedT | null; board?: Board; o
   const [admit, setAdmit] = React.useState(false);
   const [target, setTarget] = React.useState("");
   if (!bed) return null;
-  const free = (board?.units ?? []).flatMap((u) => u.beds.filter((b) => b.status === "available" && b.id !== bed.id).map((b) => ({ ...b, unit: u.name })));
+  const free = (board?.units ?? []).filter((u) => u.inpatient).flatMap((u) => u.beds.filter((b) => b.status === "available" && b.id !== bed.id).map((b) => ({ ...b, unit: u.name })));
   const manage = can("beds:manage");
   return (
     <>
@@ -157,7 +157,7 @@ function BedDialog({ bed, board, onClose }: { bed: BedT | null; board?: Board; o
 function PlaceDialog({ stay, board, onClose }: { stay: StayT; board: Board; onClose: () => void }) {
   const act = useAct();
   const [bedId, setBedId] = React.useState("");
-  const free = board.units.flatMap((u) => u.beds.filter((b) => b.status === "available").map((b) => ({ ...b, unit: u })));
+  const free = board.units.filter((u) => u.inpatient).flatMap((u) => u.beds.filter((b) => b.status === "available").map((b) => ({ ...b, unit: u })));
   const preferred = free.filter((b) => stay.level_of_care === "icu" ? b.unit.code === "ICU" : b.unit.code !== "ICU" && b.unit.code !== "ED");
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>

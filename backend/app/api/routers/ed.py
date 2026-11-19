@@ -160,6 +160,7 @@ def room(vid: uuid.UUID, body: RoomIn, ctx: TenantContext = Depends(require(P.ED
     if not bay or bay.organization_id != ctx.org_id:
         raise not_found("Bay")
     _err(ctx, lambda: E.room(ctx.db, v, bay, actor_id=ctx.user.id))
+    ctx.audit("ed.roomed", resource_type="ed_visit", resource_id=v.id, patient_id=v.patient_id, details={"bay_id": str(bay.id)})
     ctx.db.commit()
     return visit_out(ctx, v)
 

@@ -97,3 +97,24 @@ def test_blocking_needs_reason(as_user):
         assert db.get(Location, uuid.UUID(b["id"])).bed_status == "available"
     finally:
         db.close()
+
+
+def test_ed_bays_are_not_inpatient_beds(as_user):
+    doc, bedm, front = as_user("dr.santos@harborview.dev"), as_user("bedmanager@harborview.dev"), as_user("frontdesk@harborview.dev")
+    import uuid as _u
+
+    p = front.post("/patients", json={"first_name": "Bay", "last_name": f"Guard{_u.uuid4().hex[:5]}", "date_of_birth": "1966-06-06",
+                                      "sex_at_birth": "male", "confirm_not_duplicate": True}).json()
+    board = bedm.get("/adt/board").json()
+    ed_bay = next(b for u in board["units"] if not u["inpatient"] for b in u["beds"] if b["status"] == "available")
+    ward = next(b for u in board["units"] if u["inpatient"] for b in u["beds"] if b["status"] == "available")
+    r = doc.post("/adt/stays", json={"patient_id": p["id"], "reason": "Observation", "bed_id": ed_bay["id"]})
+    assert r.status_code == 400 and "ED bays" in r.text
+    s = doc.post("/adt/stays", json={"patient_id": p["id"], "reason": "Observation", "bed_id": ward["id"]}).json()
+    assert s["status"] == "admitted"
+    assert bedm.post(f"/adt/stays/{s['id']}/transfer", json={"bed_id": ed_bay["id"]}).status_code == 400
+    # Capacity counts inpatient beds only; ED bays are reported separately.
+    assert board["totals"]["available"] == sum(u["counts"]["available"] for u in board["units"] if u["inpatient"])
+    assert board["ed_totals"]["available"] == sum(u["counts"]["available"] for u in board["units"] if not u["inpatient"])
+    tiles = {t["key"]: t["value"] for t in as_user("hospitaladmin@harborview.dev").get("/command/summary").json()["hospital"]["tiles"]}
+    assert tiles["beds"] == bedm.get("/adt/board").json()["totals"]["available"]
