@@ -19,6 +19,6 @@ Every external dependency sits behind an adapter. Until a real, contracted and v
 | Referrals | Simulated fax delivery; manual status tracking | `routers/orders.py` | Direct messaging / fax vendor |
 | Clearinghouse claims (837/835) | Planned (phase 9), simulated | — | Clearinghouse partner |
 | Payments | Planned (phase 9), simulated | — | PCI-compliant processor (tokenized) |
-| Telehealth video | Planned (phase 8) | — | Established WebRTC SDK with BAA |
+| Telehealth video | Browser WebRTC (peer-to-peer, STUN only) with authenticated API signaling | `routers/telehealth.py`, `features/telehealth/VideoVisit.tsx` | BAA-covered video vendor (e.g. TURN/SFU, bandwidth adaptation); swap `join` to return vendor tokens |
 | Telephony / AI receptionist | Planned (phase 10), sandbox | — | Telephony provider with BAA |
 | FHIR R4 | Planned (phase 12) | — | Read API for Patient, Encounter, Condition, AllergyIntolerance, Observation |

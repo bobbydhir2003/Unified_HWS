@@ -17,6 +17,8 @@ import { Dashboard } from "@/features/dashboard/Dashboard";
 import { DocumentReview } from "@/features/documents/DocumentReview";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { OrdersPage } from "@/features/orders/OrdersPages";
+import { MessagesPage } from "@/features/messages/MessagesPage";
+import { VideoVisit } from "@/features/telehealth/VideoVisit";
 import { EncounterPage } from "@/features/encounters/EncounterPage";
 import { EncountersList } from "@/features/encounters/EncountersList";
 import { PatientChart } from "@/features/patients/PatientChart";
@@ -120,6 +122,8 @@ const router = createBrowserRouter([
                   { path: ":patientId/*", element: <Perm perm="patients:read"><PatientChart /></Perm>, handle: { crumb: "Chart" } },
                 ],
               },
+              { path: "messages", element: <Perm perm="messages:use"><MessagesPage /></Perm>, handle: { crumb: "Messages" } },
+              { path: "telehealth/:appointmentId", element: <Perm perm="clinical:read"><VideoVisit /></Perm>, handle: { crumb: "Video visit" } },
               { path: "orders", element: <Perm perm="clinical:read"><OrdersPage /></Perm>, handle: { crumb: "Orders" } },
               {
                 path: "documents", handle: { crumb: "Documents" },

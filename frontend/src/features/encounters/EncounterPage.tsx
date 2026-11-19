@@ -299,6 +299,31 @@ function Diagnoses({ enc, onChanged }: { enc: EncounterDetail; onChanged: () => 
   );
 }
 
+type Intake = { submitted_at: string; reviewed_at: string | null; answers: {
+  reason_details: string; symptoms: string[]; symptom_duration: string | null; pain_score: number | null; medications_confirmed: boolean;
+  medication_changes: string | null; allergies_confirmed: boolean; allergy_changes: string | null; phq2_interest: number; phq2_mood: number;
+  questions_for_clinician: string | null } };
+
+function IntakeCard({ appointmentId }: { appointmentId: string }) {
+  const q = useQuery({ queryKey: ["intake-staff", appointmentId], queryFn: () => get<Intake | null>(`/appointments/${appointmentId}/intake`) });
+  if (!q.data) return null;
+  const a = q.data.answers;
+  const phq2 = a.phq2_interest + a.phq2_mood;
+  return (
+    <Card className="border-primary/25">
+      <CardHeader className="pb-2"><CardTitle>Pre-visit intake</CardTitle><span className="text-xs text-muted-foreground">from patient · {fmtDateTime(q.data.submitted_at)}</span></CardHeader>
+      <CardContent className="space-y-2 text-[13px]">
+        <p>{a.reason_details}</p>
+        {!!a.symptoms.length && <p><span className="text-muted-foreground">Symptoms:</span> {a.symptoms.join(", ")}{a.symptom_duration ? ` · ${a.symptom_duration}` : ""}{a.pain_score != null ? ` · pain ${a.pain_score}/10` : ""}</p>}
+        {!a.medications_confirmed && <p className="text-warning"><strong>Medication changes:</strong> {a.medication_changes || "patient indicated the list is incorrect"}</p>}
+        {!a.allergies_confirmed && <p className="text-destructive"><strong>Allergy changes:</strong> {a.allergy_changes || "patient indicated the list is incorrect"}</p>}
+        <p className={phq2 >= 3 ? "font-medium text-destructive" : "text-muted-foreground"}>PHQ-2 score {phq2}/6{phq2 >= 3 ? " — positive screen; consider PHQ-9" : ""}</p>
+        {a.questions_for_clinician && <p><span className="text-muted-foreground">Questions:</span> {a.questions_for_clinician}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function EncounterPage() {
   const { encounterId = "" } = useParams();
   const { can } = useAuth();
@@ -428,6 +453,7 @@ export function EncounterPage() {
               ) : <p className="text-[13px] text-muted-foreground">Not recorded for this visit.</p>}
             </CardContent>
           </Card>
+          {enc.appointment_id && <IntakeCard appointmentId={enc.appointment_id} />}
           <Diagnoses enc={enc} onChanged={refresh} />
           {can("clinical:read") && <EncounterOrdersCard patientId={enc.patient_id} encounterId={enc.id} diagnosisCodes={enc.diagnoses.map((d) => d.code)} editable={open} />}
           {summary.data?.clinical_access && (

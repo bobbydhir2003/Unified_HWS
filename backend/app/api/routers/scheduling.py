@@ -450,4 +450,19 @@ def front_desk_queue(clinic_id: uuid.UUID, day: date | None = None, ctx: TenantC
     return {"clinic_id": clinic.id, "date": day, "timezone": clinic.timezone, "counts": counts, "appointments": items}
 
 
+@router.get("/appointments/{appt_id}/intake")
+def appointment_intake(appt_id: uuid.UUID, ctx: TenantContext = Depends(require(P.SCHEDULE_READ))):
+    from app.models import IntakeSubmission
+
+    a = _get_appt(ctx, appt_id)
+    s = ctx.db.scalar(select(IntakeSubmission).where(IntakeSubmission.appointment_id == a.id))
+    if not s:
+        return None
+    if not s.reviewed_at and ctx.can(P.CLINICAL_READ):
+        s.reviewed_at, s.reviewed_by_id = now(), ctx.user.id
+        ctx.audit("intake.reviewed", resource_type="appointment", resource_id=a.id, patient_id=a.patient_id)
+        ctx.db.commit()
+    return {"submitted_at": s.submitted_at, "reviewed_at": s.reviewed_at, "answers": s.answers}
+
+
 __all__ = ["router", "appointment_out"]

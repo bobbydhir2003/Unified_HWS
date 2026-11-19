@@ -1,5 +1,5 @@
 import {
-  Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, HeartPulse, LayoutDashboard, type LucideIcon, Mail, ScrollText,
+  Building2, CalendarDays, ClipboardList, ClipboardPen, FileStack, MessageSquare, HeartPulse, LayoutDashboard, type LucideIcon, Mail, ScrollText,
   ServerCog, Settings2, Stethoscope, Users, UsersRound,
 } from "lucide-react";
 
@@ -13,6 +13,7 @@ export const NAV: NavSection[] = [
       { to: "/front-desk", label: "Front desk", icon: ClipboardList, perm: "schedule:read" },
       { to: "/schedule", label: "Schedule", icon: CalendarDays, perm: "schedule:read" },
       { to: "/patients", label: "Patients", icon: UsersRound, perm: "patients:read" },
+      { to: "/messages", label: "Messages", icon: MessageSquare, perm: "messages:use" },
       { to: "/orders", label: "Orders", icon: ClipboardPen, perm: "clinical:read" },
       { to: "/documents", label: "Documents", icon: FileStack, perm: "documents:read" },
       { to: "/encounters", label: "My visits", icon: Stethoscope, perm: "clinical:read", providerOnly: true },

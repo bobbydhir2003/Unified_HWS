@@ -151,7 +151,7 @@ function OrgSwitcher({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-function Notifications() {
+export function Notifications() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data } = useQuery({

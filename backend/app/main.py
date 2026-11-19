@@ -13,10 +13,13 @@ from app.api.routers import (
     clinical,
     documents,
     health,
+    messages,
     orders,
     patients,
+    portal,
     scheduling,
     scribe,
+    telehealth,
     workspace,
 )
 from app.core.config import settings
@@ -77,3 +80,6 @@ app.include_router(workspace.router, prefix=API)
 app.include_router(documents.router, prefix=API)
 app.include_router(scribe.router, prefix=API)
 app.include_router(orders.router, prefix=API)
+app.include_router(portal.router, prefix=API)
+app.include_router(messages.router, prefix=API)
+app.include_router(telehealth.router, prefix=API)

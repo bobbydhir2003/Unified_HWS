@@ -30,10 +30,22 @@ from app.models.identity import (
 )
 from app.models.orders import LabResult, Order
 from app.models.patients import Patient, PatientAccessGrant, PatientInsurance, PatientNote
+from app.models.portal import (
+    IntakeSubmission,
+    MessageThread,
+    SecureMessage,
+    TelehealthSession,
+    TelehealthSignal,
+)
 from app.models.scheduling import Appointment, AppointmentType, ProviderAvailability
 from app.models.scribe import ScribeSession
 
 __all__ = [
+    "TelehealthSignal",
+    "TelehealthSession",
+    "SecureMessage",
+    "MessageThread",
+    "IntakeSubmission",
     "AIJob",
     "Document",
     "Allergy",

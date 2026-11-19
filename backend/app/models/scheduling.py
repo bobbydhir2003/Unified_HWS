@@ -67,6 +67,7 @@ class Appointment(UUIDPk, Timestamps, OrgScoped, Base):
     roomed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     checked_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    booked_via: Mapped[str] = mapped_column(String(10), default="staff", server_default="staff")  # staff | portal
     booked_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL")
     rescheduled_from_id: Mapped[uuid.UUID | None] = fk("appointments.id", nullable=True, ondelete="SET NULL")
 

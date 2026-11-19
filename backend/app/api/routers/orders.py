@@ -377,6 +377,12 @@ def simulate_result(oid: uuid.UUID, ctx: TenantContext = Depends(require(P.ORDER
     return order_out(o, p)
 
 
+def _notify_patient_release(ctx: TenantContext, o: Order) -> None:
+    p = ctx.db.get(Patient, o.patient_id)
+    if p and p.portal_user_id:
+        notify(ctx.db, ctx.org_id, p.portal_user_id, "result_released", "New test results are available", o.title, "/portal/results")
+
+
 @router.post("/orders/{oid}/review", response_model=OrderOut)
 def review_results(oid: uuid.UUID, release_to_patient: bool = False, ctx: TenantContext = Depends(require(P.ORDERS_SIGN))):
     o = _order(ctx, oid)
@@ -385,6 +391,7 @@ def review_results(oid: uuid.UUID, release_to_patient: bool = False, ctx: Tenant
     o.results_reviewed_by_id, o.results_reviewed_at, o.status = ctx.user.id, now(), "completed"
     if release_to_patient:
         o.released_to_patient_at = now()
+        _notify_patient_release(ctx, o)
     ctx.audit("order.results_reviewed", resource_type="order", resource_id=o.id, patient_id=o.patient_id,
               details={"released": release_to_patient})
     ctx.db.commit()
@@ -396,7 +403,9 @@ def release_results(oid: uuid.UUID, ctx: TenantContext = Depends(require(P.ORDER
     o = _order(ctx, oid)
     if not o.results_reviewed_at:
         raise bad_request("Results must be reviewed before release")
-    o.released_to_patient_at = o.released_to_patient_at or now()
+    if not o.released_to_patient_at:
+        o.released_to_patient_at = now()
+        _notify_patient_release(ctx, o)
     ctx.audit("order.results_released", resource_type="order", resource_id=o.id, patient_id=o.patient_id)
     ctx.db.commit()
     return order_out(o, ctx.db.get(Patient, o.patient_id))
