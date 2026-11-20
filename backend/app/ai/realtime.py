@@ -51,10 +51,13 @@ def mint_client_secret(*, org_id: uuid.UUID, user_id: uuid.UUID, contains_phi: b
     body = {"session": {"type": "realtime", "model": e.realtime_model, "instructions": instructions, "audio": {"output": {"voice": voice}}}}
     # Pseudonymous safety identifier (no names/emails): hash of org + user.
     safety_id = hashlib.sha256(f"{org_id}:{user_id}".encode()).hexdigest()[:32]
+    from app.ai import demo_scope
+
     http = client or httpx.Client(timeout=15)
     try:
-        r = http.post(CLIENT_SECRETS_URL, json=body, headers={"Authorization": f"Bearer {e.api_key}", "Content-Type": "application/json",
-                                                              "OpenAI-Safety-Identifier": safety_id})
+        with demo_scope.guard():
+            r = http.post(CLIENT_SECRETS_URL, json=body, headers={"Authorization": f"Bearer {e.api_key}", "Content-Type": "application/json",
+                                                                  "OpenAI-Safety-Identifier": safety_id})
     except httpx.HTTPError as ex:
         raise AIError(f"Could not reach OpenAI: {type(ex).__name__}") from None
     finally:

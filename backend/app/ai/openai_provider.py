@@ -102,8 +102,16 @@ class OpenAICore:
                                 "Enable only with a BAA and data-flow review, or use synthetic organizations.")
 
     def _call(self, **kw):
+        from app.ai import demo_scope
+
         try:
-            return self.client.responses.create(**kw)
+            with demo_scope.guard():
+                resp = self.client.responses.create(**kw)
+            u = getattr(resp, "usage", None)
+            demo_scope.record_cost(estimate_cost(kw.get("model"), getattr(u, "input_tokens", None), getattr(u, "output_tokens", None)))
+            return resp
+        except self._o.NotFoundError as e:
+            raise AIError(f"Model '{kw.get('model')}' is not available to this API key. Choose another model in AI settings and run Test connection.") from e
         except self._o.AuthenticationError as e:
             raise AIError("OpenAI rejected the API key (check OPENAI_API_KEY).") from e
         except self._o.RateLimitError as e:
@@ -189,8 +197,11 @@ class OpenAICore:
         start = time.perf_counter()
         ext = {"audio/webm": "webm", "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/wav": "wav", "audio/x-wav": "wav", "audio/mp4": "m4a"}
         try:
-            r = self.client.audio.transcriptions.create(model=self.cfg.transcription_model,
-                                                        file=(f"audio.{ext.get(content_type.split(';')[0], 'webm')}", audio, content_type))
+            from app.ai import demo_scope
+
+            with demo_scope.guard():
+                r = self.client.audio.transcriptions.create(model=self.cfg.transcription_model,
+                                                            file=(f"audio.{ext.get(content_type.split(';')[0], 'webm')}", audio, content_type))
         except self._o.APIError as e:
             raise AIError(f"Transcription failed ({type(e).__name__}).") from e
         return r.text, CallMeta("openai", self.cfg.transcription_model, None, None, int((time.perf_counter() - start) * 1000), contains_phi)
@@ -199,7 +210,12 @@ class OpenAICore:
         """Authenticates and checks that every configured model is available to this account (models.list)."""
         start = time.perf_counter()
         try:
-            ids = {m.id for m in self.client.models.list()}
+            from app.ai import demo_scope
+
+            with demo_scope.guard():
+                ids = {m.id for m in self.client.models.list()}
+        except AIError as e:  # demo limits
+            return {"ok": False, "error": str(e)}
         except self._o.AuthenticationError:
             return {"ok": False, "error": "Authentication failed — check the API key"}
         except self._o.APIError as e:

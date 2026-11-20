@@ -85,9 +85,10 @@ def _out(s: ScribeSession) -> ScribeOut:
 
 
 def _queue_draft(s: ScribeSession) -> None:
+    from app.ai.demo_scope import current_token as ai_scope_token
     from app.tasks import scribe_draft_task
 
-    scribe_draft_task.delay(str(s.id))
+    scribe_draft_task.delay(str(s.id), ai_scope=ai_scope_token())
 
 
 @router.get("/encounters/{encounter_id}/scribe", response_model=ScribeOut | None)
@@ -137,9 +138,10 @@ async def upload_audio(sid: uuid.UUID, file: UploadFile = File(...), seconds: in
     ctx.audit("scribe.audio_uploaded", resource_type="scribe_session", resource_id=s.id, patient_id=s.patient_id,
               details={"seconds": seconds})
     ctx.db.commit()
+    from app.ai.demo_scope import current_token as ai_scope_token
     from app.tasks import scribe_transcribe_task
 
-    scribe_transcribe_task.delay(str(s.id))
+    scribe_transcribe_task.delay(str(s.id), ai_scope=ai_scope_token())
     ctx.db.refresh(s)
     return _out(s)
 

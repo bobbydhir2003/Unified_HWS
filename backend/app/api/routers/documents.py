@@ -126,9 +126,10 @@ def _detail(ctx: TenantContext, d: Document) -> DocumentDetail:
 
 
 def _enqueue(doc_id: uuid.UUID) -> None:
+    from app.ai.demo_scope import current_token as ai_scope_token
     from app.tasks import process_document_task
 
-    process_document_task.delay(str(doc_id))
+    process_document_task.delay(str(doc_id), ai_scope=ai_scope_token())
 
 
 @router.post("/documents", response_model=DocumentDetail, status_code=201)

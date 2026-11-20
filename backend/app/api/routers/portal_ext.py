@@ -108,9 +108,10 @@ async def upload_document(file: UploadFile = File(...), pp=Depends(portal_patien
              dedupe_key=f"task:portaldoc:{doc.id}", kind="documents.portal_upload", link=f"/documents/{doc.id}", patient_id=p.id)
     ctx.audit("portal.document_uploaded", resource_type="document", resource_id=doc.id, patient_id=p.id)
     ctx.db.commit()
+    from app.ai.demo_scope import current_token as ai_scope_token
     from app.tasks import process_document_task
 
-    process_document_task.delay(str(doc.id))
+    process_document_task.delay(str(doc.id), ai_scope=ai_scope_token())
     return {"id": doc.id, "message": "Thanks — your care team will review it."}
 
 

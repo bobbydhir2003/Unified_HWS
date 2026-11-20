@@ -390,8 +390,9 @@ async def portal_update(file: UploadFile | None = File(None), request_id: uuid.U
     publish(ctx.db, ctx.org_id, "insurance", patient_id=p.id)
     ctx.db.commit()
     if doc_id:
+        from app.ai.demo_scope import current_token as ai_scope_token
         from app.tasks import process_document_task
 
-        process_document_task.delay(str(doc_id))
+        process_document_task.delay(str(doc_id), ai_scope=ai_scope_token())
     return {"message": "Thanks — our team will confirm your insurance and let you know if anything else is needed.",
             "request_id": req.id}

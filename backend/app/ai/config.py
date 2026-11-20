@@ -64,6 +64,11 @@ def _load() -> EffectiveAI:
 
 
 def effective() -> EffectiveAI:
+    from app.ai import demo_scope
+
+    scoped = demo_scope.current()  # demo sessions never see the platform configuration
+    if scoped is not None:
+        return scoped
     now = time.monotonic()
     if _CACHE["value"] is None or now - _CACHE["at"] > TTL:
         _CACHE["value"], _CACHE["at"] = _load(), now

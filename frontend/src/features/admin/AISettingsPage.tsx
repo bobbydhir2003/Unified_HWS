@@ -17,6 +17,8 @@ type Settings = {
   models: Record<"text" | "vision" | "transcription" | "realtime", string | null>; agent_models: Record<string, string>; agents: string[];
   suggested: Record<string, string>; last_test: null | { at: string; ok: boolean; models?: Record<string, boolean>; error?: string; available_count?: number };
   active_provider: string; phi_allowed: boolean; encryption: string; demo_restricted?: boolean;
+  demo_scope?: { isolated: boolean; expires_at: string | null; shared_demo_key: boolean;
+    usage: { requests_last_hour: number; cost_usd: number; limits: { requests_per_hour: number; concurrency: number; cost_usd: number } } };
 };
 type TestResult = { ok: boolean; models?: Record<string, boolean>; error?: string; available_count?: number; latency_ms?: number };
 
@@ -56,6 +58,15 @@ export function AISettingsPage() {
     <>
       <PageHeader title="AI settings" description="Platform AI provider for every organization. The API key is encrypted on the server and can never be viewed again — only replaced or removed."
         actions={s.active_provider === "openai" ? <Badge variant="ai">Live: OpenAI</Badge> : <SimulatedBadge label="Rule-based simulation active" />} />
+      {s.demo_scope && (
+        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-[13.5px]" data-testid="ai-demo-scope">
+          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-primary" />
+          <div className="space-y-1">
+            <p><strong>Demo session settings.</strong> Everything you save here applies only to this demo sign-in — the platform configuration and other visitors are never affected. A key you enter is checked with OpenAI, stored encrypted, never shown again, and deleted when this session expires{s.demo_scope.expires_at ? ` (${fmtDateTime(s.demo_scope.expires_at)})` : ""}.</p>
+            <p className="text-muted-foreground">Limits: {s.demo_scope.usage.limits.requests_per_hour} AI requests per hour, {s.demo_scope.usage.limits.concurrency} at a time, ${s.demo_scope.usage.limits.cost_usd.toFixed(2)} estimated spend. Used this hour: {s.demo_scope.usage.requests_last_hour}.{s.demo_scope.shared_demo_key ? " Without your own key, the shared demo project key is used." : " Without your own key, AI runs in the labeled simulation."}</p>
+          </div>
+        </div>
+      )}
       {s.demo_restricted && (
         <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning-soft/60 p-4 text-[13.5px]" data-testid="ai-demo-notice">
           <Lock className="mt-0.5 size-4 shrink-0" />

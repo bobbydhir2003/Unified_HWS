@@ -59,6 +59,19 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - **Final role-based UI/UX refinement pass** across the 11 roles (layout/accessibility audit, dark mode review, empty states) — not done as a dedicated pass.
 - **OpenAI live validation:** pending — no key configured; every AI path above ran on the simulated/rule-based provider (labeled in the UI).
 
+## Demo AI settings, session-scoped (2026-11-20) ✅
+- **What changed:** the demo Super Admin can now use AI settings end to end (key, models, per-agent models, Test
+  connection) and Agent Studio edits. Everything saves to that sign-in session's isolated `demo_ai_settings` row, not the
+  platform configuration.
+- **Key handling:** keys are validated with OpenAI before saving, encrypted at rest, never returned, and deleted on expiry.
+- **Isolation:** demo requests never fall back to the platform key (order: session settings, then
+  `DEMO_OPENAI_API_KEY`, then simulation). Background tasks carry the scope.
+- **Limits:** per-session request, concurrency and cost limits, plus a cap for the shared demo key.
+- **Errors:** an unavailable model now produces an explicit "model not available to this API key" error.
+- **Files:** `app/ai/demo_scope.py`, `ai_admin.py`, `agents.py`, `runner.py`, `main.py` (scope middleware), `tasks.py`,
+  `worker.py`, `models/ai_settings.py`, migration 0028, `tests/test_demo_ai_scope.py` (4 tests).
+- **Tests:** backend 153 passed.
+
 ## Homepage v2 — "Your Entire Hospital. Working as One." (2026-11-20) ✅
 - **Hero:** new headline, supporting line and description; three compact value chips replace the generic cards. The
   existing sign-in card and compact Demo Access box are unchanged.

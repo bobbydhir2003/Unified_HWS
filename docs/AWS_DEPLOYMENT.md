@@ -130,6 +130,28 @@ password sign-in; they aren't on the one-click list.
 * **Allowed:** clinical and operational workflows on synthetic data (register patients, document, order, admit, discharge,
   bill, run agents), so the demo is realistic.
 
+**Demo AI settings (session-scoped).** The demo Super Admin gets the full AI settings and Agent Studio workflow, but
+against an isolated configuration owned by its own sign-in session (`demo_ai_settings`, migration 0028). Each session can:
+* choose OpenAI and enter its own key. The key is checked against OpenAI's model list before it is saved, encrypted at
+  rest, never returned or logged, and deleted when the session expires (at most `DEMO_AI_TTL_HOURS`, default 4; a
+  cleanup task runs every 10 minutes);
+* pick text, vision, transcription and realtime models and per-agent models, and run Test connection against that key;
+* edit agent instructions, tools and limits as session overrides, run agents, and start Realtime Voice.
+
+The platform settings, the platform key, the organization's agent configuration and other sessions are never read or
+written. Demo requests resolve AI in this order: the session's settings, then `DEMO_OPENAI_API_KEY` (an optional
+dedicated demo project), then the labeled simulation. They never use the platform key; demo uploads processed by the
+worker carry the session's scope.
+
+Limits are enforced at the single OpenAI call point:
+* `DEMO_AI_MAX_REQUESTS_PER_HOUR` (40 per session);
+* `DEMO_AI_MAX_CONCURRENCY` (2 per session);
+* `DEMO_AI_MAX_COST_USD` (1.00 per session, when `AI_PRICES` allows cost estimates);
+* `DEMO_AI_SHARED_MAX_REQUESTS_PER_HOUR` (300 across all sessions on the shared demo key).
+
+Counters are kept in memory by the API process. Other demo accounts still can't change organization, staff, facility,
+monitor or credential settings.
+
 **Turn off:** set `DEMO_MODE=false` and run `sudo docker compose --profile https up -d`.
 
 **Caution:** if an OpenAI key is configured while demo mode is on, any visitor can use AI features, and that usage is

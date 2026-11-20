@@ -40,40 +40,46 @@ def send_appointment_reminders() -> int:
 
 
 @celery_app.task(name="app.tasks.process_document", autoretry_for=(), acks_late=True)
-def process_document_task(doc_id: str) -> None:
+def process_document_task(doc_id: str, ai_scope: str | None = None) -> None:
     import uuid
 
+    from app.ai import demo_scope
     from app.services.documents import process_document
 
     db = SessionLocal()
     try:
-        process_document(db, uuid.UUID(doc_id))
+        with demo_scope.use(ai_scope):  # demo uploads use the demo session's AI settings, never the platform key
+            process_document(db, uuid.UUID(doc_id))
     finally:
         db.close()
 
 
 @celery_app.task(name="app.tasks.scribe_transcribe")
-def scribe_transcribe_task(session_id: str) -> None:
+def scribe_transcribe_task(session_id: str, ai_scope: str | None = None) -> None:
     import uuid
 
+    from app.ai import demo_scope
     from app.services.scribe import transcribe
 
     db = SessionLocal()
     try:
-        transcribe(db, uuid.UUID(session_id))
+        with demo_scope.use(ai_scope):
+            transcribe(db, uuid.UUID(session_id))
     finally:
         db.close()
 
 
 @celery_app.task(name="app.tasks.scribe_draft")
-def scribe_draft_task(session_id: str) -> None:
+def scribe_draft_task(session_id: str, ai_scope: str | None = None) -> None:
     import uuid
 
+    from app.ai import demo_scope
     from app.services.scribe import draft
 
     db = SessionLocal()
     try:
-        draft(db, uuid.UUID(session_id))
+        with demo_scope.use(ai_scope):
+            draft(db, uuid.UUID(session_id))
     finally:
         db.close()
 
@@ -110,5 +116,17 @@ def escalate_cases_task() -> dict:
         stats = escalate_due(db)
         db.commit()
         return stats
+    finally:
+        db.close()
+
+
+@celery_app.task(name="app.tasks.demo_ai_cleanup")
+def demo_ai_cleanup_task() -> int:
+    """Delete expired demo-session AI settings (including any visitor-entered key)."""
+    from app.ai import demo_scope
+
+    db = SessionLocal()
+    try:
+        return demo_scope.cleanup(db)
     finally:
         db.close()

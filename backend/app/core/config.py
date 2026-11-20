@@ -64,6 +64,15 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     # One-click role sign-in for a synthetic-data demonstration deployment (app/core/demo.py). Refused in production.
     demo_mode: bool = False
+    # Demo AI (DEMO_MODE only): per-session AI settings + limits. Demo sessions NEVER use the platform AI key.
+    demo_openai_api_key: str | None = None  # optional dedicated demo project key (shared by demo sessions without their own key)
+    demo_ai_text_model: str = "gpt-4.1-mini"
+    demo_ai_realtime_model: str = ""
+    demo_ai_ttl_hours: int = 4
+    demo_ai_max_requests_per_hour: int = 40      # per demo session
+    demo_ai_max_concurrency: int = 2             # per demo session
+    demo_ai_max_cost_usd: float = 1.0            # per demo session, when AI_PRICES lets cost be estimated
+    demo_ai_shared_max_requests_per_hour: int = 300  # all sessions together, when using DEMO_OPENAI_API_KEY
     rls_enabled: bool = True
     credentials_encryption_key: str | None = None  # Fernet key for stored secrets (AI keys); required in production
     eligibility_adapter: str = "simulated"

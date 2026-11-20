@@ -18,7 +18,7 @@ import { fmtDateTime } from "@/lib/format";
 import { titleCase } from "@/lib/utils";
 
 type Agent = { key: string; name: string; purpose: string; instructions: string; allowed_tools: string[]; model: string | null; trigger: string; required_permission: string;
-  max_tool_calls: number; timeout_seconds: number; max_cost_usd: number; enabled: boolean; version: number; can_run: boolean; runs_30d: number; failed_30d: number; cost_30d_usd: number };
+  max_tool_calls: number; timeout_seconds: number; max_cost_usd: number; enabled: boolean; version: number; can_run: boolean; runs_30d: number; failed_30d: number; cost_30d_usd: number; demo_override?: boolean };
 type ToolT = { name: string; description: string; permission: string; kind: string };
 type Run = { id: string; agent_key: string; mode: string; model: string | null; status: string; input: string; output: string | null; tool_calls: { tool: string; ok: boolean; arguments: unknown; result_preview: string }[];
   approvals: string[]; cost_usd: number | null; latency_ms: number | null; error: string | null; started_at: string };
@@ -46,7 +46,7 @@ export function AgentStudio() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{agents.data?.map((a) => (
           <Card key={a.key} className="flex flex-col">
             <CardHeader className="flex-row items-start justify-between gap-2">
-              <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><Bot className="size-4" /></span><div><CardTitle className="text-[15px]">{a.name}</CardTitle><p className="text-xs text-muted-foreground">v{a.version} · {a.trigger === "feature" ? "runs in its workflow" : "on demand"}</p></div></div>
+              <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><Bot className="size-4" /></span><div><CardTitle className="text-[15px]">{a.name}</CardTitle><p className="text-xs text-muted-foreground">v{a.version} · {a.trigger === "feature" ? "runs in its workflow" : "on demand"}{a.demo_override ? " · edited in this demo session" : ""}</p></div></div>
               {manage && <Switch checked={a.enabled} aria-label={`Enable ${a.name}`} onCheckedChange={async (v) => { try { await put(`/agents/${a.key}`, { enabled: v }); qc.invalidateQueries({ queryKey: ["ai", "agents"] }); } catch (e) { toastError(e); } }} />}
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-3 text-[13px]">

@@ -34,7 +34,7 @@ DEMO_BLOCKED: list[tuple[set[str], str]] = [
     (_WRITES, "/organizations"), (_WRITES, "/organization"), (_WRITES, "/clinics"), (_WRITES, "/staff"),
     (_WRITES, "/invitations"), (_WRITES, "/facilities"), (_WRITES, "/departments"), (_WRITES, "/locations"),
     (_WRITES, "/appointment-types"), (_WRITES, "/fee-schedule"), (_WRITES, "/automation/workflows"),
-    ({"PUT", "PATCH"}, "/providers/"), ({"PUT", "PATCH"}, "/agents/"), ({"PUT", "PATCH"}, "/monitors/"),
+    ({"PUT", "PATCH"}, "/providers/"), ({"PUT", "PATCH"}, "/monitors/"),
     ({"GET", "POST", "PUT", "PATCH", "DELETE"}, "/outbox"),
 ]
 
@@ -52,8 +52,48 @@ def blocked(method: str, path: str) -> bool:
         if path.startswith(prefix + "/"):
             path = path[len(prefix):]
             break
+    if path.startswith("/admin/ai-settings"):  # demo accounts edit their own session-scoped AI settings
+        return False
     return any(method in methods and path.startswith(p) for methods, p in DEMO_BLOCKED)
 
 
 def account(key: str) -> tuple[str, str, str, str] | None:
     return next((a for a in DEMO_ACCOUNTS if a[0] == key), None)
+
+
+# ---------------------------------------------------------------------------------------------- AI scope per demo session
+
+_ids_cache: dict = {"at": 0.0, "ids": frozenset()}
+
+
+def demo_user_ids() -> frozenset:
+    import time
+
+    if time.monotonic() - _ids_cache["at"] > 300:
+        from sqlalchemy import select
+
+        from app.core.db import SessionLocal
+        from app.models import User
+
+        db = SessionLocal()
+        try:
+            ids = db.scalars(select(User.id).where(User.email.in_(DEMO_EMAILS), User.is_superadmin.is_(False))).all()
+        finally:
+            db.close()
+        _ids_cache.update(at=time.monotonic(), ids=frozenset(str(i) for i in ids))
+    return _ids_cache["ids"]
+
+
+def request_ai_scope(authorization: str | None):
+    """For a bearer token of a demo account: ('sess:<sid>', EffectiveAI). None otherwise. Runs in a worker thread."""
+    if not enabled() or not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    from app.core.security import decode_token
+
+    data = decode_token(authorization[7:].strip(), "access")
+    if not data or data.get("sub") not in demo_user_ids():
+        return None
+    from app.ai import demo_scope
+
+    token = f"sess:{data['sid']}"
+    return token, demo_scope.resolve(token)

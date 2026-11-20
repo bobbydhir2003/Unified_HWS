@@ -50,14 +50,10 @@ def test_every_demo_role_signs_in_to_its_own_role(app, demo_on):
 def test_demo_super_admin_can_look_but_not_change_admin_settings(app, demo_on):
     c, r = _demo(app, "super_admin")
     h = _h(r)
-    s = c.get("/api/v1/admin/ai-settings", headers=h)
-    assert s.status_code == 200 and s.json()["key"]["hint"] is None and s.json()["demo_restricted"] is True
-    assert c.put("/api/v1/admin/ai-settings", headers=h, json={"text_model": "x"}).status_code == 403
-    assert c.post("/api/v1/admin/ai-settings/test", headers=h).status_code == 403
-    assert c.delete("/api/v1/admin/ai-settings/key", headers=h).status_code == 403
+    s = c.get("/api/v1/admin/ai-settings", headers=h)  # AI settings are session-scoped for demo accounts (test_demo_ai_scope)
+    assert s.status_code == 200 and s.json()["key"]["hint"] is None and s.json()["demo_scope"]["isolated"] is True
     assert c.post("/api/v1/invitations", headers=h, json={"email": "x@harborview.dev", "roles": ["doctor"]}).status_code == 403
     assert c.patch("/api/v1/organization", headers=h, json={"name": "Hacked"}).status_code == 403
-    assert c.put("/api/v1/agents/hospital_operations", headers=h, json={"enabled": False}).status_code == 403
     assert c.get("/api/v1/outbox", headers=h).status_code == 403   # reset links live there
     assert c.post("/api/v1/auth/password/change", headers=h, json={"current_password": "x", "new_password": "Another!Pass99"}).status_code == 403
     assert c.post("/api/v1/auth/mfa/setup", headers=h).status_code == 403
