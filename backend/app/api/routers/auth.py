@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pyotp
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
+from pydantic import BaseModel, Field
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
@@ -177,7 +178,9 @@ def update_me(body: ProfileUpdate, auth: AuthUser = Depends(get_auth_user), db: 
 @router.post("/password/forgot", response_model=Message)
 def forgot_password(body: ForgotIn, request: Request, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == body.email.lower()))
-    if user and user.is_active:
+    from app.core import demo
+
+    if user and user.is_active and not demo.is_demo_user(user):  # demo accounts sign in with one click; no resets
         token = new_opaque_token()
         db.add(PasswordResetToken(user_id=user.id, token_hash=hash_token(token), created_at=now(),
                                   expires_at=now() + timedelta(hours=1)))
@@ -347,5 +350,45 @@ def accept_invitation(body: AcceptInviteIn, request: Request, response: Response
     db.flush()
     db.refresh(user)
     out = issue_session(db, user, request, response)
+    db.commit()
+    return out
+
+
+# ---------- Demo mode (synthetic demonstration deployments only; see app/core/demo.py) ----------
+
+
+class DemoLoginIn(BaseModel):
+    key: str = Field(min_length=1, max_length=40)
+
+
+@router.get("/demo")
+def demo_accounts():
+    """Public: which one-click demo roles exist. Empty unless DEMO_MODE is on (never in production)."""
+    from app.core import demo
+
+    if not demo.enabled():
+        return {"enabled": False, "accounts": []}
+    return {"enabled": True, "accounts": [{"key": k, "label": label, "role": role} for k, label, _, role in demo.DEMO_ACCOUNTS]}
+
+
+@router.post("/demo-login", response_model=TokenOut)
+def demo_login(body: DemoLoginIn, request: Request, response: Response, db: Session = Depends(get_db)):
+    from app.core import demo
+    from app.models import Organization
+
+    acct = demo.account(body.key)
+    if not demo.enabled() or not acct:
+        raise HTTPException(404, "Not found")
+    user = db.scalar(select(User).where(User.email == acct[2]))
+    memberships = [m for m in user.memberships if m.is_active] if user else []
+    orgs = [db.get(Organization, m.organization_id) for m in memberships]
+    # Only synthetic organizations, never the platform administrator, never bypass MFA.
+    if (not user or not user.is_active or user.is_superadmin or user.mfa_enabled or not memberships
+            or not all(o and (o.settings or {}).get("synthetic_data") for o in orgs)):
+        audit.record(db, "auth.demo_login", outcome="failure", request=request, details={"role": body.key})
+        db.commit()
+        raise HTTPException(403, "This demo account is not available.")
+    out = issue_session(db, user, request, response)
+    audit.record(db, "auth.demo_login", actor_id=user.id, request=request, details={"role": body.key})
     db.commit()
     return out

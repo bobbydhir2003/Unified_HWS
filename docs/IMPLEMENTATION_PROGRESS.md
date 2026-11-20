@@ -59,6 +59,17 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - **Final role-based UI/UX refinement pass** across the 11 roles (layout/accessibility audit, dark mode review, empty states) — not done as a dedicated pass.
 - **OpenAI live validation:** pending — no key configured; every AI path above ran on the simulated/rule-based provider (labeled in the UI).
 
+## Demo mode for live pitches (2026-11-20) ✅
+- **Setting:** `DEMO_MODE` (backend, off by default, refused in production) enables the homepage Demo Access box:
+  13 one-click roles, signed in through `POST /auth/demo-login` with a normal session.
+- **Safeguards:** a server-side allowlist, synthetic organizations only, and a dedicated demo Super Admin that is not a
+  platform administrator. Admin configuration, credential and MFA changes, AI settings and the outbox are blocked for demo
+  accounts, and their password resets are suppressed. Details are in `docs/AWS_DEPLOYMENT.md`.
+- **Files:** `backend/app/core/demo.py`, `auth.py` (`/auth/demo`, `/auth/demo-login`), `deps.py` (block rules),
+  `seed_extend.py` (demo Super Admin), `LoginForm.tsx` (Demo Access box), `tests/test_demo_mode.py` (7 tests).
+- **Tests:** backend 149 passed. Browser check: all 13 buttons land in the right workspace (Patient → portal), and the
+  demo Super Admin's AI-settings save is refused.
+
 ## Public website redesign (2026-11-20) ✅ (committed locally on `dev`, not yet pushed or deployed)
 - **Routes:**
   - `/` shows signed-out visitors the new homepage; signed-in users still get their workspace at `/`, unchanged.

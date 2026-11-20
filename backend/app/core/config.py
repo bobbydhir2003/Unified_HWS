@@ -62,6 +62,8 @@ class Settings(BaseSettings):
 
     # Abuse protection (per client IP, per process). Put a WAF/edge limiter in front in production.
     rate_limit_enabled: bool = True
+    # One-click role sign-in for a synthetic-data demonstration deployment (app/core/demo.py). Refused in production.
+    demo_mode: bool = False
     rls_enabled: bool = True
     credentials_encryption_key: str | None = None  # Fernet key for stored secrets (AI keys); required in production
     eligibility_adapter: str = "simulated"

@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from app.ai.config import effective, invalidate
 from app.api.deps import TenantContext, require
+from app.core import demo
 from app.core.config import settings
 from app.core.crypto import encrypt, mask
 from app.core.errors import bad_request
@@ -36,7 +37,7 @@ def _out(ctx: TenantContext, row: AIProviderSettings | None) -> dict:
     return {
         "provider": row.provider if row else settings.ai_provider, "source": "ui" if row else "environment",
         "key": {"configured": bool(row and row.api_key_encrypted) or (not row and bool(settings.openai_api_key)),
-                "hint": row.api_key_hint if row else (mask(settings.openai_api_key) if settings.openai_api_key else None),
+                "hint": None if demo.is_demo_user(ctx.user) else (row.api_key_hint if row else (mask(settings.openai_api_key) if settings.openai_api_key else None)),
                 "updated_at": row.key_updated_at if row else None},
         "models": {"text": (row.text_model if row else None) or settings.ai_text_model or None,
                    "vision": (row.vision_model if row else None) or settings.ai_vision_model or None,

@@ -318,6 +318,27 @@ def seed_equipment(db, org: Organization, hosp: Clinic) -> int:
     return len(rows)
 
 
+def seed_demo_superadmin(db, org: Organization) -> bool:
+    """Dedicated account behind the demo "Super Admin" button: super_admin role inside this (synthetic) organization only,
+    NOT a platform administrator (is_superadmin stays false). Demo-mode restrictions apply to it (app/core/demo.py)."""
+    from app.core.demo import DEMO_SUPERADMIN_EMAIL
+    from app.core.security import hash_password
+    from app.models import Membership, MembershipRole, User
+    from app.seed import DEV_PASSWORD
+
+    if db.scalar(select(User.id).where(User.email == DEMO_SUPERADMIN_EMAIL)):
+        return False
+    u = User(email=DEMO_SUPERADMIN_EMAIL, first_name="Demo", last_name="Super Admin", password_hash=hash_password(DEV_PASSWORD))
+    db.add(u)
+    db.flush()
+    m = Membership(user_id=u.id, organization_id=org.id, all_clinics=True)
+    db.add(m)
+    db.flush()
+    m.roles.append(MembershipRole(role="super_admin"))
+    db.flush()
+    return True
+
+
 def extend(db) -> list[str]:
     done = []
     for org in db.scalars(select(Organization).where(Organization.slug == "harborview")):
@@ -338,6 +359,8 @@ def extend(db) -> list[str]:
             done.append("roster + OR cases")
         if seed_equipment(db, org, hosp):
             done.append("equipment + par levels")
+        if seed_demo_superadmin(db, org):
+            done.append("demo super admin account")
     return done
 
 

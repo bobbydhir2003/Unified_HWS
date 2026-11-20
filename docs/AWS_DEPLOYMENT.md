@@ -105,16 +105,37 @@ ssh -i ~/Downloads/Unified_HMS.pem -N -L 8080:127.0.0.1:8080 ubuntu@3.19.143.26
 4. `sudo docker compose --profile https up -d` — Caddy obtains the certificate and redirects HTTP→HTTPS.
 5. Only then enter the OpenAI key (Super Admin → AI settings → Test connection) and try Realtime Voice from the browser.
 
-## Quick role login (login page)
+## Demo mode — one-click role sign-in (enabled on this deployment for product demonstrations)
 
-The one-click "Development accounts" box only fills in the normal sign-in form; authentication, MFA, lockout and audit are unchanged.
-* **Local dev server** (`npm run dev`): always shown, with all 7 roles and the documented dev password.
-* **Default production build** (what `deploy.sh` ships, including this EC2 site): **compiled out**. No demo emails or
-  passwords are in the bundle.
-* **Opt-in isolated demo build:** `VITE_DEMO_LOGIN=true` (optionally `VITE_DEMO_PASSWORD=…`) at image build time. Administrator
-  roles (Clinic admin, Super admin) are never included. Use this only for a separate public demo stack that has its own database,
-  synthetic data, no AI key, and administrator accounts whose passwords differ from the shared demo password. That stack is
-  not provisioned, because it needs its own instance or a larger one.
+`DEMO_MODE=true` in `/opt/undeclared/.env` shows a **Demo Access** box under the Sign In button. Each button signs in to
+that role's synthetic account with one click (`POST /api/v1/auth/demo-login`), creating a normal session; role
+permissions and the audit log are unchanged. Every demo sign-in is recorded as `auth.demo_login`.
+
+Buttons: Doctor, Nurse, Front Desk, Clinic Admin, Billing, Patient, Super Admin, Hospital Admin, Pharmacist, Laboratory,
+Radiology, Bed Manager, Insurance.
+
+**Safeguards:**
+* **Production guard:** the app refuses to start with `DEMO_MODE` on when `ENVIRONMENT=production`.
+* **Allowlist:** only the server-side list in `backend/app/core/demo.py` can be used, and only when every organization the
+  account belongs to is flagged `synthetic_data`. Accounts with MFA enabled are refused.
+* **Super Admin button:** uses a dedicated `superadmin.demo@harborview.dev` account with the super_admin role inside the
+  demo organization. It is not a platform administrator and sees only its own organization. The real platform
+  administrator (`admin@undeclared.dev`) is never on the list and keeps normal password sign-in, for real administration.
+* **Blocked for demo accounts:** AI settings and key changes, connection tests, organization, facility, staff, invitation
+  and scheduling-setup changes, agent, monitor and workflow configuration, password and MFA changes, and profile edits.
+  They get "This action is disabled in the demonstration environment."
+* **Hidden from demo accounts:** the message outbox (it can contain password-reset links); password resets for demo
+  accounts are also suppressed. The stored AI key's hint is never shown to them.
+* **Allowed:** clinical and operational workflows on synthetic data (register patients, document, order, admit, discharge,
+  bill, run agents), so the demo is realistic.
+
+**Turn off:** set `DEMO_MODE=false` and run `sudo docker compose --profile https up -d`.
+
+**Caution:** if an OpenAI key is configured while demo mode is on, any visitor can use AI features, and that usage is
+billed to your OpenAI account. Turn demo mode off, or monitor usage under AI governance.
+
+Local development: the dev server's own quick-login box (fills in the dev password) is still shown when the server's demo
+mode is off.
 
 ## Verification (2026-11-20)
 

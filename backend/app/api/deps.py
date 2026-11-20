@@ -31,7 +31,7 @@ class AuthUser:
 
 
 def get_auth_user(
-    creds: HTTPAuthorizationCredentials | None = Depends(bearer), db: Session = Depends(get_db)
+    request: Request, creds: HTTPAuthorizationCredentials | None = Depends(bearer), db: Session = Depends(get_db)
 ) -> AuthUser:
     unauthorized = HTTPException(
         status.HTTP_401_UNAUTHORIZED, "Not authenticated", headers={"WWW-Authenticate": "Bearer"}
@@ -47,6 +47,10 @@ def get_auth_user(
     user = db.get(User, uuid.UUID(data["sub"]))
     if not user or not user.is_active:
         raise unauthorized
+    from app.core import demo
+
+    if demo.is_demo_user(user) and demo.blocked(request.method, request.url.path):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This action is disabled in the demonstration environment.")
     return AuthUser(user=user, session_id=sess.id)
 
 
