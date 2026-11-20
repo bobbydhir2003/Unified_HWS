@@ -55,14 +55,22 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
 
 const loginSchema = z.object({ email: z.email("Enter a valid email"), password: z.string().min(1, "Enter your password") });
 
-const DEV_ACCOUNTS: [string, string][] = [
+
+/* Quick role login. Local dev server: always on, every role, documented dev password.
+ * Other builds: off unless VITE_DEMO_LOGIN=true (an isolated, synthetic-data demo environment). There, administrator
+ * roles are never offered and a password is filled only if VITE_DEMO_PASSWORD is set for that demo. Buttons only fill
+ * the normal sign-in form — authentication, MFA, lockout and audit are unchanged. */
+const DEMO_LOGIN = import.meta.env.DEV || import.meta.env.VITE_DEMO_LOGIN === "true";
+const DEMO_PASSWORD: string = import.meta.env.DEV ? "Undeclared!2026" : (import.meta.env.VITE_DEMO_PASSWORD ?? "");
+// Administrator accounts exist in the list only in dev-server builds (compiled out everywhere else).
+const DEMO_ACCOUNTS: [string, string][] = !DEMO_LOGIN ? [] : [
   ["dr.chen@harborview.dev", "Doctor"],
   ["nurse.rivera@harborview.dev", "Nurse"],
   ["frontdesk@harborview.dev", "Front desk"],
-  ["clinicadmin@harborview.dev", "Clinic admin"],
+  ...(import.meta.env.DEV ? [["clinicadmin@harborview.dev", "Clinic admin"] as [string, string]] : []),
   ["billing@harborview.dev", "Billing"],
   ["patient@harborview.dev", "Patient"],
-  ["admin@undeclared.dev", "Super admin"],
+  ...(import.meta.env.DEV ? [["admin@undeclared.dev", "Super admin"] as [string, string]] : []),
 ];
 
 export function LoginPage() {
@@ -140,13 +148,16 @@ export function LoginPage() {
             </div>
             <Button type="submit" className="w-full" size="lg" loading={busy}>Sign in</Button>
           </form>
-          {import.meta.env.DEV && (
-            <div className="mt-8 rounded-xl border border-dashed p-3">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Development accounts · password <code className="rounded bg-muted px-1">Undeclared!2026</code></p>
+          {DEMO_LOGIN && (
+            <div className="mt-8 rounded-xl border border-dashed p-3" data-testid="demo-accounts">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                {import.meta.env.DEV ? "Development accounts" : "Demo accounts (synthetic data)"}
+                {DEMO_PASSWORD ? <> · password <code className="rounded bg-muted px-1">{DEMO_PASSWORD}</code></> : " · ask your administrator for the demo password"}
+              </p>
               <div className="flex flex-wrap gap-1.5">
-                {DEV_ACCOUNTS.map(([email, label]) => (
+                {DEMO_ACCOUNTS.map(([email, label]) => (
                   <button key={email} type="button" className="rounded-md border bg-card px-2 py-1 text-xs hover:bg-muted"
-                    onClick={() => { form.setValue("email", email); form.setValue("password", "Undeclared!2026"); }}>
+                    onClick={() => { form.setValue("email", email); if (DEMO_PASSWORD) form.setValue("password", DEMO_PASSWORD); else form.setFocus("password"); }}>
                     {label}
                   </button>
                 ))}
