@@ -59,6 +59,36 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - **Final role-based UI/UX refinement pass** across the 11 roles (layout/accessibility audit, dark mode review, empty states) — not done as a dedicated pass.
 - **OpenAI live validation:** pending — no key configured; every AI path above ran on the simulated/rule-based provider (labeled in the UI).
 
+## Public website redesign (2026-11-20) ✅ (committed locally on `dev`, not yet pushed or deployed)
+- **Routes:**
+  - `/` shows signed-out visitors the new homepage; signed-in users still get their workspace at `/`, unchanged.
+  - New: `/modules`, `/solutions`.
+  - Redesigned: `/about` (vision, differentiators, how AI works, platform status, plus copyright and legal at `/about#legal`)
+    and `/login`.
+  - `/forgot-password`, `/reset-password` and `/accept-invite` keep their flow; their side panel now uses the hospital image.
+- **Homepage:**
+  - Hero with the supplied hospital image (converted to WebP: 74 KB desktop, 26 KB mobile, in `frontend/public/images/`)
+    under navy overlays.
+  - Headline and description, three value highlights, an "Explore modules" link, and the integrated sign-in card.
+  - "One Platform. Every Hospital Workflow." grid of 12 modules, each linking to `/modules#<id>`; a patient-journey strip; footer.
+  - Header: brand, Home/Modules/Solutions/About and Sign In (focuses the homepage form, or opens `/login` elsewhere);
+    accessible mobile menu.
+- **Sign-in:** one shared `LoginForm` (`features/auth/LoginForm.tsx`) with the existing backend login, MFA step, lockout and
+  error messages, role redirect and forgot-password link. Adds email/password icons and show/hide password.
+- **Removed from the public site:** Demo Access box, demo role buttons, displayed demo password, Watch Overview / Watch
+  Video, Request Demo. The quick-login box is compiled out of production builds (verified: 0 demo strings in the bundle).
+  It remains on the local dev server only.
+- **Content:** describes only implemented features; simulated integrations are labeled; no outcome claims; no
+  HIPAA or certification claims.
+- **Verified:**
+  - typecheck, lint, production build (copyright banner in 96/96 chunks);
+  - browser: all four nav links, module card → anchor, Sign In focus, forgot password, homepage login → dashboard,
+    "Open workspace" when signed in, mobile (390 px: menu, no horizontal scroll, mobile image), dark mode;
+  - `help_flow`, `command_center_flow` and `clinical_flow` still pass;
+  - live site: the repository default password returns 401.
+- **Smoke-test fix:** `deploy_smoke.py`'s wrong-password check now uses a nonexistent address. The old check counted
+  against the Super Admin account and temporarily locked it (auto-unlocks after 15 minutes; lockout working as designed).
+
 ## GitHub + AWS EC2 deployment (2026-11-20) ✅ (staging/demo, synthetic data)
 - **GitHub:** https://github.com/bobbydhir2003/Unified_HWS (public). Branches `dev` (working) and `main` (release; default branch).
   - Before publishing, I scanned the full history (50 commits) for private keys, AWS/OpenAI/GitHub/Slack tokens and secret

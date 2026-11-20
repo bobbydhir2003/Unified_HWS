@@ -40,7 +40,8 @@ check("refresh cookie Secure + HttpOnly", "secure" in cookie.lower() and "httpon
 c.headers["Authorization"] = f"Bearer {r.json()['access_token']}"
 check("token refresh via cookie", c.post("/auth/refresh").status_code == 200)
 check("logout", c.post("/auth/logout").status_code == 200)
-check("wrong password refused", httpx.post(f"{API}/auth/login", json={"email": "admin@undeclared.dev", "password": "wrong-password"}, timeout=30).status_code == 401)
+# Use an address that doesn't exist: failed attempts against a real account count toward its lockout (5 → 15 min).
+check("wrong credentials refused", httpx.post(f"{API}/auth/login", json={"email": "nobody@example.invalid", "password": "wrong-password"}, timeout=30).status_code == 401)
 
 sa, ha, doc, front, pt, rx = (login(e) for e in ("admin@undeclared.dev", "hospitaladmin@harborview.dev", "dr.chen@harborview.dev",
                                                   "frontdesk@harborview.dev", "patient@harborview.dev", "pharmacist@harborview.dev"))

@@ -9,12 +9,17 @@ import { Toaster } from "sonner";
 import { EmptyState } from "@/components/common";
 import { AppShell } from "@/components/layout/AppShell";
 import { TooltipProvider } from "@/components/ui/menu";
-import { AcceptInvitePage, ForgotPasswordPage, LoginPage, ResetPasswordPage } from "@/features/auth/AuthPages";
+import { AcceptInvitePage, ForgotPasswordPage, ResetPasswordPage } from "@/features/auth/AuthPages";
 import { ApiError } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 
 // Feature pages load on demand (route-level code splitting).
-const AboutPage = lazy(() => import("@/features/legal/AboutPage").then((m) => ({ default: m.AboutPage })));
+const PublicPages = () => import("@/features/public/PublicPages");
+const HomePage = lazy(() => PublicPages().then((m) => ({ default: m.HomePage })));
+const ModulesPage = lazy(() => PublicPages().then((m) => ({ default: m.ModulesPage })));
+const SolutionsPage = lazy(() => PublicPages().then((m) => ({ default: m.SolutionsPage })));
+const PublicAboutPage = lazy(() => PublicPages().then((m) => ({ default: m.PublicAboutPage })));
+const PublicLoginPage = lazy(() => PublicPages().then((m) => ({ default: m.PublicLoginPage })));
 const AccountPage = lazy(() => import("@/features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
 const AuditPage = lazy(() => import("@/features/admin/AdminPages").then((m) => ({ default: m.AuditPage })));
 const OrganizationsPage = lazy(() => import("@/features/admin/AdminPages").then((m) => ({ default: m.OrganizationsPage })));
@@ -92,7 +97,8 @@ function RequireAuth() {
   const { status, me, membership } = useAuth();
   const loc = useLocation();
   if (status === "loading") return <Splash />;
-  if (status === "anonymous") return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  // Signed-out visitors at "/" get the public homepage (with its sign-in form); everything else requires sign-in.
+  if (status === "anonymous") return loc.pathname === "/" ? <Suspense fallback={<Splash />}><HomePage /></Suspense> : <Navigate to="/login" replace state={{ from: loc.pathname }} />;
   if (me?.mfa_enrollment_required && loc.pathname !== "/account") return <Navigate to="/account?mfa=required" replace />;
   if (!membership && !me?.user.is_superadmin) {
     return <EmptyState icon={ShieldAlert} title="No active organization" description="Your account isn't linked to an organization. Contact your administrator." className="min-h-dvh" />;
@@ -129,12 +135,14 @@ const router = createBrowserRouter([
   {
     element: <PublicOnly />,
     children: [
-      { path: "/login", element: <LoginPage /> },
+      { path: "/login", element: <Suspense fallback={<Splash />}><PublicLoginPage /></Suspense> },
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
     ],
   },
   { path: "/reset-password", element: <ResetPasswordPage /> },
-  { path: "/about", element: <Suspense fallback={<Splash />}><AboutPage /></Suspense> },
+  { path: "/about", element: <Suspense fallback={<Splash />}><PublicAboutPage /></Suspense> },
+  { path: "/modules", element: <Suspense fallback={<Splash />}><ModulesPage /></Suspense> },
+  { path: "/solutions", element: <Suspense fallback={<Splash />}><SolutionsPage /></Suspense> },
   { path: "/accept-invite", element: <AcceptInvitePage /> },
   {
     element: <RequireAuth />,
