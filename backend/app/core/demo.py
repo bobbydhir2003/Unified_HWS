@@ -22,12 +22,6 @@ DEMO_ACCOUNTS: list[tuple[str, str, str, str]] = [
     ("billing", "Billing", "billing@harborview.dev", "billing"),
     ("patient", "Patient", "patient@harborview.dev", "patient"),
     ("super_admin", "Super Admin", "superadmin.demo@harborview.dev", "super_admin"),
-    ("hospital_admin", "Hospital Admin", "hospitaladmin@harborview.dev", "hospital_admin"),
-    ("pharmacist", "Pharmacist", "pharmacist@harborview.dev", "pharmacist"),
-    ("lab", "Laboratory", "lab@harborview.dev", "lab_tech"),
-    ("radiology", "Radiology", "radiology@harborview.dev", "radiologist"),
-    ("bed_manager", "Bed Manager", "bedmanager@harborview.dev", "bed_manager"),
-    ("insurance", "Insurance", "insurance@harborview.dev", "insurance_specialist"),
 ]
 DEMO_EMAILS = {e for _, _, e, _ in DEMO_ACCOUNTS}
 DEMO_SUPERADMIN_EMAIL = "superadmin.demo@harborview.dev"

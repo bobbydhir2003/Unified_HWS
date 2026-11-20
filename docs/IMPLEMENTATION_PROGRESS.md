@@ -61,7 +61,9 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 
 ## Demo mode for live pitches (2026-11-20) ✅
 - **Setting:** `DEMO_MODE` (backend, off by default, refused in production) enables the homepage Demo Access box:
-  13 one-click roles, signed in through `POST /auth/demo-login` with a normal session.
+  7 one-click roles (Doctor, Nurse, Front Desk, Clinic Admin, Billing, Patient, Super Admin) in a compact box under
+  Sign In, signed in through `POST /auth/demo-login` with a normal session. Public footer: copyright on the left,
+  "Undeclared HMS | About & Legal" on the right.
 - **Safeguards:** a server-side allowlist, synthetic organizations only, and a dedicated demo Super Admin that is not a
   platform administrator. Admin configuration, credential and MFA changes, AI settings and the outbox are blocked for demo
   accounts, and their password resets are suppressed. Details are in `docs/AWS_DEPLOYMENT.md`.

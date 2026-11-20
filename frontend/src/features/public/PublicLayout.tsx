@@ -104,8 +104,15 @@ function Footer() {
           <Link to="/about#legal" className="text-muted-foreground hover:text-foreground">Legal notices</Link>
         </nav>
       </div>
-      <div className="border-t">
-        <p className="mx-auto max-w-7xl px-4 py-4 text-center text-[12px] text-muted-foreground sm:px-6" data-testid="public-copyright">{COPYRIGHT_NOTICE}</p>
+      <div className="bg-[#071a44] text-blue-100/85">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 px-4 py-5 text-center text-[13px] sm:flex-row sm:justify-between sm:px-6 sm:text-left">
+          <p data-testid="public-copyright">{COPYRIGHT_NOTICE}</p>
+          <p className="flex items-center gap-2">
+            <span className="font-medium text-white">Undeclared HMS</span>
+            <span aria-hidden className="text-blue-100/40">|</span>
+            <Link to="/about#legal" className="rounded underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">About &amp; Legal</Link>
+          </p>
+        </div>
       </div>
     </footer>
   );

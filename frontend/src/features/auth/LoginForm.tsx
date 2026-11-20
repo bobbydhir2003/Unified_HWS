@@ -1,9 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowLeft, ArrowRight, BedDouble, Building2, Crown, Eye, EyeOff, FlaskConical, HeartPulse, Lock, Mail, Pill, Receipt, ScanLine,
-  Settings2, ShieldCheck, Sparkles, Stethoscope, UserRound, UsersRound,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -37,11 +34,6 @@ const DEMO_ACCOUNTS: [string, string][] = !DEMO_LOGIN ? [] : [
 /* Server demo mode (DEMO_MODE on a synthetic demonstration deployment): one click signs in to an allowlisted demo
  * account through POST /auth/demo-login — a normal session; demo accounts can't change admin settings or credentials. */
 type DemoAccount = { key: string; label: string; role: string };
-const DEMO_ICONS: Record<string, React.ElementType> = {
-  doctor: Stethoscope, nurse: HeartPulse, front_desk: UserRound, clinic_admin: Settings2, billing: Receipt, patient: UsersRound,
-  super_admin: Crown, hospital_admin: Building2, pharmacist: Pill, lab: FlaskConical, radiology: ScanLine, bed_manager: BedDouble,
-  insurance: ShieldCheck,
-};
 
 function ServerDemoAccess({ accounts }: { accounts: DemoAccount[] }) {
   const { acceptTokens } = useAuth();
@@ -55,33 +47,25 @@ function ServerDemoAccess({ accounts }: { accounts: DemoAccount[] }) {
       acceptTokens(await post<Parameters<typeof acceptTokens>[0]>("/auth/demo-login", { key }));
       navigate("/", { replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Demo sign-in failed");
+      setError(e instanceof Error ? e.message : "Demo sign-in failed. Please try again.");
     } finally {
       setBusy(null);
     }
   };
   return (
-    <section className="mt-5 rounded-2xl border bg-muted/40 p-3.5" aria-labelledby="demo-access-title" data-testid="demo-access">
-      <div className="mb-2.5 flex items-start gap-2.5">
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><Sparkles className="size-4" /></span>
-        <div>
-          <p id="demo-access-title" className="text-[13.5px] font-semibold leading-tight">Demo Access</p>
-          <p className="text-[12px] text-muted-foreground">Explore any role with synthetic data — one click, no password.</p>
-        </div>
-      </div>
-      {error && <p role="alert" className="mb-2 text-[12px] text-destructive">{error}</p>}
+    <div className="mt-5 rounded-xl border border-dashed p-3" data-testid="demo-access">
+      <p className="text-xs font-medium">Demo Access</p>
+      <p className="mb-2 text-[11.5px] text-muted-foreground">Explore Undeclared HMS with a preconfigured role.</p>
+      {error && <p role="alert" className="mb-2 text-[11.5px] text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-1.5">
-        {accounts.map((a) => {
-          const Icon = DEMO_ICONS[a.key] ?? UserRound;
-          return (
-            <Button key={a.key} type="button" size="xs" variant="outline" className="h-7 bg-card px-2 text-[12px]" loading={busy === a.key}
-              disabled={!!busy && busy !== a.key} onClick={() => go(a.key)} aria-label={`Sign in as demo ${a.label}`}>
-              {busy !== a.key && <Icon className="size-3.5 text-primary" />}{a.label}
-            </Button>
-          );
-        })}
+        {accounts.map((a) => (
+          <button key={a.key} type="button" onClick={() => go(a.key)} disabled={!!busy} aria-label={`Sign in as demo ${a.label}`}
+            className="rounded-md border bg-card px-2 py-1 text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60">
+            {busy === a.key ? "Signing in…" : a.label}
+          </button>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }
 

@@ -111,8 +111,9 @@ ssh -i ~/Downloads/Unified_HMS.pem -N -L 8080:127.0.0.1:8080 ubuntu@3.19.143.26
 that role's synthetic account with one click (`POST /api/v1/auth/demo-login`), creating a normal session; role
 permissions and the audit log are unchanged. Every demo sign-in is recorded as `auth.demo_login`.
 
-Buttons: Doctor, Nurse, Front Desk, Clinic Admin, Billing, Patient, Super Admin, Hospital Admin, Pharmacist, Laboratory,
-Radiology, Bed Manager, Insurance.
+Buttons (compact box under Sign In): Doctor, Nurse, Front Desk, Clinic Admin, Billing, Patient, Super Admin. The other
+roles (hospital admin, pharmacist, laboratory, radiology, bed manager, insurance) remain in the application with normal
+password sign-in; they aren't on the one-click list.
 
 **Safeguards:**
 * **Production guard:** the app refuses to start with `DEMO_MODE` on when `ENVIRONMENT=production`.
