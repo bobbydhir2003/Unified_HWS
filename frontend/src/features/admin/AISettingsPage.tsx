@@ -22,7 +22,7 @@ type TestResult = { ok: boolean; models?: Record<string, boolean>; error?: strin
 
 const MODEL_FIELDS: [keyof Settings["models"], string, string][] = [
   ["text", "Text model", "Chart assistant, drafting, agents"], ["vision", "Vision model", "Document & insurance-card reading"],
-  ["transcription", "Transcription model", "Medical scribe audio"], ["realtime", "Realtime voice model", "AI receptionist voice (future)"],
+  ["transcription", "Transcription model", "Medical scribe audio"], ["realtime", "Realtime voice model", "AI receptionist live voice (WebRTC) — verify with Test connection"],
 ];
 
 export function AISettingsPage() {
