@@ -13,7 +13,7 @@ def test_closed_loop_discharge(as_user):
     p = front.post("/patients", json={"first_name": "Dc", "last_name": f"Loop{tag}", "date_of_birth": "1955-02-02", "sex_at_birth": "female",
                                       "confirm_not_duplicate": True}).json()
     board = as_user("bedmanager@harborview.dev").get("/adt/board").json()
-    bed = next(b for u in board["units"] if u["code"] == "4C" for b in u["beds"] if b["status"] == "available")
+    bed = next(b for u in board["units"] if u["inpatient"] for b in u["beds"] if b["status"] == "available")
     stay = doc.post("/adt/stays", json={"patient_id": p["id"], "reason": "COPD exacerbation", "bed_id": bed["id"]}).json()
     assert stay["status"] == "admitted"
     doc.post(f"/adt/stays/{stay['id']}/discharge-order", json={"disposition": "home"})

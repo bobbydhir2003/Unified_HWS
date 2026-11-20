@@ -63,7 +63,7 @@ def test_synthetic_hospital_end_to_end(as_user):
     assert _tiles(admin)["pending_admits"] == before["pending_admits"] + 1
 
     # 3. Bed management assigns an available bed (ED visit ends, bay goes to cleaning).
-    bed = next(b for u in bedm.get("/adt/board").json()["units"] if u["code"] == "4C" for b in u["beds"] if b["status"] == "available")
+    bed = next(b for u in bedm.get("/adt/board").json()["units"] if u["inpatient"] for b in u["beds"] if b["status"] == "available")
     assert bedm.post(f"/adt/stays/{adm['stay_id']}/assign-bed", json={"bed_id": bed["id"]}).status_code == 200
     assert doc.get(f"/ed/visits/{v['id']}").json()["status"] == "departed"
 

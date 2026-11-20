@@ -22,7 +22,8 @@ def test_login_rate_limited_per_ip(app, monkeypatch):
 
 
 def test_production_guard_rejects_unsafe_config():
-    bad = Settings(environment="production")
+    # Explicit unsafe values: the CI environment supplies its own SECRET_KEY etc., which must not mask the check.
+    bad = Settings(environment="production", secret_key="change-me", cookie_secure=False)
     problems = production_problems(bad)
     assert any("SECRET_KEY" in p for p in problems) and any("COOKIE_SECURE" in p for p in problems)
     good = Settings(environment="production", secret_key="x" * 48, cookie_secure=True, celery_eager=False, storage_backend="s3",

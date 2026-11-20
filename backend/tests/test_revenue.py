@@ -89,7 +89,7 @@ def test_claim_review_blockers_gate_submission(as_user):
 def test_facility_charges_on_discharge(as_user):
     doc, bedm = as_user("dr.santos@harborview.dev"), as_user("bedmanager@harborview.dev")
     p = _patient(as_user("frontdesk@harborview.dev"), "SYN0000001")
-    bed = next(b for u in bedm.get("/adt/board").json()["units"] if u["code"] == "4C" for b in u["beds"] if b["status"] == "available")
+    bed = next(b for u in bedm.get("/adt/board").json()["units"] if u["inpatient"] for b in u["beds"] if b["status"] == "available")
     s = doc.post("/adt/stays", json={"patient_id": p["id"], "reason": "Observation", "bed_id": bed["id"]}).json()
     assert "id" in s, s
     doc.post(f"/adt/stays/{s['id']}/discharge-order", json={"disposition": "home"})

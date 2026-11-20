@@ -59,6 +59,37 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - **Final role-based UI/UX refinement pass** across the 11 roles (layout/accessibility audit, dark mode review, empty states) — not done as a dedicated pass.
 - **OpenAI live validation:** pending — no key configured; every AI path above ran on the simulated/rule-based provider (labeled in the UI).
 
+## GitHub + AWS EC2 deployment (2026-11-20) ✅ (staging/demo, synthetic data)
+- **GitHub:** https://github.com/bobbydhir2003/Unified_HWS (public). Branches `dev` (working) and `main` (release; default branch).
+  - Before publishing, I scanned the full history (50 commits) for private keys, AWS/OpenAI/GitHub/Slack tokens and secret
+    files. Only synthetic test placeholders were found.
+  - `.env` files, `.pem` keys, dumps and runtime storage are excluded.
+  - The seeded demo password and webhook secrets are now per-deployment (`SEED_DEMO_PASSWORD`); the repository default is
+    refused in staging/production.
+- **Live site:** **https://3-19-143-26.sslip.io**
+  - Instance `i-0a190b3478787307c` (us-east-2, t3.small, Ubuntu 26.04). SSH host key verified by the owner.
+  - Caddy obtains the Let's Encrypt certificate and redirects HTTP → HTTPS.
+  - Stack: nginx web, FastAPI (1 process), Celery worker + beat (concurrency 1, all queues), PostgreSQL 16, Redis.
+    Images are built off-host for amd64. `ENVIRONMENT=staging`; the production guard would refuse to boot without S3 and MFA.
+  - Only ports 80, 443 and 22 are public; 5432, 6379, 8000 and 8080 were verified unreachable.
+  - Fresh random secrets in `/opt/undeclared/.env` (mode 600). The encryption key for stored AI keys persists there.
+  - Nightly backup at 03:15 UTC, 7-day retention. A restore drill passed.
+- **Verified:** `e2e/deploy_smoke.py` 26/26 against the public URL; browser check of login (no demo box), Command Center
+  live updates, Super Admin AI settings, and the voice panel in a secure context; full restart keeps data. Details are in
+  `docs/AWS_DEPLOYMENT.md`.
+- **Pending or limited:**
+  - OpenAI key not entered, so AI runs in labeled simulation. Live text and Realtime Voice remain unvalidated.
+  - Disk is 6.7 GB (76% used): grow the EBS volume to 20 GB.
+  - No Elastic IP: a stop/start changes the IP and therefore the sslip.io hostname.
+  - MFA is not enforced on the demo.
+- **Quick role login:** environment-configurable.
+  - Dev server: all 7 roles.
+  - Opt-in `VITE_DEMO_LOGIN` builds: no admin roles.
+  - Default production build, including EC2: compiled out.
+- **CI (first run on GitHub):** two tests that depended on the local environment were fixed:
+  - the production-guard test now passes explicit unsafe values;
+  - bed-selection tests use any free inpatient bed instead of unit 4C.
+
 ## Help & About (in-app user guide, 2026-11-19) ✅
 - Route **`/help`** (staff, every role; sidebar → Support → *Help & About*, and user menu → *Help & About*). Patients: **`/portal/help`** (portal nav → *Help & About*). `/about` remains the public legal-notices page (user menu → *Legal notices*).
 - Sections: Overview (plain-language description + 9-stage patient journey linking to each topic), Getting started (8 steps with links the user can open), Features (19 module articles: what / who / when / steps / example / simulated note / links — step-by-step only for areas the role can use; other areas show a short non-sensitive summary marked "not part of your role"), Role guides (Doctor, Nurse, Receptionist, Billing & insurance, Pharmacist, Laboratory, Radiology, Bed manager, Hospital administrator, Super Admin — users see their own; administrators can browse all), AI & automation (10 plain-English topics, "AI assists hospital staff. It does not replace professional clinical judgment."), FAQ (12 staff / 8 patient, accordion), About (version from package metadata, modules, plain architecture, privacy/limitations, demo status, copyright from `lib/legal.ts`).
