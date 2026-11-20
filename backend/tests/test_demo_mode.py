@@ -51,7 +51,7 @@ def test_demo_super_admin_can_look_but_not_change_admin_settings(app, demo_on):
     c, r = _demo(app, "super_admin")
     h = _h(r)
     s = c.get("/api/v1/admin/ai-settings", headers=h)
-    assert s.status_code == 200 and s.json()["key"]["hint"] is None
+    assert s.status_code == 200 and s.json()["key"]["hint"] is None and s.json()["demo_restricted"] is True
     assert c.put("/api/v1/admin/ai-settings", headers=h, json={"text_model": "x"}).status_code == 403
     assert c.post("/api/v1/admin/ai-settings/test", headers=h).status_code == 403
     assert c.delete("/api/v1/admin/ai-settings/key", headers=h).status_code == 403
@@ -82,6 +82,8 @@ def test_demo_clinical_workflows_still_work_and_permissions_hold(app, demo_on):
 def test_platform_admin_unaffected_and_demo_resets_suppressed(app, demo_on, as_user):
     admin = as_user("admin@undeclared.dev")
     assert admin.get("/outbox").status_code == 200  # real administration is not restricted
+    assert admin.get("/admin/ai-settings").json()["demo_restricted"] is False
+    assert admin.post("/admin/ai-settings/test").status_code == 200  # real super admin can test (no key → ok:false)
     db = SessionLocal()
     try:
         before = db.scalar(select(func.count()).select_from(PasswordResetToken))

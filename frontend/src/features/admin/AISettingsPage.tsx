@@ -16,7 +16,7 @@ type Settings = {
   provider: string; source: string; key: { configured: boolean; hint: string | null; updated_at: string | null };
   models: Record<"text" | "vision" | "transcription" | "realtime", string | null>; agent_models: Record<string, string>; agents: string[];
   suggested: Record<string, string>; last_test: null | { at: string; ok: boolean; models?: Record<string, boolean>; error?: string; available_count?: number };
-  active_provider: string; phi_allowed: boolean; encryption: string;
+  active_provider: string; phi_allowed: boolean; encryption: string; demo_restricted?: boolean;
 };
 type TestResult = { ok: boolean; models?: Record<string, boolean>; error?: string; available_count?: number; latency_ms?: number };
 
@@ -56,6 +56,12 @@ export function AISettingsPage() {
     <>
       <PageHeader title="AI settings" description="Platform AI provider for every organization. The API key is encrypted on the server and can never be viewed again — only replaced or removed."
         actions={s.active_provider === "openai" ? <Badge variant="ai">Live: OpenAI</Badge> : <SimulatedBadge label="Rule-based simulation active" />} />
+      {s.demo_restricted && (
+        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning-soft/60 p-4 text-[13.5px]" data-testid="ai-demo-notice">
+          <Lock className="mt-0.5 size-4 shrink-0" />
+          <p><strong>View only — demo account.</strong> You're signed in with the one-click demo Super Admin, which can't change AI keys, models or run connection tests. To configure OpenAI, sign out and sign in with a real administrator account (email and password).</p>
+        </div>
+      )}
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
         <div className="space-y-4">
           <Card>
@@ -67,9 +73,9 @@ export function AISettingsPage() {
                   : <p className="flex items-center gap-2 text-muted-foreground"><Lock className="size-4" />No key stored</p>}
               </div>
               <Field label={s.key.configured ? "Replace API key" : "API key"} hint="Sent once over HTTPS, encrypted at rest, never shown again or stored in the browser.">
-                <Input type="password" autoComplete="off" spellCheck={false} value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk-…" />
+                <Input type="password" autoComplete="off" spellCheck={false} value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk-…" disabled={s.demo_restricted} />
               </Field>
-              {s.key.configured && s.source === "ui" && <Button variant="outline" size="sm" onClick={async () => {
+              {s.key.configured && s.source === "ui" && <Button variant="outline" size="sm" disabled={s.demo_restricted} onClick={async () => {
                 if (!(await confirm({ title: "Remove the stored API key?", description: "AI features fall back to the rule-based simulation.", confirmLabel: "Remove key", destructive: true }))) return;
                 try { await api("/admin/ai-settings/key", { method: "DELETE" }); toast.success("Key removed"); qc.invalidateQueries({ queryKey: ["ai"] }); } catch (e) { toastError(e); }
               }}><Trash2 />Remove key</Button>}
@@ -92,7 +98,7 @@ export function AISettingsPage() {
                 <Field key={a} label={titleCase(a.replace(/_/g, " "))}><Input value={f.agent_models[a] ?? ""} placeholder={f.models.text || "text model"} onChange={(e) => setF({ ...f, agent_models: { ...f.agent_models, [a]: e.target.value } })} /></Field>))}</div>
             </CardContent>
           </Card>
-          <div className="flex gap-2"><Button loading={busy} onClick={save}><Save />Save settings</Button><Button variant="outline" loading={busy} onClick={runTest}><PlugZap />Test connection</Button></div>
+          <div className="flex gap-2"><Button loading={busy} disabled={s.demo_restricted} onClick={save}><Save />Save settings</Button><Button variant="outline" loading={busy} disabled={s.demo_restricted} onClick={runTest}><PlugZap />Test connection</Button></div>
         </div>
         <div className="space-y-4">
           <Card>

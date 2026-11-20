@@ -46,6 +46,8 @@ def _out(ctx: TenantContext, row: AIProviderSettings | None) -> dict:
         "agent_models": (row.agent_models if row else {}) or {}, "agents": AGENTS, "suggested": SUGGESTED,
         "last_test": {"at": row.last_test_at, **(row.last_test_result or {})} if row and row.last_test_at else None,
         "active_provider": "openai" if e.provider == "openai" and e.api_key and e.text_model else ("simulated" if e.provider == "openai" else e.provider),
+        # One-click demo accounts can view but not change AI configuration (enforced in deps.get_auth_user).
+        "demo_restricted": demo.is_demo_user(ctx.user),
         "phi_allowed": settings.ai_phi_allowed, "encryption": "dedicated key" if settings.credentials_encryption_key else "derived from SECRET_KEY (development)",
     }
 
