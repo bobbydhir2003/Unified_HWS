@@ -59,6 +59,25 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - **Final role-based UI/UX refinement pass** across the 11 roles (layout/accessibility audit, dark mode review, empty states) — not done as a dedicated pass.
 - **OpenAI live validation:** pending — no key configured; every AI path above ran on the simulated/rule-based provider (labeled in the UI).
 
+## Homepage v2 — "Your Entire Hospital. Working as One." (2026-11-20) ✅
+- **Hero:** new headline, supporting line and description; three compact value chips replace the generic cards. The
+  existing sign-in card and compact Demo Access box are unchanged.
+- **Ecosystem** (`features/public/Ecosystem.tsx`): React and SVG with the central platform node and six linked systems
+  (AI, EHR, Hospital Operations, Insurance & Billing, Pharmacy & Laboratory, Command Center). Each links to its `/modules`
+  section. Radial layout from 1280 px with flowing connection lines; a stacked grid below that. Animations stop for
+  reduced motion.
+- **Patient journey:** seven connected steps (horizontal on desktop, vertical timeline on mobile), each naming the
+  module that handles it and linking to it.
+- **Meet Undeclared AI:** six features, each with an honest status label (clinician review, staff verification, payer
+  connection simulated, requires a configured provider, rule-based, proposals need approval).
+- **Command Center section:** a real screenshot of the live synthetic-data deployment, optimized WebP (62 KB / 21 KB)
+  and lazy-loaded, captioned as such, plus the eight information types it shows.
+- **Modules page:** six groups (Clinical Care & EHR, Hospital Operations, Insurance & Revenue, Pharmacy, Laboratory &
+  Radiology, AI & Automation, Analytics & Administration), plus two new entries: Automation & Worklists and
+  Administration & Security.
+- **Solutions and About:** Solutions titles adjusted. About uses the new mission line and adds a "Live integrations:
+  none verified yet" status. The footer and copyright are unchanged.
+
 ## Demo mode for live pitches (2026-11-20) ✅
 - **Setting:** `DEMO_MODE` (backend, off by default, refused in production) enables the homepage Demo Access box:
   7 one-click roles (Doctor, Nurse, Front Desk, Clinic Admin, Billing, Patient, Super Admin) in a compact box under

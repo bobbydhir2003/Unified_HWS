@@ -3,8 +3,9 @@
  * are labeled as such. No performance or outcome claims.
  */
 import {
-  Activity, BarChart3, BedDouble, Bot, CalendarDays, ClipboardList, FlaskConical, HeartPulse, Hospital, type LucideIcon,
-  MonitorSmartphone, Package, Pill, Radar, Receipt, ScanLine, ShieldCheck, Siren, Stethoscope, UserCog, UsersRound,
+  Activity, BarChart3, BedDouble, Bot, CalendarDays, ClipboardList, FileSearch, FlaskConical, HeartPulse, Hospital, KeyRound,
+  ListChecks, type LucideIcon, Mic, MonitorSmartphone, Package, PhoneCall, Pill, Radar, Receipt, ScanLine, ShieldCheck, Siren,
+  Sparkles, Stethoscope, UserCog, UserPlus, UsersRound, Workflow,
 } from "lucide-react";
 
 export type PublicModule = {
@@ -105,7 +106,68 @@ export const MODULES: PublicModule[] = [
   },
 ];
 
-export const HOME_MODULES = MODULES.filter((m) => m.id !== "portal");
+MODULES.push(
+  {
+    id: "automation", title: "Automation & Worklists", icon: Workflow,
+    short: "Background checks that turn problems into assigned work.",
+    description: "Monitors watch for issues such as coverage problems, expiring stock, unacknowledged critical results, missing discharge steps or follow-ups that were never booked. Each problem becomes one case for the right team, with a deadline, and closes only when the record shows it is fixed. Anything that changes data waits for a person's approval.",
+    capabilities: ["Configurable monitors and thresholds", "Cases with owners, deadlines and escalation", "Personal worklist and approvals", "Automation activity history"],
+  },
+  {
+    id: "admin", title: "Administration & Security", icon: KeyRound,
+    short: "Facilities, staff, roles, audit and AI configuration.",
+    description: "Administrators set up facilities and departments, invite staff with role-based access, review the audit log, and configure the AI provider. Provider keys are encrypted on the server and never shown in the browser.",
+    capabilities: ["Facilities, departments and locations", "Staff invitations and role-based access", "Audit log of user actions", "AI provider and model settings"],
+  },
+);
+
+export const HOME_MODULES = MODULES.filter((m) => !["portal", "automation", "admin"].includes(m.id));
+
+/** /modules grouping (every module appears in exactly one group). */
+export const MODULE_GROUPS: { id: string; title: string; intro: string; modules: string[] }[] = [
+  { id: "group-clinical", title: "Clinical Care & EHR", intro: "Patient records, visits and documentation, from registration to the patient portal.", modules: ["patients", "scheduling", "ehr", "portal"] },
+  { id: "group-operations", title: "Hospital Operations", intro: "Emergency, inpatient, nursing, beds and discharge, coordinated across departments.", modules: ["acute", "beds"] },
+  { id: "group-revenue", title: "Insurance & Revenue", intro: "Coverage readiness, claims, authorizations and payments.", modules: ["revenue"] },
+  { id: "group-diagnostics", title: "Pharmacy, Laboratory & Radiology", intro: "Medications, diagnostics and the supplies behind them.", modules: ["pharmacy", "diagnostics", "inventory"] },
+  { id: "group-ai", title: "AI & Automation", intro: "AI assistance and background automation, with people in control.", modules: ["ai", "automation"] },
+  { id: "group-analytics", title: "Analytics & Administration", intro: "Hospital-wide visibility, reporting and secure administration.", modules: ["command", "analytics", "admin"] },
+];
+
+/** Homepage ecosystem: six systems around the platform core. `to` points at the matching /modules section. */
+export const ECOSYSTEM: { id: string; title: string; icon: LucideIcon; text: string; to: string }[] = [
+  { id: "eco-ai", title: "Undeclared AI", icon: Sparkles, text: "Medical scribe, document intelligence, chart assistant, configurable agents and realtime voice.", to: "/modules#ai" },
+  { id: "eco-ehr", title: "Electronic Health Records", icon: Stethoscope, text: "Charts, encounters, notes, vitals, medications and allergies.", to: "/modules#ehr" },
+  { id: "eco-ops", title: "Hospital Operations", icon: Hospital, text: "Emergency, admissions, nursing, beds, transfers and discharge.", to: "/modules#group-operations" },
+  { id: "eco-revenue", title: "Insurance & Billing", icon: Receipt, text: "Insurance Guardian, eligibility, claims, prior authorizations and billing.", to: "/modules#revenue" },
+  { id: "eco-diag", title: "Pharmacy & Laboratory", icon: FlaskConical, text: "Medication stock, pharmacy workflows, lab results, radiology and supplies.", to: "/modules#group-diagnostics" },
+  { id: "eco-command", title: "Hospital Command Center", icon: Radar, text: "Worklists, alerts, department coordination, reporting and analytics.", to: "/modules#command" },
+];
+
+export const JOURNEY_STAGES: { id: string; title: string; icon: LucideIcon; text: string; module: string; to: string }[] = [
+  { id: "registration", title: "Registration", icon: UserPlus, text: "Create a patient record and prepare the visit.", module: "Patient Management", to: "/modules#patients" },
+  { id: "visit", title: "Appointment or Emergency Visit", icon: Siren, text: "Book and check in, or register and triage an emergency arrival.", module: "Scheduling · Emergency", to: "/modules#scheduling" },
+  { id: "care", title: "Clinical Care", icon: Stethoscope, text: "Doctors and nurses review history, document care, and manage orders.", module: "Electronic Health Records", to: "/modules#ehr" },
+  { id: "diagnostics", title: "Laboratory & Pharmacy", icon: FlaskConical, text: "Departments process orders and share verified information with the care team.", module: "Pharmacy · Lab · Radiology", to: "/modules#group-diagnostics" },
+  { id: "inpatient", title: "Inpatient & Discharge", icon: BedDouble, text: "Teams coordinate outstanding tasks and prepare the patient's next steps.", module: "Inpatient & Bed Management", to: "/modules#acute" },
+  { id: "billing", title: "Billing", icon: Receipt, text: "Charges become reviewed claims, and balances appear in the patient portal.", module: "Insurance & Billing", to: "/modules#revenue" },
+  { id: "follow-up", title: "Follow-Up", icon: CalendarDays, text: "Appointments, insurance tasks, and patient communication continue after the visit.", module: "Scheduling · Patient Portal", to: "/modules#portal" },
+];
+
+export const AI_FEATURES: { title: string; icon: LucideIcon; text: string; status: string }[] = [
+  { title: "AI Medical Scribe", icon: Mic, text: "Drafts clinical documentation from consented visit conversations. The clinician reviews, edits and signs.", status: "Clinician review required" },
+  { title: "Document Intelligence", icon: FileSearch, text: "Classifies uploaded documents, suggests the matching patient and extracts key details for staff to verify.", status: "Staff verification" },
+  { title: "Insurance Guardian", icon: ShieldCheck, text: "Checks coverage before visits, opens cases for problems and coordinates verification tasks and reminders.", status: "Payer connection simulated" },
+  { title: "AI Receptionist & Realtime Voice", icon: PhoneCall, text: "Conversational help with administrative questions, including live voice in the browser.", status: "Requires a configured AI provider" },
+  { title: "Pharmacy Watchdog", icon: Pill, text: "Tracks stock levels, expiry dates and unusual use, and turns them into pharmacy follow-up tasks.", status: "Rule-based monitoring" },
+  { title: "Hospital Operations Agent", icon: Bot, text: "Summarizes operational issues from live data and proposes department tasks for people to approve.", status: "Proposals need approval" },
+];
+
+export const COMMAND_ITEMS: { icon: LucideIcon; label: string }[] = [
+  { icon: UsersRound, label: "Admissions and inpatient census" }, { icon: BedDouble, label: "Bed availability by department" },
+  { icon: Siren, label: "Emergency department activity" }, { icon: ShieldCheck, label: "Insurance tasks" },
+  { icon: Pill, label: "Pharmacy and supply alerts" }, { icon: ClipboardList, label: "Discharge coordination" },
+  { icon: ListChecks, label: "Department worklists" }, { icon: Activity, label: "AI and automation status" },
+];
 
 export type Solution = { id: string; title: string; icon: LucideIcon; intro: string; points: string[]; modules: string[] };
 
@@ -114,13 +176,13 @@ export const SOLUTIONS: Solution[] = [
     points: ["Today's patients and visit list", "Patient charts with allergies always in view", "Clinical notes, with an optional AI scribe (with consent)", "Orders, results and critical-result alerts", "Admission, discharge and follow-up workflows"], modules: ["ehr", "acute", "ai"] },
   { id: "nurses", title: "Nurses", icon: HeartPulse, intro: "Your patients, their vitals and your tasks, with clear handoffs between shifts.",
     points: ["Patient assignments by unit", "Observations and overdue-vitals flags", "Nursing documentation and handoffs", "Emergency triage", "Coordinated discharge tasks"], modules: ["acute", "beds"] },
-  { id: "front-desk", title: "Reception & Front Desk", icon: ClipboardList, intro: "Smooth arrivals, from registration to the waiting room.",
+  { id: "front-desk", title: "Reception & Registration", icon: ClipboardList, intro: "Smooth arrivals, from registration to the waiting room.",
     points: ["Patient registration with duplicate checks", "Appointment booking and rescheduling", "Check-in and rooming", "Insurance readiness before the visit"], modules: ["patients", "scheduling", "revenue"] },
   { id: "administrators", title: "Hospital Administrators", icon: Hospital, intro: "A clear view of the whole hospital and the work that needs attention.",
     points: ["Command Center with live operational status", "Capacity and discharge monitoring", "Approvals and assigned work", "Reports, briefings and analytics"], modules: ["command", "analytics", "inventory"] },
   { id: "billing", title: "Insurance & Billing Teams", icon: ShieldCheck, intro: "Catch coverage and claim problems before they become denials.",
     points: ["Eligibility checks and follow-ups", "Claims with pre-submission review", "Prior authorizations", "Denials and appeals", "Patient balances and payments"], modules: ["revenue"] },
-  { id: "pharmacists", title: "Pharmacists", icon: Pill, intro: "Safe medication handling, with stock you can trust.",
+  { id: "pharmacists", title: "Pharmacy Staff", icon: Pill, intro: "Safe medication handling, with stock you can trust.",
     points: ["Medication verification worklist", "Stock movements and lot tracking", "Expiry and low-stock monitoring", "Two-person approval for waste", "Discharge medication reconciliation"], modules: ["pharmacy", "inventory"] },
   { id: "diagnostics", title: "Laboratory & Radiology Staff", icon: ScanLine, intro: "Orders in, verified results out, with nothing lost in between.",
     points: ["Order and specimen worklists", "Independent result verification", "Imaging scheduling and signed reports", "Critical-result alerts"], modules: ["diagnostics"] },
