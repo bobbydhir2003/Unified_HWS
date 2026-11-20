@@ -12,3 +12,5 @@ backend/.env
 *.log
 e2e/.venv/
 *.tsbuildinfo
+# original hero source image (served as optimized WebP from public/images/)
+frontend/public/background.png
