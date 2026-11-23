@@ -67,7 +67,7 @@ def get_transcriber():
     if active_provider() == "openai" and effective().transcription_model:
         from app.ai.openai_provider import OpenAITranscriber, available
 
-        if available():
+        if available("medical_scribe"):
             return OpenAITranscriber()
     return NoTranscriber()
 
@@ -230,6 +230,6 @@ def get_drafter():
     if active_provider() == "openai":
         from app.ai.openai_provider import OpenAIDrafter, available
 
-        if available():
+        if available("medical_scribe"):
             return OpenAIDrafter()
     return AnthropicDrafter() if active_provider() == "anthropic" else SimulatedDrafter()

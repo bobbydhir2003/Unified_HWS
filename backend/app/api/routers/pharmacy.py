@@ -338,6 +338,14 @@ def decide_pr(pid: uuid.UUID, body: DecideIn, ctx: TenantContext = Depends(requi
     if not body.approve and not body.note:
         raise bad_request("Give a reason for rejecting")
     p.status, p.decided_by_id, p.decided_at, p.decision_note = ("approved" if body.approve else "rejected"), ctx.user.id, now(), body.note
+    if p.case_id:
+        from app.engine.cases import log_event
+        from app.models import Case
+
+        c = ctx.db.get(Case, p.case_id)
+        if c:
+            log_event(ctx.db, c, "purchase_request_decided", f"Purchase request #{p.number} {p.status}" + (f" — {body.note}" if body.note else ""),
+                      actor_id=ctx.user.id, data={"purchase_request_id": str(p.id), "status": p.status})
     ctx.audit(f"procurement.{p.status}", resource_type="purchase_request", resource_id=p.id)
     ctx.db.commit()
     return pr_out(ctx, p)

@@ -69,7 +69,7 @@ def test_demo_session_saves_and_tests_its_own_settings(app, demo_on, monkeypatch
 
     seen = {}
 
-    def fake_health(self):
+    def fake_health(self, probe=False):
         seen["key"] = self.cfg.api_key
         return {"ok": True, "models": {"text": True, "realtime": True}, "available_count": 42}
 

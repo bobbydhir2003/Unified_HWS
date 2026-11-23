@@ -4,6 +4,117 @@
  */
 
 export interface paths {
+    "/api/v1/admin/ai-owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Owner Status */
+        get: operations["owner_status_api_v1_admin_ai_owner_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-owner/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Owner Demo Update */
+        put: operations["owner_demo_update_api_v1_admin_ai_owner_demo_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-owner/demo/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Owner Demo Disable
+         * @description Emergency switch: stop all owner-funded demo AI immediately (no redeploy).
+         */
+        post: operations["owner_demo_disable_api_v1_admin_ai_owner_demo_disable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-owner/demo/key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Owner Demo Delete Key */
+        delete: operations["owner_demo_delete_key_api_v1_admin_ai_owner_demo_key_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-owner/demo/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Owner Demo Test
+         * @description Owner's own test of the demo provider: models.list + one tiny real call per configured capability.
+         */
+        post: operations["owner_demo_test_api_v1_admin_ai_owner_demo_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-owner/platform": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Owner Platform Switch
+         * @description Emergency switch for ALL platform AI: when on, every AI feature returns its labelled simulation.
+         */
+        put: operations["owner_platform_switch_api_v1_admin_ai_owner_platform_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/ai-settings": {
         parameters: {
             query?: never;
@@ -625,6 +736,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/realtime/tools/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Realtime Tool
+         * @description Execute one function call requested by the voice model. Only the allow-listed tools exist; every argument is
+         *     validated here; nothing reads patient records, books appointments or changes clinical data.
+         */
+        post: operations["realtime_tool_api_v1_ai_realtime_tools__name__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/allergies/{item_id}": {
         parameters: {
             query?: never;
@@ -982,6 +1114,26 @@ export interface paths {
         put?: never;
         /** Demo Login */
         post: operations["demo_login_api_v1_auth_demo_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/email/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Email
+         * @description Change your sign-in email. Requires your current password; other sessions are signed out.
+         */
+        post: operations["change_email_api_v1_auth_email_change_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6376,6 +6528,13 @@ export interface components {
             deliveries: components["schemas"]["DeliveryOut"][];
             /** Events */
             events: components["schemas"]["CaseEventOut"][];
+            /**
+             * Story
+             * @default []
+             */
+            story: {
+                [key: string]: unknown;
+            }[];
             /** Tasks */
             tasks: {
                 [key: string]: unknown;
@@ -6410,6 +6569,10 @@ export interface components {
         };
         /** CaseOut */
         CaseOut: {
+            /** Ai Assist */
+            ai_assist?: {
+                [key: string]: unknown;
+            } | null;
             /** Assigned Role */
             assigned_role: string | null;
             /** Assigned User Id */
@@ -6478,6 +6641,8 @@ export interface components {
             snoozed_until: string | null;
             /** Source */
             source: string;
+            /** Stage */
+            stage?: string | null;
             /** Status */
             status: string;
             /** Subject Id */
@@ -6498,6 +6663,13 @@ export interface components {
              * @enum {string}
              */
             to: "in_room" | "completed" | "cancelled";
+        };
+        /** ChangeEmailIn */
+        ChangeEmailIn: {
+            /** Current Password */
+            current_password: string;
+            /** New Email */
+            new_email: string;
         };
         /** ChangePasswordIn */
         ChangePasswordIn: {
@@ -7638,6 +7810,49 @@ export interface components {
             /** Roles */
             roles: string[];
         };
+        /** Limits */
+        Limits: {
+            /**
+             * Global Concurrency
+             * @default 6
+             */
+            global_concurrency: number;
+            /**
+             * Global Daily Requests
+             * @default 200
+             */
+            global_daily_requests: number;
+            /**
+             * Monthly Budget Usd
+             * @default 10
+             */
+            monthly_budget_usd: number;
+            /**
+             * Realtime Daily Sessions
+             * @default 20
+             */
+            realtime_daily_sessions: number;
+            /**
+             * Realtime Enabled
+             * @default false
+             */
+            realtime_enabled: boolean;
+            /**
+             * Realtime Max Seconds
+             * @default 120
+             */
+            realtime_max_seconds: number;
+            /**
+             * Visitor Concurrency
+             * @default 2
+             */
+            visitor_concurrency: number;
+            /**
+             * Visitor Daily Requests
+             * @default 25
+             */
+            visitor_daily_requests: number;
+        };
         /** LocationIn */
         LocationIn: {
             /**
@@ -8268,6 +8483,56 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** OwnerDemoIn */
+        OwnerDemoIn: {
+            /**
+             * Allowed Agents
+             * @default []
+             */
+            allowed_agents: string[];
+            /**
+             * Allowed Models
+             * @default []
+             */
+            allowed_models: string[];
+            /** Api Key */
+            api_key?: string | null;
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Key Source
+             * @default dedicated
+             * @enum {string}
+             */
+            key_source: "dedicated" | "platform";
+            /**
+             * @default {
+             *       "global_concurrency": 6,
+             *       "global_daily_requests": 200,
+             *       "monthly_budget_usd": 10,
+             *       "realtime_daily_sessions": 20,
+             *       "realtime_enabled": false,
+             *       "realtime_max_seconds": 120,
+             *       "visitor_concurrency": 2,
+             *       "visitor_daily_requests": 25
+             *     }
+             */
+            limits: components["schemas"]["Limits"];
+            /** Realtime Model */
+            realtime_model?: string | null;
+            /**
+             * Text Model
+             * @default gpt-4.1-mini
+             */
+            text_model: string;
+            /** Transcription Model */
+            transcription_model?: string | null;
+            /** Vision Model */
+            vision_model?: string | null;
+        };
         /** PAIn */
         PAIn: {
             /**
@@ -8685,6 +8950,11 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** PlatformSwitchIn */
+        PlatformSwitchIn: {
+            /** Ai Disabled */
+            ai_disabled: boolean;
         };
         /** PortalPayIn */
         PortalPayIn: {
@@ -9958,6 +10228,200 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    owner_status_api_v1_admin_ai_owner_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    owner_demo_update_api_v1_admin_ai_owner_demo_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnerDemoIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    owner_demo_disable_api_v1_admin_ai_owner_demo_disable_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    owner_demo_delete_key_api_v1_admin_ai_owner_demo_key_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    owner_demo_test_api_v1_admin_ai_owner_demo_test_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    owner_platform_switch_api_v1_admin_ai_owner_platform_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformSwitchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_ai_settings_api_v1_admin_ai_settings_get: {
         parameters: {
             query?: never;
@@ -11324,6 +11788,45 @@ export interface operations {
             };
         };
     };
+    realtime_tool_api_v1_ai_realtime_tools__name__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_allergies_api_v1_allergies__item_id__put: {
         parameters: {
             query?: never;
@@ -12132,6 +12635,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_email_api_v1_auth_email_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeEmailIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
                 };
             };
             /** @description Validation Error */

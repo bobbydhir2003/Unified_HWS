@@ -12,9 +12,9 @@ import { get, post } from "@/lib/api";
 import { fromNow } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/types";
 import { cn, titleCase } from "@/lib/utils";
-import { type ApprovalT, ApprovalList, CASE_COLS, CaseDrawer, CaseListHeader, CaseRow, type CaseT, CATEGORY_LABEL, ownerLabel, SlaBadge, type TaskT } from "./ops";
+import { type ApprovalT, ApprovalList, OtherApprovalList, type OtherApprovalT, CASE_COLS, CaseDrawer, CaseListHeader, CaseRow, type CaseT, CATEGORY_LABEL, ownerLabel, SlaBadge, type TaskT } from "./ops";
 
-type Worklist = { cases: CaseT[]; tasks: TaskT[]; approvals: ApprovalT[]; counts: { cases: number; tasks: number; approvals: number; overdue: number } };
+type Worklist = { cases: CaseT[]; tasks: TaskT[]; approvals: ApprovalT[]; other_approvals?: OtherApprovalT[]; counts: { cases: number; tasks: number; approvals: number; overdue: number } };
 const PRIO: Record<string, React.ComponentProps<typeof Badge>["variant"]> = { urgent: "danger", high: "warning", normal: "neutral", low: "neutral" };
 
 /** Group cases that come from the same rule (e.g. 16 staffing gaps) so one row stands for many. */
@@ -93,7 +93,10 @@ export function WorklistPage() {
             </Card>
           </TabsContent>
           <TabsContent value="tasks"><Card className="overflow-hidden">{q.isLoading ? <LoadingRows /> : <TaskList tasks={q.data?.tasks ?? []} onOpenCase={setCase} />}</Card></TabsContent>
-          <TabsContent value="approvals"><Card className="px-4">{q.isLoading ? <LoadingRows /> : <ApprovalList items={q.data?.approvals ?? []} empty={<EmptyState icon={ShieldCheck} title="Nothing to approve" />} />}</Card></TabsContent>
+          <TabsContent value="approvals"><Card className="px-4">{q.isLoading ? <LoadingRows /> : (<>
+            <ApprovalList items={q.data?.approvals ?? []} empty={q.data?.other_approvals?.length ? <></> : <EmptyState icon={ShieldCheck} title="Nothing to approve" />} />
+            <OtherApprovalList items={q.data?.other_approvals ?? []} />
+          </>)}</Card></TabsContent>
         </Tabs>
       )}
       <CaseDrawer caseId={openCase} onClose={() => setCase(null)} />

@@ -72,6 +72,8 @@ class CaseOut(ORM):
     evidence: dict
     created_at: datetime
     last_detected_at: datetime
+    stage: str | None = None
+    ai_assist: dict | None = None
 
 
 class CaseEventOut(ORM):
@@ -127,6 +129,7 @@ class CaseDetail(BaseModel):
     tasks: list[dict]
     deliveries: list[DeliveryOut]
     approvals: list[ApprovalOut]
+    story: list[dict] = []
 
 
 def _names(ctx: TenantContext, ids: set) -> dict:
@@ -150,9 +153,19 @@ def case_out(ctx: TenantContext, cases: list[Case]) -> list[CaseOut]:
     pids = {c.patient_id for c in cases if c.patient_id}
     pnames = {p.id: p.full_name for p in ctx.db.scalars(select(Patient).where(Patient.id.in_(pids)))} if pids else {}
     unames = _names(ctx, {c.assigned_user_id for c in cases})
+    from app.engine.story import stage
+
+    ids = [c.id for c in cases]
+    appr = ctx.db.execute(select(ApprovalRequest.case_id, ApprovalRequest.status).where(ApprovalRequest.case_id.in_(ids),
+                          ApprovalRequest.status.in_(("pending", "executed")))).all() if ids else []
+    pending = {cid for cid, st in appr if st == "pending"}
+    executed = {cid for cid, st in appr if st == "executed"}
     out = []
     for c in cases:
         o = CaseOut.model_validate(c)
+        o.stage = stage(c, c.id in pending, c.id in executed)
+        a = (c.data or {}).get("ai_assist")
+        o.ai_assist = {k: a.get(k) for k in ("status", "trigger", "at")} if a else None
         o.patient_name = pnames.get(c.patient_id)
         o.assigned_user_name = unames.get(c.assigned_user_id)
         o.overdue = bool(c.due_at and c.status in ("open", "in_progress", "waiting", "escalated") and c.due_at < now())
@@ -232,11 +245,15 @@ def get_case(cid: uuid.UUID, ctx: TenantContext = Depends(require(P.CASES_READ))
     tasks = [task_out(t) for t in ctx.db.scalars(select(Task).where(Task.case_id == c.id).order_by(Task.created_at))]
     deliveries = ctx.db.scalars(select(NotificationDelivery).where(NotificationDelivery.case_id == c.id)
                                 .order_by(NotificationDelivery.created_at)).all()
-    approvals = [_approval_out(ctx, a) for a in ctx.db.scalars(select(ApprovalRequest).where(ApprovalRequest.case_id == c.id))]
+    appr_rows = ctx.db.scalars(select(ApprovalRequest).where(ApprovalRequest.case_id == c.id)).all()
+    approvals = [_approval_out(ctx, a) for a in appr_rows]
+    from app.engine.story import build
+
+    story = build(c, list(events), list(appr_rows))
     ctx.audit("case.viewed", resource_type="case", resource_id=c.id, patient_id=c.patient_id)
     ctx.db.commit()
     return CaseDetail(case=case_out(ctx, [c])[0], events=ev_out, tasks=tasks,
-                      deliveries=[DeliveryOut.model_validate(d) for d in deliveries], approvals=approvals)
+                      deliveries=[DeliveryOut.model_validate(d) for d in deliveries], approvals=approvals, story=story)
 
 
 class CaseIn(BaseModel):
@@ -349,9 +366,38 @@ def worklist(ctx: TenantContext = Depends(require(P.CASES_READ))):
 
     tasks = list_tasks(scope="mine", status="open", ctx=ctx)
     approvals = [a for a in list_approvals(status="pending", ctx=ctx) if a.can_decide]
-    return {"cases": cases, "tasks": tasks, "approvals": approvals,
-            "counts": {"cases": len(cases), "tasks": len(tasks), "approvals": len(approvals),
+    other = _other_approvals(ctx)
+    return {"cases": cases, "tasks": tasks, "approvals": approvals, "other_approvals": other,
+            "counts": {"cases": len(cases), "tasks": len(tasks), "approvals": len(approvals) + len(other),
                        "overdue": sum(1 for c in cases if c.overdue)}}
+
+
+def _other_approvals(ctx: TenantContext) -> list[dict]:
+    """Decisions that live in their own modules, shown in the one My work approvals list (decided via their own endpoints,
+    which enforce their own permission and separation-of-duties rules)."""
+    from app.models import AutomationRun, AutomationWorkflow, InventoryItem, PurchaseRequest
+
+    out: list[dict] = []
+    if ctx.can(P.PROCUREMENT_APPROVE):
+        q = select(PurchaseRequest, InventoryItem.name, InventoryItem.unit).join(InventoryItem, InventoryItem.id == PurchaseRequest.item_id).where(
+            PurchaseRequest.organization_id == ctx.org_id, PurchaseRequest.status == "submitted",
+            or_(PurchaseRequest.requested_by_id.is_(None), PurchaseRequest.requested_by_id != ctx.user.id))
+        if ctx.facility_ids is not None:
+            q = q.where(PurchaseRequest.facility_id.in_(ctx.facility_ids))
+        for p, name, unit in ctx.db.execute(q.order_by(PurchaseRequest.created_at).limit(50)).all():
+            out.append({"id": str(p.id), "type": "purchase_request", "title": f"Purchase request #{p.number}: {p.quantity} {unit} {name}",
+                        "summary": p.reason, "case_id": str(p.case_id) if p.case_id else None, "created_at": p.created_at,
+                        "requested_by": "Pharmacy Watchdog" if p.source == "watchdog" else "Staff", "link": "/pharmacy?tab=purchasing",
+                        "decide": {"path": f"/purchase-requests/{p.id}/decide", "style": "approve_flag"}})
+    if ctx.can(P.MESSAGES):
+        q = select(AutomationRun, AutomationWorkflow.name).join(AutomationWorkflow, AutomationWorkflow.id == AutomationRun.workflow_id).where(
+            AutomationRun.organization_id == ctx.org_id, AutomationRun.status == "pending_approval")
+        for r, name in ctx.db.execute(q.order_by(AutomationRun.created_at).limit(50)).all():
+            acts = ", ".join(a.get("type", "action") for a in (r.proposed_actions or [])[:3])
+            out.append({"id": str(r.id), "type": "automation_run", "title": f"{name}: {acts or 'proposed actions'}", "summary": None,
+                        "case_id": None, "created_at": r.created_at, "requested_by": "Automation workflow", "link": "/automation",
+                        "decide": {"path": f"/automation/runs/{r.id}", "style": "approve_reject_paths"}})
+    return out
 
 
 # ---------- Approvals ----------
@@ -475,6 +521,9 @@ def run_monitor_now(key: str, ctx: TenantContext = Depends(require(P.AUTOMATION_
     try:
         run = run_monitor(db, ctx.org_id, key, force=True)
         db.commit()
+        from app.tasks import _assist_sweep
+
+        _assist_sweep(db)
         result = {"status": run.status, "found": run.found, "opened": run.opened, "updated": run.updated, "closed": run.closed,
                   "error": run.error, "duration_ms": run.duration_ms}
     finally:

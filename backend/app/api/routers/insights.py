@@ -209,7 +209,7 @@ def briefing(ctx: TenantContext = Depends(require(P.CASES_READ))):
     narrative, source = "\n".join(lines), "deterministic"
     from app.ai.openai_provider import available
 
-    if available():
+    if available("hospital_operations"):
         from pydantic import BaseModel
 
         from app.ai.config import effective

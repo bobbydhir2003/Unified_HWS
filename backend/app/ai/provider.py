@@ -293,6 +293,6 @@ def get_provider():
     if active_provider() == "openai":
         from app.ai.openai_provider import OpenAIDocumentProvider, available
 
-        if available():
+        if available("document_intelligence"):
             return OpenAIDocumentProvider()
     return SimulatedProvider()  # also the graceful fallback when OpenAI isn't configured (labeled "simulated")

@@ -10,17 +10,20 @@ import { Field } from "@/components/ui/field";
 import { Input, NativeSelect } from "@/components/ui/input";
 import { api, get, post, put } from "@/lib/api";
 import { fmtDateTime } from "@/lib/format";
+import { useAuth } from "@/lib/auth";
 import { titleCase } from "@/lib/utils";
+import { OwnerAICard } from "./OwnerAICard";
 
 type Settings = {
   provider: string; source: string; key: { configured: boolean; hint: string | null; updated_at: string | null };
   models: Record<"text" | "vision" | "transcription" | "realtime", string | null>; agent_models: Record<string, string>; agents: string[];
-  suggested: Record<string, string>; last_test: null | { at: string; ok: boolean; models?: Record<string, boolean>; error?: string; available_count?: number };
+  suggested: Record<string, string>; last_test: null | (TestResult & { at: string });
   active_provider: string; phi_allowed: boolean; encryption: string; demo_restricted?: boolean;
-  demo_scope?: { isolated: boolean; expires_at: string | null; shared_demo_key: boolean;
+  demo_scope?: { isolated: boolean; expires_at: string | null; shared_demo_key: boolean; provider_source?: string; owner_managed?: boolean; reason?: string | null;
     usage: { requests_last_hour: number; cost_usd: number; limits: { requests_per_hour: number; concurrency: number; cost_usd: number } } };
 };
-type TestResult = { ok: boolean; models?: Record<string, boolean>; error?: string; available_count?: number; latency_ms?: number };
+type TestResult = { ok: boolean; models?: Record<string, boolean>; error?: string; available_count?: number; latency_ms?: number;
+  family_problems?: Record<string, string>; capabilities?: Record<string, { ok: boolean; error?: string }> };
 
 const MODEL_FIELDS: [keyof Settings["models"], string, string][] = [
   ["text", "Text model", "Chart assistant, drafting, agents"], ["vision", "Vision model", "Document & insurance-card reading"],
@@ -31,6 +34,7 @@ export function AISettingsPage() {
   const qc = useQueryClient();
   const { confirm, dialog } = useConfirm();
   const q = useQuery({ queryKey: ["ai", "settings"], queryFn: () => get<Settings>("/admin/ai-settings") });
+  const { me } = useAuth();
   const [f, setF] = React.useState<{ provider: string; models: Record<string, string>; agent_models: Record<string, string> } | null>(null);
   const [key, setKey] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -63,7 +67,8 @@ export function AISettingsPage() {
           <ShieldAlert className="mt-0.5 size-4 shrink-0 text-primary" />
           <div className="space-y-1">
             <p><strong>Demo session settings.</strong> Everything you save here applies only to this demo sign-in — the platform configuration and other visitors are never affected. A key you enter is checked with OpenAI, stored encrypted, never shown again, and deleted when this session expires{s.demo_scope.expires_at ? ` (${fmtDateTime(s.demo_scope.expires_at)})` : ""}.</p>
-            <p className="text-muted-foreground">Limits: {s.demo_scope.usage.limits.requests_per_hour} AI requests per hour, {s.demo_scope.usage.limits.concurrency} at a time, ${s.demo_scope.usage.limits.cost_usd.toFixed(2)} estimated spend. Used this hour: {s.demo_scope.usage.requests_last_hour}.{s.demo_scope.shared_demo_key ? " Without your own key, the shared demo project key is used." : " Without your own key, AI runs in the labeled simulation."}</p>
+            <p data-testid="ai-demo-source"><strong>AI used in this session:</strong> {s.demo_scope.provider_source === "visitor-key" ? "your own key (temporary)" : s.demo_scope.owner_managed ? "the platform owner's demo AI (limited)" : s.demo_scope.provider_source === "demo-project" ? "the shared demo project key (limited)" : `labelled simulation${s.demo_scope.reason ? ` — ${s.demo_scope.reason}` : ""}`}.</p>
+            {!s.demo_scope.owner_managed && <p className="text-muted-foreground">Limits: {s.demo_scope.usage.limits.requests_per_hour} AI requests per hour, {s.demo_scope.usage.limits.concurrency} at a time, ${s.demo_scope.usage.limits.cost_usd.toFixed(2)} estimated spend. Used this hour: {s.demo_scope.usage.requests_last_hour}.{s.demo_scope.shared_demo_key ? " Without your own key, the shared demo project key is used." : " Without your own key, AI runs in the labeled simulation."}</p>}
           </div>
         </div>
       )}
@@ -112,12 +117,15 @@ export function AISettingsPage() {
           <div className="flex gap-2"><Button loading={busy} disabled={s.demo_restricted} onClick={save}><Save />Save settings</Button><Button variant="outline" loading={busy} disabled={s.demo_restricted} onClick={runTest}><PlugZap />Test connection</Button></div>
         </div>
         <div className="space-y-4">
+          {me?.user.is_superadmin && !s.demo_scope && !s.demo_restricted && <OwnerAICard />}
           <Card>
             <CardHeader><CardTitle>Connection test</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-table">{!shown ? <p className="text-muted-foreground">Not tested yet. Live validation is pending until a key is saved and tested.</p> : (
               <>
                 <p className="flex items-center gap-2 font-medium">{shown.ok ? <CheckCircle2 className="size-4 text-success" /> : <XCircle className="size-4 text-destructive" />}{shown.ok ? "Connected" : "Not connected"}{"at" in shown && shown.at ? <span className="font-normal text-muted-foreground">· {fmtDateTime(shown.at as string)}</span> : null}</p>
                 {shown.error && <p className="text-destructive">{shown.error}</p>}
+                {shown.family_problems && Object.values(shown.family_problems).map((p) => <p key={p} className="text-destructive">{p}</p>)}
+                {shown.capabilities && <ul className="space-y-1" data-testid="ai-capabilities">{Object.entries(shown.capabilities).map(([k, c]) => <li key={k} className="flex items-center gap-2">{c.ok ? <CheckCircle2 className="size-3.5 text-success" /> : <XCircle className="size-3.5 text-destructive" />}{titleCase(k)}: {c.ok ? "real call succeeded" : c.error}</li>)}</ul>}
                 {shown.models && <ul className="space-y-1">{Object.entries(shown.models).map(([k, ok]) => <li key={k} className="flex items-center gap-2">{ok ? <CheckCircle2 className="size-3.5 text-success" /> : <XCircle className="size-3.5 text-destructive" />}{titleCase(k.replace("agent:", "agent · ").replace(/_/g, " "))} {ok ? "available" : "not available to this account"}</li>)}</ul>}
               </>
             )}</CardContent>

@@ -21,7 +21,7 @@ GUARD = ("You assist hospital staff. You can only use the provided tools; you ha
          "Cite case references (e.g. C1042) and sources you used. If tools return nothing relevant, say so.")
 
 DEFAULTS = [
-    ("insurance_guardian", "Insurance Guardian", "Helps resolve insurance verification issues before visits.", ["list_open_cases", "get_case", "get_patient_coverage", "propose_task", "propose_patient_message"], P.INSURANCE_WRITE, "manual"),
+    ("insurance_guardian", "Insurance Guardian", "Helps resolve insurance verification issues before visits.", ["get_insurance_worklist", "list_open_cases", "get_case", "get_patient_coverage", "propose_task", "propose_patient_message"], P.INSURANCE_WRITE, "manual"),
     ("doctor_assistant", "Doctor Assistant", "Answers questions from one patient's chart with citations (runs in the chart's Ask AI panel).", [], P.CLINICAL_READ, "feature"),
     ("medical_scribe", "Medical Scribe", "Drafts SOAP notes from consented visit conversations (runs in the visit's Scribe panel).", [], P.CLINICAL_WRITE, "feature"),
     ("document_intelligence", "Document Intelligence", "Classifies and extracts incoming documents for staff review (runs on upload).", [], P.DOCUMENTS_REVIEW, "feature"),
@@ -34,7 +34,7 @@ DEFAULTS = [
 ]
 
 RULE_PLANS = {
-    "insurance_guardian": [("list_open_cases", {"category": "insurance", "limit": 10})],
+    "insurance_guardian": [("get_insurance_worklist", {"limit": 10})],
     "pharmacy_watchdog": [("list_open_cases", {"category": "pharmacy", "limit": 10}), ("list_open_cases", {"category": "inventory", "limit": 10})],
     "discharge_coordination": [("list_open_cases", {"category": "discharge", "limit": 10})],
     "hospital_operations": [("get_operations_summary", {}), ("list_open_cases", {"limit": 8})],
@@ -44,8 +44,22 @@ RULE_PLANS = {
 }
 
 
+# Tool upgrades applied to agents still on an older *unmodified* default tool list (admin customizations are left alone).
+TOOL_UPGRADES = {
+    "insurance_guardian": ({"list_open_cases", "get_case", "get_patient_coverage", "propose_task", "propose_patient_message"},
+                           ["get_insurance_worklist"], "Added the bounded insurance worklist tool (one call instead of one per case)"),
+}
+
+
 def ensure_defaults(db: Session, org_id) -> None:
-    have = set(db.scalars(select(AgentConfig.key).where(AgentConfig.organization_id == org_id)))
+    rows = {c.key: c for c in db.scalars(select(AgentConfig).where(AgentConfig.organization_id == org_id))}
+    for key, (old, add, note) in TOOL_UPGRADES.items():
+        c = rows.get(key)
+        if c and set(c.allowed_tools or []) == old:
+            c.allowed_tools = [*add, *c.allowed_tools]
+            c.version = (c.version or 1) + 1
+            db.add(AgentConfigVersion(organization_id=org_id, agent_key=key, version=c.version, snapshot=snapshot(c), note=note))
+    have = set(rows)
     for key, name, purpose, tools, perm, trigger in DEFAULTS:
         if key in have:
             continue
@@ -102,6 +116,9 @@ def _summarize(key: str, calls: list[dict]) -> str:
             cs = r["cases"]
             label = (c["arguments"].get("category") or "operational").replace("_", " ")
             lines.append(f"{len(cs)} open {label} case(s)" + (": " + "; ".join(f"{x['title']} [{x['ref']}]" for x in cs[:5]) if cs else "."))
+        elif "worklist" in r:
+            w = r["worklist"]
+            lines.append(f"{len(w)} open insurance case(s)" + (": " + "; ".join(f"{x['title']} [{x['ref']}] — coverage {x.get('coverage') or 'unknown'}" for x in w[:5]) if w else "."))
         elif "tiles" in r:
             lines.append("Operations: " + "; ".join(f"{t['metric']} {t['value']}" for t in r["tiles"][:8]) + ".")
         elif "gaps" in r:
@@ -112,8 +129,13 @@ def _summarize(key: str, calls: list[dict]) -> str:
     return "\n".join(lines) or "Nothing relevant found."
 
 
+def ai_source(eff) -> str:
+    """Where a live AI call's credential came from (shown in governance and run history)."""
+    return {"env": "platform", "ui": "platform"}.get(eff.source, eff.source)
+
+
 def run_agent(ctx, key: str, user_input: str, *, facility_id: uuid.UUID | None = None, subject_type: str | None = None,
-              subject_id: str | None = None) -> AgentRun:
+              subject_id: str | None = None, trigger: str = "manual") -> AgentRun:
     ensure_defaults(ctx.db, ctx.org_id)
     cfg = ctx.db.scalar(select(AgentConfig).where(AgentConfig.organization_id == ctx.org_id, AgentConfig.key == key))
     if not cfg:
@@ -129,10 +151,12 @@ def run_agent(ctx, key: str, user_input: str, *, facility_id: uuid.UUID | None =
     from app.ai.config import effective
     from app.ai.openai_provider import OpenAICore, available
 
-    live = available()
+    live = available(key)
+    eff = effective()
     run = AgentRun(organization_id=ctx.org_id, agent_key=key, agent_version=cfg.version, user_id=ctx.user.id, facility_id=facility_id,
                    subject_type=subject_type, subject_id=subject_id, input=(user_input or "")[:4000], mode="openai" if live else "rule_based",
-                   model=(cfg.model or effective().model_for(key)) if live else "rules-v1")
+                   model=(cfg.model or eff.model_for(key)) if live else "rules-v1", trigger=trigger,
+                   ai_source=ai_source(eff) if live else "rules")
     ctx.db.add(run)
     ctx.db.flush()
     start = time.perf_counter()
@@ -145,6 +169,14 @@ def run_agent(ctx, key: str, user_input: str, *, facility_id: uuid.UUID | None =
         calls.append({"tool": name, "arguments": args, "ok": "error" not in result, "result": result})
         return result
 
+    def rules(note: str) -> None:
+        for name, args in RULE_PLANS.get(key, [])[: cfg.max_tool_calls]:
+            execute(name, args)
+        run.output = _summarize(key, calls) + f"\n\n({note})"
+        run.status = "succeeded"
+
+    from app.ai.provider import AIError, AIPolicyError
+
     try:
         if live:
             from app.ai.policy import contains_phi
@@ -152,14 +184,20 @@ def run_agent(ctx, key: str, user_input: str, *, facility_id: uuid.UUID | None =
             text, meta = OpenAICore().tool_loop(system=cfg.instructions, user=f"<request>{user_input}</request>", tools=T.openai_tool_specs(list(cfg.allowed_tools)),
                                                 execute=execute, contains_phi=contains_phi(ctx.db, ctx.org_id), model=run.model, max_steps=cfg.max_tool_calls)
             run.output, run.input_tokens, run.output_tokens, run.cost_usd = text, meta.input_tokens, meta.output_tokens, meta.cost_usd
-            run.status = "limit_reached" if "tool-call limit" in text else "succeeded"
+            run.status = "limit_reached" if getattr(meta, "tool_limit_reached", False) else "succeeded"
+            if run.status == "limit_reached":
+                run.error = f"Used all {cfg.max_tool_calls} tool calls; the answer was written from the results gathered so far."
             if meta.cost_usd is not None and meta.cost_usd > cfg.max_cost_usd:
                 run.status, run.error = "limit_reached", f"cost {meta.cost_usd:.4f} exceeded limit {cfg.max_cost_usd:.2f}"
         else:
-            for name, args in RULE_PLANS.get(key, [])[: cfg.max_tool_calls]:
-                execute(name, args)
-            run.output = _summarize(key, calls) + "\n\n(Rule-based summary — no AI provider configured.)"
-            run.status = "succeeded"
+            rules("Rule-based summary — " + (eff.reason or "no AI provider is configured for this assistant") + ".")
+    except AIPolicyError as e:
+        run.status, run.error = "blocked", str(e)[:300]
+    except AIError as e:
+        # Labelled fallback: the deterministic summary runs and the run says plainly that AI was unavailable.
+        calls.clear()
+        run.mode, run.model, run.ai_source, run.error = "rule_based", "rules-v1", "rules", f"AI provider unavailable: {str(e)[:250]}"
+        rules(f"Simulated — AI provider unavailable: {str(e)[:200]}")
     except Exception as e:  # noqa: BLE001
         run.status, run.error = "failed", f"{type(e).__name__}: {str(e)[:300]}"
     run.tool_calls = [{k: v for k, v in c.items() if k != "result"} | {"result_preview": str(c["result"])[:300]} for c in calls]

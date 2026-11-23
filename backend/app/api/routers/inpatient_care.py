@@ -95,7 +95,7 @@ def draft_instructions(sid: uuid.UUID, ctx: TenantContext = Depends(require(P.CL
     text, source = D.draft_instructions(ctx.db, s)
     from app.ai.openai_provider import available
 
-    if available():
+    if available("discharge_coordination"):
         from pydantic import BaseModel as _B
 
         from app.ai.openai_provider import OpenAICore

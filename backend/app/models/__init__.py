@@ -1,5 +1,5 @@
 from app.models.agents import AgentConfig, AgentConfigVersion, AgentRun, AIFeedback
-from app.models.ai_settings import AIProviderSettings, DemoAISettings
+from app.models.ai_settings import AIProviderSettings, AIUsageCounter, DemoAISettings
 from app.models.automation import AutomationRun, AutomationWorkflow, Task, VoiceCall
 from app.models.base import Base
 from app.models.billing import Charge, Claim, ClaimEvent, ClaimSubmission, FeeScheduleItem, Invoice, Payment
@@ -113,6 +113,7 @@ __all__ = [
     "StockMovement",
     "Supplier",
     "AIProviderSettings",
+    "AIUsageCounter",
     "DemoAISettings",
     "EdVisit",
     "TriageAssessment",

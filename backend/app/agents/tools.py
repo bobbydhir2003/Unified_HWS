@@ -91,6 +91,32 @@ def get_case(ctx, a: _CaseRef) -> dict:
     return {**_case_brief(c), "summary": c.summary, "evidence": c.evidence, "recent_events": [e.message for e in ev]}
 
 
+class _Worklist(_Args):
+    limit: int = Field(default=10, ge=1, le=15)
+
+
+@tool("get_insurance_worklist", "Open insurance cases with each patient's current coverage state in ONE call (use this first).", _Worklist, P.CASES_READ)
+def get_insurance_worklist(ctx, a: _Worklist) -> dict:
+    """Bounded retrieval: replaces 1 + 2N calls (list, then get_case + get_patient_coverage per case)."""
+    from app.api.routers.operations import _visible
+    from app.services.insurance import coverage_state
+
+    rows = ctx.db.scalars(_visible(ctx, select(Case).where(Case.status.in_(("open", "in_progress", "waiting", "escalated")), Case.category == "insurance"))
+                          .order_by(Case.due_at.asc().nulls_last()).limit(a.limit)).all()
+    can_pt = ctx.can(P.PATIENTS_READ)
+    out = []
+    for c in rows:
+        item = {**_case_brief(c), "summary": (c.summary or "")[:200], "patient_id": str(c.patient_id) if c.patient_id and can_pt else None}
+        if c.patient_id and can_pt:
+            try:
+                st = coverage_state(ctx.db, c.patient_id, now().date())
+                item.update(coverage=st.state, coverage_reason=st.reason, payer=st.insurance.payer_name if st.insurance else None)
+            except Exception:  # noqa: BLE001
+                item["coverage"] = None
+        out.append(item)
+    return {"worklist": out, "note": "Payer checks are simulated in this environment (no live payer connection)."}
+
+
 class _PatientRef(_Args):
     patient_id: str
 
@@ -238,18 +264,55 @@ def _exec_task(db, req, actor_id) -> dict:
 
 @AP.executor("agent.patient_message")
 def _exec_msg(db, req, actor_id) -> dict:
+    """Approved administrative message: a portal thread (sender = the approving staff member), then the portal notification
+    goes through notifications.deliver so the patient's channel preferences and the daily patient cap apply."""
+    from app.engine.notifications import deliver
     from app.models import MessageThread, SecureMessage
-    from app.services.notify import notify
 
     p = db.get(Patient, uuid.UUID(req.payload["patient_id"]))
+    if not p or p.organization_id != req.organization_id:
+        raise ValueError("patient not found")
     th = MessageThread(organization_id=req.organization_id, patient_id=p.id, subject=req.payload["subject"][:200], category="general",
                        assigned_provider_id=p.primary_provider_id, patient_unread=1, last_message_at=now())
     db.add(th)
     db.flush()
     db.add(SecureMessage(organization_id=req.organization_id, thread_id=th.id, sender_id=actor_id, sender_is_patient=False, body=req.payload["body"]))
-    if p.portal_user_id:
-        notify(db, req.organization_id, p.portal_user_id, "message", "New message from your care team", req.payload["subject"][:200], f"/portal/messages/{th.id}")
-    return {"thread_id": str(th.id)}
+    case = db.get(Case, req.case_id) if req.case_id else None
+    d = deliver(db, req.organization_id, channel="portal", dedupe=f"approval:{req.id}:portal", subject="New message from your care team",
+                body=req.payload["subject"][:200], category="general", link=f"/portal/messages/{th.id}", case=case, patient_id=p.id)
+    return {"thread_id": str(th.id), "notification": d.status if d else "already_sent", "notification_reason": d.status_reason if d else None}
+
+
+@AP.executor("inventory.adjust_purchase_request")
+def _exec_pr_qty(db, req, actor_id) -> dict:
+    """Change the quantity of a still-submitted purchase request (bounded at proposal time; re-checked here). Approving
+    the purchase itself remains a separate procurement decision."""
+    from app.models import PurchaseRequest
+
+    pr = db.get(PurchaseRequest, uuid.UUID(req.payload["purchase_request_id"]))
+    q = int(req.payload["quantity"])
+    if not pr or pr.organization_id != req.organization_id:
+        raise ValueError("purchase request not found")
+    if pr.status != "submitted":
+        raise ValueError(f"purchase request is already {pr.status}")
+    if not 1 <= q <= 100000:
+        raise ValueError("quantity out of range")
+    old, pr.quantity = pr.quantity, q
+    return {"purchase_request_id": str(pr.id), "from": old, "to": q}
+
+
+@AP.executor("insurance.request_update")
+def _exec_ins_update(db, req, actor_id) -> dict:
+    """Ask the patient (portal) to confirm/update insurance. Idempotent: reuses an open request."""
+    from app.monitors.insurance import ensure_update_request
+
+    case = db.get(Case, uuid.UUID(req.payload["case_id"]))
+    if not case or case.organization_id != req.organization_id or not case.patient_id:
+        raise ValueError("case not found")
+    appt = (case.data or {}).get("appointment_id")
+    r = ensure_update_request(db, case, case.patient_id, req.payload.get("reason") or "Please confirm your insurance before your visit.",
+                              uuid.UUID(appt) if appt else None)
+    return {"coverage_update_request_id": str(r.id), "status": r.status}
 
 
 def openai_tool_specs(names: list[str]) -> list[dict]:

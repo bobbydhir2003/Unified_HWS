@@ -465,3 +465,47 @@ def realtime_session(body: RealtimeIn, ctx: TenantContext = Depends(require(P.AI
     ctx.audit("ai.realtime_session", details={"model": out["model"], "purpose": body.purpose})
     ctx.db.commit()
     return {"mode": "openai", **out}
+
+
+class CallbackArgs(BaseModel):
+    topic: str = Field(min_length=2, max_length=200)
+    caller_first_name: str | None = Field(default=None, max_length=60)
+    preferred_time: str | None = Field(default=None, max_length=60)
+
+
+@router.post("/ai/realtime/tools/{name}")
+def realtime_tool(name: str, args: dict, ctx: TenantContext = Depends(require(P.AI_USE))):
+    """Execute one function call requested by the voice model. Only the allow-listed tools exist; every argument is
+    validated here; nothing reads patient records, books appointments or changes clinical data."""
+    from pydantic import ValidationError
+
+    from app.ai import usage
+    from app.ai.realtime import CALLBACKS_PER_USER_PER_DAY, TOOL_NAMES
+    from app.engine.cases import add_task
+    from app.models import Clinic, Department
+
+    ctx.require(P.SCHEDULE_WRITE)
+    if name not in TOOL_NAMES:
+        ctx.audit("ai.realtime_tool", outcome="denied", details={"tool": name[:60]})
+        ctx.db.commit()
+        raise HTTPException(404, "Unknown voice tool")
+    if name == "get_clinic_information":
+        clinics = ctx.db.scalars(select(Clinic).where(Clinic.organization_id == ctx.org_id, Clinic.is_active.is_(True)).order_by(Clinic.name).limit(10)).all()
+        depts = ctx.db.scalars(select(Department.name).where(Department.organization_id == ctx.org_id, Department.is_active.is_(True))
+                               .order_by(Department.name).limit(30)).all()
+        return {"facilities": [{"name": c.name, "phone": c.phone, "address": ", ".join(x for x in (c.address_line1, c.city, c.state) if x)}
+                               for c in clinics], "departments": sorted(set(depts))}
+    try:
+        a = CallbackArgs.model_validate(args)
+    except ValidationError:
+        raise HTTPException(422, "Invalid callback request") from None
+    if not usage.take_request(f"voice:callback:{ctx.user.id}:{usage.day_key()}", CALLBACKS_PER_USER_PER_DAY):
+        raise HTTPException(429, "Callback request limit reached for today")
+    who = a.caller_first_name or "Caller"
+    t = add_task(ctx.db, None, org_id=ctx.org_id, title=f"Voice assistant callback: {who} — {a.topic}"[:200], role="receptionist",
+                 kind="callback", source="voice_ai", priority="normal", due_minutes=240,
+                 description=f"Requested during a voice-assistant session by the caller. Preferred time: {a.preferred_time or 'not stated'}. "
+                             "Administrative callback only — nothing was booked or changed.")
+    ctx.audit("ai.realtime_tool", resource_type="task", resource_id=t.id if t else None, details={"tool": name})
+    ctx.db.commit()
+    return {"ok": True, "message": "A front-desk team member will call back. Nothing has been booked."}

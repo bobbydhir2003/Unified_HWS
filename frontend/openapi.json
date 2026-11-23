@@ -1865,6 +1865,15 @@
       "title": "Events",
       "type": "array"
      },
+     "story": {
+      "default": [],
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "title": "Story",
+      "type": "array"
+     },
      "tasks": {
       "items": {
        "additionalProperties": true,
@@ -1951,6 +1960,18 @@
    },
    "CaseOut": {
     "properties": {
+     "ai_assist": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ai Assist"
+     },
      "assigned_role": {
       "anyOf": [
        {
@@ -2183,6 +2204,17 @@
       "title": "Source",
       "type": "string"
      },
+     "stage": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stage"
+     },
      "status": {
       "title": "Status",
       "type": "string"
@@ -2287,6 +2319,29 @@
      "to"
     ],
     "title": "CaseStatusIn",
+    "type": "object"
+   },
+   "ChangeEmailIn": {
+    "properties": {
+     "current_password": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Current Password",
+      "type": "string"
+     },
+     "new_email": {
+      "maxLength": 320,
+      "minLength": 5,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "title": "New Email",
+      "type": "string"
+     }
+    },
+    "required": [
+     "new_email",
+     "current_password"
+    ],
+    "title": "ChangeEmailIn",
     "type": "object"
    },
    "ChangePasswordIn": {
@@ -5799,6 +5854,66 @@
     "title": "InvitationPreview",
     "type": "object"
    },
+   "Limits": {
+    "properties": {
+     "global_concurrency": {
+      "default": 6,
+      "maximum": 50.0,
+      "minimum": 1.0,
+      "title": "Global Concurrency",
+      "type": "integer"
+     },
+     "global_daily_requests": {
+      "default": 200,
+      "maximum": 20000.0,
+      "minimum": 0.0,
+      "title": "Global Daily Requests",
+      "type": "integer"
+     },
+     "monthly_budget_usd": {
+      "default": 10.0,
+      "maximum": 5000.0,
+      "minimum": 0.0,
+      "title": "Monthly Budget Usd",
+      "type": "number"
+     },
+     "realtime_daily_sessions": {
+      "default": 20,
+      "maximum": 1000.0,
+      "minimum": 0.0,
+      "title": "Realtime Daily Sessions",
+      "type": "integer"
+     },
+     "realtime_enabled": {
+      "default": false,
+      "title": "Realtime Enabled",
+      "type": "boolean"
+     },
+     "realtime_max_seconds": {
+      "default": 120,
+      "maximum": 900.0,
+      "minimum": 30.0,
+      "title": "Realtime Max Seconds",
+      "type": "integer"
+     },
+     "visitor_concurrency": {
+      "default": 2,
+      "maximum": 10.0,
+      "minimum": 1.0,
+      "title": "Visitor Concurrency",
+      "type": "integer"
+     },
+     "visitor_daily_requests": {
+      "default": 25,
+      "maximum": 1000.0,
+      "minimum": 0.0,
+      "title": "Visitor Daily Requests",
+      "type": "integer"
+     }
+    },
+    "title": "Limits",
+    "type": "object"
+   },
    "LocationIn": {
     "properties": {
      "attributes": {
@@ -7546,6 +7661,106 @@
     "title": "OverrideIn",
     "type": "object"
    },
+   "OwnerDemoIn": {
+    "properties": {
+     "allowed_agents": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Allowed Agents",
+      "type": "array"
+     },
+     "allowed_models": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Allowed Models",
+      "type": "array"
+     },
+     "api_key": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "minLength": 20,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Api Key"
+     },
+     "enabled": {
+      "default": false,
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "key_source": {
+      "default": "dedicated",
+      "enum": [
+       "dedicated",
+       "platform"
+      ],
+      "title": "Key Source",
+      "type": "string"
+     },
+     "limits": {
+      "$ref": "#/components/schemas/Limits",
+      "default": {
+       "global_concurrency": 6,
+       "global_daily_requests": 200,
+       "monthly_budget_usd": 10.0,
+       "realtime_daily_sessions": 20,
+       "realtime_enabled": false,
+       "realtime_max_seconds": 120,
+       "visitor_concurrency": 2,
+       "visitor_daily_requests": 25
+      }
+     },
+     "realtime_model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Realtime Model"
+     },
+     "text_model": {
+      "default": "gpt-4.1-mini",
+      "title": "Text Model",
+      "type": "string"
+     },
+     "transcription_model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Transcription Model"
+     },
+     "vision_model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Vision Model"
+     }
+    },
+    "title": "OwnerDemoIn",
+    "type": "object"
+   },
    "PAIn": {
     "properties": {
      "order_id": {
@@ -8856,6 +9071,19 @@
      "name"
     ],
     "title": "PersonRef",
+    "type": "object"
+   },
+   "PlatformSwitchIn": {
+    "properties": {
+     "ai_disabled": {
+      "title": "Ai Disabled",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "ai_disabled"
+    ],
+    "title": "PlatformSwitchIn",
     "type": "object"
    },
    "PortalPayIn": {
@@ -12662,6 +12890,341 @@
  },
  "openapi": "3.1.0",
  "paths": {
+  "/api/v1/admin/ai-owner": {
+   "get": {
+    "operationId": "owner_status_api_v1_admin_ai_owner_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Owner Status",
+    "tags": [
+     "ai-admin"
+    ]
+   }
+  },
+  "/api/v1/admin/ai-owner/demo": {
+   "put": {
+    "operationId": "owner_demo_update_api_v1_admin_ai_owner_demo_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OwnerDemoIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Owner Demo Update",
+    "tags": [
+     "ai-admin"
+    ]
+   }
+  },
+  "/api/v1/admin/ai-owner/demo/disable": {
+   "post": {
+    "description": "Emergency switch: stop all owner-funded demo AI immediately (no redeploy).",
+    "operationId": "owner_demo_disable_api_v1_admin_ai_owner_demo_disable_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Owner Demo Disable",
+    "tags": [
+     "ai-admin"
+    ]
+   }
+  },
+  "/api/v1/admin/ai-owner/demo/key": {
+   "delete": {
+    "operationId": "owner_demo_delete_key_api_v1_admin_ai_owner_demo_key_delete",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Owner Demo Delete Key",
+    "tags": [
+     "ai-admin"
+    ]
+   }
+  },
+  "/api/v1/admin/ai-owner/demo/test": {
+   "post": {
+    "description": "Owner's own test of the demo provider: models.list + one tiny real call per configured capability.",
+    "operationId": "owner_demo_test_api_v1_admin_ai_owner_demo_test_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Owner Demo Test",
+    "tags": [
+     "ai-admin"
+    ]
+   }
+  },
+  "/api/v1/admin/ai-owner/platform": {
+   "put": {
+    "description": "Emergency switch for ALL platform AI: when on, every AI feature returns its labelled simulation.",
+    "operationId": "owner_platform_switch_api_v1_admin_ai_owner_platform_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlatformSwitchIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Owner Platform Switch",
+    "tags": [
+     "ai-admin"
+    ]
+   }
+  },
   "/api/v1/admin/ai-settings": {
    "get": {
     "operationId": "get_ai_settings_api_v1_admin_ai_settings_get",
@@ -15300,6 +15863,80 @@
     ]
    }
   },
+  "/api/v1/ai/realtime/tools/{name}": {
+   "post": {
+    "description": "Execute one function call requested by the voice model. Only the allow-listed tools exist; every argument is\nvalidated here; nothing reads patient records, books appointments or changes clinical data.",
+    "operationId": "realtime_tool_api_v1_ai_realtime_tools__name__post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "name",
+      "required": true,
+      "schema": {
+       "title": "Name",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "title": "Args",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Realtime Tool",
+    "tags": [
+     "ai"
+    ]
+   }
+  },
   "/api/v1/allergies/{item_id}": {
    "put": {
     "operationId": "update_allergies_api_v1_allergies__item_id__put",
@@ -17068,6 +17705,53 @@
      }
     },
     "summary": "Demo Login",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/v1/auth/email/change": {
+   "post": {
+    "description": "Change your sign-in email. Requires your current password; other sessions are signed out.",
+    "operationId": "change_email_api_v1_auth_email_change_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChangeEmailIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MeOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Change Email",
     "tags": [
      "auth"
     ]

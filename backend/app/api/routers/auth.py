@@ -229,6 +229,32 @@ def change_password(body: ChangePasswordIn, request: Request, auth: AuthUser = D
     return Message(message="Password changed. Other sessions were signed out.")
 
 
+class ChangeEmailIn(BaseModel):
+    new_email: str = Field(min_length=5, max_length=320, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    current_password: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/email/change", response_model=MeOut)
+def change_email(body: ChangeEmailIn, request: Request, auth: AuthUser = Depends(get_auth_user), db: Session = Depends(get_db)):
+    """Change your sign-in email. Requires your current password; other sessions are signed out."""
+    user = auth.user
+    if not verify_password(body.current_password, user.password_hash):
+        raise bad_request("Current password is incorrect")
+    new = body.new_email.strip().lower()
+    if new == user.email:
+        raise bad_request("That is already your email address.")
+    if db.scalar(select(User.id).where(User.email == new)):
+        raise bad_request("That email address can't be used.")
+    old_domain = user.email.split("@")[-1]
+    user.email = new
+    db.execute(update(UserSession).where(UserSession.user_id == user.id, UserSession.id != auth.session_id,
+                                         UserSession.revoked_at.is_(None)).values(revoked_at=now()))
+    audit.record(db, "auth.email_changed", actor_id=user.id, request=request,
+                 details={"old_domain": old_domain, "new_domain": new.split("@")[-1]})
+    db.commit()
+    return build_me(db, user)
+
+
 # ---------- MFA ----------
 
 @router.post("/mfa/setup", response_model=MfaSetupOut)

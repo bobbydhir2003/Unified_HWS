@@ -254,7 +254,7 @@ def get_assistant():
     if active_provider() == "openai":
         from app.ai.openai_provider import OpenAIAssistant, available
 
-        if available():
+        if available("doctor_assistant"):
             return OpenAIAssistant()
     return AnthropicAssistant() if active_provider() == "anthropic" else SimulatedAssistant()
 

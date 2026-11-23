@@ -25,7 +25,9 @@ def _loop(stop: threading.Event) -> None:
             if t - last["esc"] >= 60:
                 db = SessionLocal()
                 try:
-                    escalate_due(db)
+                    if escalate_due(db).get("escalated"):
+                        db.commit()
+                        _sweep(db)
                     db.commit()
                 finally:
                     db.close()
@@ -35,11 +37,18 @@ def _loop(stop: threading.Event) -> None:
                 try:
                     run_all(db)
                     db.commit()
+                    _sweep(db)
                 finally:
                     db.close()
                 last["mon"] = t
         except Exception:  # noqa: BLE001
             log.exception("engine scheduler tick failed")
+
+
+def _sweep(db) -> None:
+    from app.tasks import _assist_sweep
+
+    _assist_sweep(db)
 
 
 def start() -> threading.Event:

@@ -69,6 +69,30 @@ function MfaCard() {
   );
 }
 
+function EmailCard() {
+  const { me, setMe } = useAuth();
+  const [email, setEmail] = React.useState("");
+  const [pw, setPw] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  return (
+    <Card data-testid="email-card">
+      <CardHeader><div><CardTitle>Sign-in email</CardTitle><CardDescription>Currently {me?.user.email}. Changing it requires your password and signs out your other sessions.</CardDescription></div></CardHeader>
+      <CardContent>
+        <form className="grid gap-3 sm:grid-cols-3" onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          try { setMe(await post<Me>("/auth/email/change", { new_email: email, current_password: pw })); setEmail(""); setPw(""); toast.success("Email updated"); }
+          catch (err) { toastError(err); } finally { setBusy(false); }
+        }}>
+          <Field label="New email"><Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+          <Field label="Current password"><Input type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
+          <div className="flex items-end"><Button type="submit" variant="outline" loading={busy} disabled={!email.includes("@") || !pw}>Change email</Button></div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 function PasswordCard() {
   const [cur, setCur] = React.useState("");
   const [next, setNext] = React.useState("");
@@ -172,6 +196,7 @@ export function AccountPage() {
           </CardContent>
         </Card>
         <MfaCard />
+        <EmailCard />
         <PasswordCard />
         <div className="lg:col-span-2"><SessionsCard /></div>
       </div>

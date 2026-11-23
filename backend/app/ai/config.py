@@ -23,6 +23,11 @@ class EffectiveAI:
     transcription_model: str = ""
     realtime_model: str = ""
     agent_models: dict = field(default_factory=dict)
+    # Owner-managed demo provider only: which assistants/models it serves and its limits (see app/ai/owner_demo.py).
+    allowed_agents: list | None = None
+    allowed_models: list | None = None
+    limits: dict | None = None
+    reason: str | None = None  # why this scope is simulated (shown to the user)
 
     def model_for(self, agent_key: str | None) -> str:
         return (self.agent_models or {}).get(agent_key or "", "") or self.text_model
@@ -58,9 +63,19 @@ def _load() -> EffectiveAI:
             eff.transcription_model = row.transcription_model or eff.transcription_model
             eff.realtime_model = row.realtime_model or ""
             eff.agent_models = row.agent_models or {}
+            if (row.policy or {}).get("ai_disabled"):  # owner's emergency switch: every platform AI call → labelled simulation
+                eff.provider, eff.api_key, eff.reason = "simulated", None, "AI is turned off by the platform owner"
     except Exception:  # noqa: BLE001 — table missing during migrations etc.
         log.debug("AI settings unavailable; using environment")
     return eff
+
+
+def platform_effective() -> EffectiveAI:
+    """The platform configuration regardless of any demo scope (server-side use only)."""
+    now = time.monotonic()
+    if _CACHE["value"] is None or now - _CACHE["at"] > TTL:
+        _CACHE["value"], _CACHE["at"] = _load(), now
+    return _CACHE["value"]
 
 
 def effective() -> EffectiveAI:
@@ -69,14 +84,14 @@ def effective() -> EffectiveAI:
     scoped = demo_scope.current()  # demo sessions never see the platform configuration
     if scoped is not None:
         return scoped
-    now = time.monotonic()
-    if _CACHE["value"] is None or now - _CACHE["at"] > TTL:
-        _CACHE["value"], _CACHE["at"] = _load(), now
-    return _CACHE["value"]
+    return platform_effective()
 
 
 def invalidate() -> None:
     _CACHE["value"] = None
+    from app.ai import owner_demo
+
+    owner_demo.invalidate()
 
 
 def active_provider() -> str:

@@ -15,7 +15,7 @@ celery_app.conf.update(
     # Slow AI work must never starve time-critical engine jobs: run workers with -Q default,engine,ai.
     task_routes={"app.tasks.dispatch_events": {"queue": "engine"}, "app.tasks.run_monitors": {"queue": "engine"},
                  "app.tasks.escalate_cases": {"queue": "engine"}, "app.tasks.process_document": {"queue": "ai"},
-                 "app.tasks.run_agent": {"queue": "ai"}},
+                 "app.tasks.run_agent": {"queue": "ai"}, "app.tasks.case_assist": {"queue": "ai"}},
     beat_schedule={
         "appointment-reminders": {"task": "app.tasks.send_appointment_reminders", "schedule": 900.0},
         "engine-dispatch": {"task": "app.tasks.dispatch_events", "schedule": 10.0},

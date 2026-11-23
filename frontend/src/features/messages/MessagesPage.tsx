@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
+import { AskAI } from "@/features/ai/AskAI";
 import { PatientPicker, type PatientPick } from "@/features/schedule/AppointmentDialog";
 import { get, post } from "@/lib/api";
 import { fmtDateTime, fmtDob } from "@/lib/format";
@@ -37,7 +38,7 @@ export function MessagesPage() {
 
   return (
     <>
-      <PageHeader title="Messages" description="Secure conversations with patients." actions={<Button onClick={() => setParams({ new: "" })}><Send />New message</Button>} />
+      <PageHeader title="Messages" description="Secure conversations with patients." actions={<div className="flex flex-wrap gap-2"><AskAI agent="patient_communication" label="Draft insurance reminders" question="Find patients with open insurance cases who may need a routine administrative reminder, and draft messages for staff approval. No clinical advice." /><Button onClick={() => setParams({ new: "" })}><Send />New message</Button></div>} />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card className="overflow-hidden">
           <div className="flex items-center gap-1 border-b p-2.5">

@@ -116,7 +116,7 @@ def run_out(r: AgentRun) -> dict:
     return {"id": r.id, "agent_key": r.agent_key, "agent_version": r.agent_version, "mode": r.mode, "model": r.model, "status": r.status, "input": r.input,
             "output": r.output, "tool_calls": r.tool_calls, "approvals": r.approvals, "input_tokens": r.input_tokens, "output_tokens": r.output_tokens,
             "cost_usd": float(r.cost_usd) if r.cost_usd is not None else None, "latency_ms": r.latency_ms, "error": r.error, "started_at": r.started_at,
-            "user_id": r.user_id}
+            "user_id": r.user_id, "trigger": r.trigger, "ai_source": r.ai_source, "subject_type": r.subject_type, "subject_id": r.subject_id}
 
 
 @router.post("/agents/{key}/run")
@@ -186,8 +186,20 @@ def governance(days: int = 30, ctx: TenantContext = Depends(require(P.AI_MANAGE)
     phi_external = ctx.db.scalar(select(func.count()).select_from(AIJob).where(AIJob.organization_id == ctx.org_id, AIJob.phi_sent_externally.is_(True), AIJob.created_at > since))
     from app.ai.config import active_provider
     from app.core.config import settings
+    from app.models import ApprovalRequest
+
+    by_trigger = [{"trigger": t, "source": src or "rules", "mode": m, "runs": n, "proposals": int(p or 0)} for t, src, m, n, p in ctx.db.execute(
+        select(AgentRun.trigger, AgentRun.ai_source, AgentRun.mode, func.count(), func.sum(func.jsonb_array_length(AgentRun.approvals)))
+        .where(AgentRun.organization_id == ctx.org_id, AgentRun.started_at > since).group_by(AgentRun.trigger, AgentRun.ai_source, AgentRun.mode)).all()]
+    outcomes = dict(ctx.db.execute(select(ApprovalRequest.status, func.count()).where(
+        ApprovalRequest.organization_id == ctx.org_id, ApprovalRequest.requested_by_agent.is_not(None), ApprovalRequest.created_at > since)
+        .group_by(ApprovalRequest.status)).all())
 
     return {"window_days": days, "active_provider": active_provider(), "phi_allowed": settings.ai_phi_allowed, "phi_sent_externally": phi_external,
+            "by_trigger": by_trigger,
+            "agent_proposals": {"total": sum(outcomes.values()), "pending": outcomes.get("pending", 0), "executed": outcomes.get("executed", 0),
+                                "rejected": outcomes.get("rejected", 0), "failed": outcomes.get("failed", 0)},
+            "cost_note": "Costs are estimates from token counts and a price table, not provider bills.",
             "features": [{"kind": k, "provider": p, "calls": n, "failed": f, "cost_usd": float(c), "input_tokens": int(i), "output_tokens": int(o),
                           "avg_latency_ms": round(float(lat)) if lat else None} for k, p, n, f, c, i, o, lat in jobs],
             "agents": [{"agent": k, "mode": m, "runs": n, "problems": f, "cost_usd": float(c), "avg_latency_ms": round(float(lat)) if lat else None}

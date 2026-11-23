@@ -73,6 +73,9 @@ class Settings(BaseSettings):
     demo_ai_max_concurrency: int = 2             # per demo session
     demo_ai_max_cost_usd: float = 1.0            # per demo session, when AI_PRICES lets cost be estimated
     demo_ai_shared_max_requests_per_hour: int = 300  # all sessions together, when using DEMO_OPENAI_API_KEY
+    demo_ai_disabled: bool = False                   # operator kill switch for ALL shared demo AI (owner-managed + env key)
+    ai_auto_assist_daily_limit: int = 60             # automatic case-assist AI runs per organization per day
+    ai_realtime_max_seconds: int = 300               # staff voice sessions end after this (client timer + short-lived secret)
     rls_enabled: bool = True
     credentials_encryption_key: str | None = None  # Fernet key for stored secrets (AI keys); required in production
     eligibility_adapter: str = "simulated"

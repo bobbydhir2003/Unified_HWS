@@ -228,7 +228,7 @@ def shift_handoff(facility_id: uuid.UUID | None = None, ctx: TenantContext = Dep
     narrative, source = "\n".join(lines), "deterministic"
     from app.ai.openai_provider import available
 
-    if available() and sections:
+    if available("hospital_operations") and sections:
         import re
 
         from pydantic import BaseModel as _B

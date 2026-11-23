@@ -23,7 +23,10 @@ type Agent = { key: string; name: string; purpose: string; instructions: string;
   max_tool_calls: number; timeout_seconds: number; max_cost_usd: number; enabled: boolean; version: number; can_run: boolean; runs_30d: number; failed_30d: number; cost_30d_usd: number; demo_override?: boolean };
 type ToolT = { name: string; description: string; permission: string; kind: string };
 type Run = { id: string; agent_key: string; mode: string; model: string | null; status: string; input: string; output: string | null; tool_calls: { tool: string; ok: boolean; arguments: unknown; result_preview: string }[];
-  approvals: string[]; cost_usd: number | null; latency_ms: number | null; error: string | null; started_at: string };
+  approvals: string[]; cost_usd: number | null; latency_ms: number | null; error: string | null; started_at: string; trigger?: string; ai_source?: string | null };
+
+const TRIGGER_LABEL: Record<string, string> = { manual: "Run by staff", case_open: "Case opened (automatic)", case_escalation: "Case escalated (automatic)" };
+const SOURCE_LABEL: Record<string, string> = { platform: "Platform AI", "owner-demo": "Owner demo AI", "visitor-key": "Visitor's own key", "demo-project": "Demo project key", rules: "Rules (no AI)" };
 
 const usd = (n: number | null | undefined) => (n == null ? "—" : n > 0 && n < 0.01 ? "< $0.01" : "$" + n.toFixed(2));
 
@@ -70,7 +73,7 @@ export function AgentStudio() {
           <Field label="Request"><Textarea rows={3} value={input} onChange={(e) => setInput(e.target.value)} placeholder="e.g. What needs attention on Med-Surg this shift?" /></Field>
           {result && (
             <div className="space-y-2 rounded-lg border p-3 text-table">
-              <div className="flex flex-wrap items-center gap-2"><Badge variant={result.status === "succeeded" ? "success" : "danger"}>{result.status}</Badge><RunProvenance run={result} />
+              <div className="flex flex-wrap items-center gap-2"><Badge variant={result.status === "succeeded" ? "success" : result.status === "limit_reached" ? "warning" : "danger"}>{result.status.replace("_", " ")}</Badge><RunProvenance run={result} />
                 <span className="text-xs text-muted-foreground">{result.latency_ms} ms · {usd(result.cost_usd)}</span>
                 <span className="ml-auto flex gap-1"><Button size="icon" variant="ghost" aria-label="Helpful" onClick={() => post("/ai/feedback", { agent_run_id: result.id, rating: "up" }).then(() => toast.success("Thanks"))}><ThumbsUp /></Button>
                   <Button size="icon" variant="ghost" aria-label="Not helpful" onClick={() => post("/ai/feedback", { agent_run_id: result.id, rating: "down" }).then(() => toast.success("Thanks"))}><ThumbsDown /></Button></span></div>
@@ -107,7 +110,9 @@ export function AgentStudio() {
 
 type Gov = { window_days: number; active_provider: string; phi_allowed: boolean; phi_sent_externally: number;
   features: { kind: string; provider: string; calls: number; failed: number; cost_usd: number; input_tokens: number; output_tokens: number; avg_latency_ms: number | null }[];
-  agents: { agent: string; mode: string; runs: number; problems: number; cost_usd: number; avg_latency_ms: number | null }[]; feedback: { up: number; down: number }; recent_problems: Run[] };
+  agents: { agent: string; mode: string; runs: number; problems: number; cost_usd: number; avg_latency_ms: number | null }[]; feedback: { up: number; down: number }; recent_problems: Run[];
+  by_trigger?: { trigger: string; source: string; mode: string; runs: number; proposals: number }[];
+  agent_proposals?: { total: number; pending: number; executed: number; rejected: number; failed: number }; cost_note?: string };
 
 export function AIGovernancePage() {
   const qc = useQueryClient();
@@ -121,10 +126,20 @@ export function AIGovernancePage() {
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Stat label="Active provider" icon={Bot} tone="ai" value={titleCase(g.active_provider)} sub={g.phi_allowed ? "Patient data allowed (BAA required)" : "Patient data blocked from external AI"} />
-            <Stat label={`Cost (${g.window_days} d)`} icon={Settings2} value={usd(totalCost)} sub="From configured price table" />
+            <Stat label={`Estimated cost (${g.window_days} d)`} icon={Settings2} value={usd(totalCost)} sub={g.cost_note ?? "Estimate from a price table"} />
             <Stat label="Patient data sent externally" icon={ShieldCheck} tone={g.phi_sent_externally ? "warning" : "success"} value={g.phi_sent_externally} sub="AI calls flagged as PHI" />
             <Stat label="Feedback" icon={ThumbsUp} value={`${g.feedback.up} 👍 · ${g.feedback.down} 👎`} />
           </div>
+          {g.agent_proposals && (
+            <Card data-testid="gov-proposals"><CardHeader><CardTitle>AI proposals and outcomes</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-table">
+                <p className="text-muted-foreground">Every AI-proposed action waits for an authorized person. Counts come from approval records in this window.</p>
+                <div className="grid gap-3 sm:grid-cols-5">{([["Proposed", g.agent_proposals.total], ["Waiting", g.agent_proposals.pending], ["Approved & executed", g.agent_proposals.executed], ["Rejected", g.agent_proposals.rejected], ["Execution failed", g.agent_proposals.failed]] as [string, number][]).map(([l, n]) => (
+                  <div key={l} className="rounded-lg border p-3"><p className="text-label text-muted-foreground">{l}</p><p className="text-metric font-semibold tabular">{n}</p></div>))}</div>
+                {!!g.by_trigger?.length && <Table><THead><TR><TH>Trigger</TH><TH>AI source</TH><TH>Mode</TH><TH className="text-right">Runs</TH><TH className="text-right">Proposals</TH></TR></THead>
+                  <TBody>{g.by_trigger.map((t) => <TR key={t.trigger + t.source + t.mode}><TD>{TRIGGER_LABEL[t.trigger] ?? t.trigger}</TD><TD>{SOURCE_LABEL[t.source] ?? t.source}</TD><TD>{t.mode === "openai" ? "Live AI" : "Rules / simulated"}</TD><TD className="text-right tabular">{t.runs}</TD><TD className="text-right tabular">{t.proposals}</TD></TR>)}</TBody></Table>}
+              </CardContent></Card>
+          )}
           <Card className="overflow-hidden"><CardHeader><CardTitle>AI features</CardTitle></CardHeader>
             {!g.features.length ? <EmptyState title="No AI activity yet" /> : <Table><THead><TR><TH>Feature</TH><TH>Provider</TH><TH className="text-right">Calls</TH><TH className="text-right">Failed</TH><TH className="text-right">Tokens in/out</TH><TH className="text-right">Avg latency</TH><TH className="text-right">Cost</TH></TR></THead>
               <TBody>{g.features.map((f) => <TR key={f.kind + f.provider}><TD>{titleCase(f.kind.replace(/_/g, " "))}</TD><TD>{f.provider}</TD><TD className="text-right tabular">{f.calls}</TD><TD className="text-right tabular">{f.failed}</TD><TD className="text-right tabular">{f.input_tokens}/{f.output_tokens}</TD><TD className="text-right tabular">{f.avg_latency_ms ?? "—"} ms</TD><TD className="text-right tabular">{usd(f.cost_usd)}</TD></TR>)}</TBody></Table>}</Card>
@@ -133,7 +148,7 @@ export function AIGovernancePage() {
               <TBody>{g.agents.map((a) => <TR key={a.agent + a.mode}><TD>{titleCase(a.agent.replace(/_/g, " "))}</TD><TD>{a.mode}</TD><TD className="text-right tabular">{a.runs}</TD><TD className="text-right tabular">{a.problems}</TD><TD className="text-right tabular">{a.avg_latency_ms ?? "—"} ms</TD><TD className="text-right tabular">{usd(a.cost_usd)}</TD></TR>)}</TBody></Table>}</Card>
           <Card><CardHeader><CardTitle>Recent failed or limited runs</CardTitle></CardHeader>
             <CardContent>{!g.recent_problems.length ? <p className="text-table text-muted-foreground">None.</p> : (
-              <ul className="divide-y">{g.recent_problems.map((r) => <li key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-table"><Badge variant="danger">{r.status}</Badge><span className="font-medium">{titleCase(r.agent_key.replace(/_/g, " "))}</span><span className="flex-1 truncate text-muted-foreground">{r.error ?? r.output}</span><span className="text-xs text-muted-foreground">{fmtDateTime(r.started_at)}</span>
+              <ul className="divide-y">{g.recent_problems.map((r) => <li key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-table"><Badge variant="danger">{r.status}</Badge><span className="font-medium">{titleCase(r.agent_key.replace(/_/g, " "))}</span>{r.trigger && r.trigger !== "manual" && <Badge variant="outline">{TRIGGER_LABEL[r.trigger] ?? r.trigger}</Badge>}<span className="flex-1 truncate text-muted-foreground">{r.error ?? r.output}</span><span className="text-xs text-muted-foreground">{fmtDateTime(r.started_at)}</span>
                 <Button size="xs" variant="outline" onClick={async () => { try { await post(`/agents/runs/${r.id}/retry`); toast.success("Retried"); qc.invalidateQueries({ queryKey: ["ai"] }); } catch (e) { toastError(e); } }}>Retry</Button></li>)}</ul>)}</CardContent></Card>
           <EvaluationsCard />
         </div>

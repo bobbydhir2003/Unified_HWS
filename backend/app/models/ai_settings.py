@@ -4,7 +4,7 @@ and never returned. Environment variables remain a fallback when no row exists."
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,6 +27,20 @@ class AIProviderSettings(UUIDPk, Timestamps, Base):
     last_test_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_test_result: Mapped[dict] = mapped_column(JSONB, default=dict)  # {"ok": bool, "models": {"text": true, ...}, "error": ...}
     updated_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
+    # scope="platform": {"ai_disabled": bool}. scope="demo" (owner-managed public demo AI): see app/ai/owner_demo.py.
+    policy: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+
+
+class AIUsageCounter(Base):
+    """Durable AI usage ledger (survives restarts). Keys like 'demo:global:day:2026-11-23', 'demo:visitor:<sess>:day:…',
+    'demo:global:month:2026-11', 'auto:day:…'. Incremented atomically with a limit check (app/ai/usage.py)."""
+    __tablename__ = "ai_usage_counters"
+    key: Mapped[str] = mapped_column(String(160), primary_key=True)
+    requests: Mapped[int] = mapped_column(Integer, default=0)
+    cost_usd: Mapped[float] = mapped_column(Numeric(14, 6), default=0)
+    input_tokens: Mapped[int] = mapped_column(BigInteger, default=0)
+    output_tokens: Mapped[int] = mapped_column(BigInteger, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class DemoAISettings(Base):

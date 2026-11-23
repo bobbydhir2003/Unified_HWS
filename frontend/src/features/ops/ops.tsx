@@ -24,7 +24,13 @@ export type CaseT = {
   due_at: string | null; overdue: boolean; escalation_level: number; snoozed_until: string | null; snooze_reason: string | null;
   resolved_at: string | null; resolution_code: string | null; resolution: string | null; source: string; rule_key: string | null;
   rule_version: number | null; evidence: Record<string, unknown>; created_at: string; last_detected_at: string;
+  stage?: CaseStage | null; ai_assist?: { status: string; trigger: string; at: string } | null;
 };
+export type CaseStage = "detected" | "ai_assisted" | "waiting_approval" | "executed" | "verified";
+export const STAGE_LABEL: Record<CaseStage, string> = {
+  detected: "Detected", ai_assisted: "AI assisted", waiting_approval: "Waiting for approval", executed: "Action executed", verified: "Verified",
+};
+export type StoryStep = { key: string; label: string; status: "done" | "current" | "pending" | "skipped" | "not_used" | "failed"; at: string | null; detail: string | null };
 export type Severity = "info" | "low" | "medium" | "high" | "critical";
 export type CaseEventT = { id: string; at: string; actor_id: string | null; actor_name: string | null; actor_kind: string; kind: string; message: string; data: Record<string, unknown> };
 export type ApprovalT = {
@@ -38,7 +44,33 @@ export type TaskT = {
   case_id: string | null; due_at: string | null; kind: string | null; acknowledged_at: string | null;
 };
 type DeliveryT = { id: string; channel: string; category: string; subject: string; status: string; status_reason: string | null; created_at: string; recipient_patient_id: string | null };
-type CaseDetail = { case: CaseT; events: CaseEventT[]; tasks: TaskT[]; deliveries: DeliveryT[]; approvals: ApprovalT[] };
+type CaseDetail = { case: CaseT; events: CaseEventT[]; tasks: TaskT[]; deliveries: DeliveryT[]; approvals: ApprovalT[]; story?: StoryStep[] };
+
+/** Automation lifecycle of a case, built by the server from recorded events only (no step is shown complete before it happened). */
+export function CaseStory({ steps }: { steps: StoryStep[] }) {
+  return (
+    <ol className="space-y-2" data-testid="case-story">
+      {steps.map((s) => {
+        const done = s.status === "done";
+        const Icon = done ? CheckCircle2 : s.status === "failed" ? XCircle : s.status === "current" ? Clock : CircleDot;
+        return (
+          <li key={s.key} className="flex gap-2.5" data-status={s.status}>
+            <Icon className={cn("mt-0.5 size-4 shrink-0", done ? "text-success" : s.status === "current" ? "text-primary" : s.status === "failed" ? "text-destructive" : "text-muted-foreground/50")} aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className={cn("text-table", done || s.status === "current" ? "font-medium text-heading" : "text-muted-foreground")}>
+                {s.label}
+                <span className="ml-2 text-label font-normal text-muted-foreground">
+                  {done && s.at ? fmtDateTime(s.at) : s.status === "current" ? "In progress" : s.status === "skipped" ? "Skipped" : s.status === "not_used" ? "Not needed" : s.status === "failed" ? "Failed" : "Not yet"}
+                </span>
+              </p>
+              {s.detail && s.status !== "pending" && <p className="text-label text-muted-foreground">{s.detail}</p>}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 export const SEVERITY_VARIANT: Record<Severity, React.ComponentProps<typeof Badge>["variant"]> = {
   critical: "danger", high: "warning", medium: "neutral", low: "neutral", info: "neutral",
@@ -109,7 +141,8 @@ export function CaseRow({ c, onOpen, compact }: { c: CaseT; onOpen: (id: string)
         <SeverityIcon c={c} />
         <span className="min-w-0">
           <span className="block text-body font-medium text-heading">{c.title}</span>
-          <span className="block text-label text-muted-foreground">#{c.number} · {CATEGORY_LABEL[c.category] ?? c.category}{c.source === "monitor" ? " · rule alert" : ""}{c.escalation_level > 0 ? " · escalated" : ""}</span>
+          <span className="block text-label text-muted-foreground">#{c.number} · {CATEGORY_LABEL[c.category] ?? c.category}{c.source === "monitor" ? " · rule alert" : ""}{c.escalation_level > 0 ? " · escalated" : ""}
+            {c.stage && c.stage !== "detected" && <span className={cn("ml-1.5 inline-flex items-center gap-1", c.stage === "waiting_approval" ? "text-primary" : "")} data-testid="case-stage">{c.stage === "ai_assisted" && <Bot className="size-3" aria-hidden />}· {STAGE_LABEL[c.stage]}</span>}</span>
           <span className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-label text-muted-foreground md:hidden">
             {c.patient_name && <span>{c.patient_name}</span>}<span className="inline-flex items-center gap-1"><UserRound className="size-3" />Owner: {ownerLabel(c)}</span><SlaBadge c={c} />
           </span>
@@ -125,7 +158,8 @@ export function CaseRow({ c, onOpen, compact }: { c: CaseT; onOpen: (id: string)
 
 const EVENT_ICON: Record<string, React.ElementType> = {
   created: CircleDot, assigned: UserCheck, escalated: AlarmClock, notification: Bell, comment: MessageSquare, resolved: CheckCircle2,
-  cancelled: XCircle, approval: ShieldCheck, approval_requested: ShieldCheck, task: CheckCircle2,
+  cancelled: XCircle, approval: ShieldCheck, approval_requested: ShieldCheck, task: CheckCircle2, ai_assist: Bot, ai_unavailable: Bot,
+  purchase_request_decided: ShieldCheck,
 };
 
 /** Case detail drawer: evidence, timeline (append-only), tasks, notifications, approvals and actions. */
@@ -172,6 +206,12 @@ export function CaseDrawer({ caseId, onClose }: { caseId: string | null; onClose
                 </div>
               )}
             </div>
+            {!!q.data!.story?.length && (
+              <section className="border-b p-5">
+                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Case story</h4>
+                <CaseStory steps={q.data!.story} />
+              </section>
+            )}
             {Object.keys(c.evidence ?? {}).length > 0 && (
               <section className="border-b p-5">
                 <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Evidence (what the rule saw)</h4>
@@ -276,6 +316,53 @@ function fmtVal(v: unknown): string {
   return v == null ? "—" : String(v);
 }
 
+export type OtherApprovalT = {
+  id: string; type: "purchase_request" | "automation_run"; title: string; summary: string | null; case_id: string | null; created_at: string;
+  requested_by: string; link: string; decide: { path: string; style: "approve_flag" | "approve_reject_paths" };
+};
+
+/** Decisions owned by other modules (purchase requests, automation workflow runs) shown in the same approvals list.
+ *  Each decision goes to that module's own endpoint, which enforces its own permission and separation-of-duties rules. */
+export function OtherApprovalList({ items }: { items: OtherApprovalT[] }) {
+  const qc = useQueryClient();
+  const [rejecting, setRejecting] = React.useState<OtherApprovalT | null>(null);
+  const [note, setNote] = React.useState("");
+  const decide = async (a: OtherApprovalT, approve: boolean, n?: string) => {
+    try {
+      if (a.decide.style === "approve_flag") await post(a.decide.path, { approve, note: n ?? null });
+      else await post(`${a.decide.path}/${approve ? "approve" : "reject"}`, {});
+      toast.success(approve ? "Approved" : "Rejected");
+      setRejecting(null); setNote("");
+      qc.invalidateQueries({ queryKey: ["worklist"] }); qc.invalidateQueries({ queryKey: ["cases"] });
+    } catch (e) { toastError(e); }
+  };
+  if (!items.length) return null;
+  return (
+    <>
+      <ul className="divide-y border-t" data-testid="other-approvals">{items.map((a) => (
+        <li key={a.id} className="flex flex-wrap items-start gap-3 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2"><span className="text-body font-medium">{a.title}</span>
+              <Badge variant="outline">{a.type === "purchase_request" ? "Purchase request" : "Automation"}</Badge></div>
+            {a.summary && <p className="mt-0.5 text-table text-muted-foreground">{a.summary}</p>}
+            <p className="mt-0.5 text-xs text-muted-foreground">{a.requested_by} · {fromNow(a.created_at)} · <Link className="text-primary hover:underline" to={a.link}>Open</Link></p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => decide(a, true)}><ShieldCheck />Approve</Button>
+            <Button size="sm" variant="outline" onClick={() => (a.decide.style === "approve_flag" ? setRejecting(a) : decide(a, false))}>Reject</Button>
+          </div>
+        </li>))}</ul>
+      <Dialog open={!!rejecting} onOpenChange={(o) => !o && setRejecting(null)}>
+        <DialogContent size="sm">
+          <DialogHeader><DialogTitle>Reject request</DialogTitle></DialogHeader>
+          <Field label="Reason" required><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+          <DialogFooter><Button variant="outline" onClick={() => setRejecting(null)}>Cancel</Button><Button variant="destructive" disabled={note.trim().length < 3} onClick={() => rejecting && decide(rejecting, false, note)}>Reject</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export function ApprovalList({ items, empty }: { items: ApprovalT[]; empty?: React.ReactNode }) {
   const qc = useQueryClient();
   const [rejecting, setRejecting] = React.useState<ApprovalT | null>(null);
@@ -295,7 +382,7 @@ export function ApprovalList({ items, empty }: { items: ApprovalT[]; empty?: Rea
         <li key={a.id} className="flex flex-wrap items-start gap-3 py-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2"><span className="text-body font-medium">{a.title}</span>
-              {a.requested_by_agent && <Badge variant="ai"><Bot />{a.requested_by_agent}</Badge>}
+              {a.requested_by_agent && <Badge variant="ai"><Bot />Proposed by {titleCase(a.requested_by_agent.replace(/_/g, " "))}</Badge>}
               {a.status !== "pending" && <Badge variant={a.status === "executed" ? "success" : a.status === "failed" ? "danger" : "neutral"}>{a.status}</Badge>}
             </div>
             {a.summary && <p className="mt-0.5 whitespace-pre-line text-table text-muted-foreground">{a.summary}</p>}

@@ -102,7 +102,35 @@ def run_monitors_task() -> int:
     try:
         runs = run_all(db)
         db.commit()
+        _assist_sweep(db)
         return len(runs)
+    finally:
+        db.close()
+
+
+def _assist_sweep(db) -> None:
+    """After the engine committed: queue AI assistance for newly opened/escalated cases of the selected kinds."""
+    from app.agents.case_assist import sweep
+
+    try:
+        sweep(db)
+    except Exception:  # noqa: BLE001 — AI assistance must never break the deterministic engine
+        import logging
+
+        db.rollback()
+        logging.getLogger("undeclared.tasks").exception("case assistance sweep failed")
+
+
+@celery_app.task(name="app.tasks.case_assist")
+def case_assist_task(case_id: str, trigger: str) -> str | None:
+    import uuid
+
+    from app.agents.case_assist import assist
+
+    db = SessionLocal()
+    try:
+        run = assist(db, uuid.UUID(case_id), trigger)
+        return run.status if run else None
     finally:
         db.close()
 
@@ -115,6 +143,8 @@ def escalate_cases_task() -> dict:
     try:
         stats = escalate_due(db)
         db.commit()
+        if stats.get("escalated"):
+            _assist_sweep(db)
         return stats
     finally:
         db.close()

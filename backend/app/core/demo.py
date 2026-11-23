@@ -29,7 +29,7 @@ DEMO_SUPERADMIN_EMAIL = "superadmin.demo@harborview.dev"
 # (methods, path prefix) blocked for demo accounts. Paths are relative to /api or /api/v1.
 _WRITES = {"POST", "PUT", "PATCH", "DELETE"}
 DEMO_BLOCKED: list[tuple[set[str], str]] = [
-    (_WRITES, "/auth/password/change"), (_WRITES, "/auth/mfa/"), (_WRITES, "/auth/me"),
+    (_WRITES, "/auth/password/change"), (_WRITES, "/auth/email/"), (_WRITES, "/auth/mfa/"), (_WRITES, "/auth/me"),
     (_WRITES, "/admin/"),                       # AI settings & key, other admin endpoints
     (_WRITES, "/organizations"), (_WRITES, "/organization"), (_WRITES, "/clinics"), (_WRITES, "/staff"),
     (_WRITES, "/invitations"), (_WRITES, "/facilities"), (_WRITES, "/departments"), (_WRITES, "/locations"),

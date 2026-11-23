@@ -12,6 +12,7 @@ import { get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtTime } from "@/lib/format";
 import { cn, titleCase } from "@/lib/utils";
+import { AskAI } from "@/features/ai/AskAI";
 import { PatientPicker } from "../inpatient/shared";
 
 type OrCase = { id: string; room: { id: string; name: string }; patient: { id: string; name: string; mrn: string }; surgeon: string; procedure: string; priority: string; anesthesia: string; start_at: string; end_at: string; blocked_until: string; status: string };
@@ -134,7 +135,8 @@ export function RosterPage() {
   return (
     <>
       <PageHeader title={manage ? "Staff roster" : "My shifts"} description={`Hard rules: no overlapping shifts, ≥ ${r?.rules.min_rest_hours ?? 10} h rest, ≤ ${r?.rules.max_week_hours ?? 48} h per 7 days, time off and credentials respected. Suggestions explain themselves; managers decide.`}
-        actions={manage ? <NativeSelect className="w-56" value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department"><option value="">All departments</option>{depts.data?.filter((d) => ["inpatient", "icu", "emergency"].includes(d.kind)).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</NativeSelect> : undefined} />
+        actions={manage ? <div className="flex flex-wrap items-center gap-2"><AskAI agent="staff_scheduling" label="Explain staffing gaps" question="Which departments are below minimum staffing in the next 48 hours, and what should a manager review first? Do not change any assignments." />
+          <NativeSelect className="w-56" value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department"><option value="">All departments</option>{depts.data?.filter((d) => ["inpatient", "icu", "emergency"].includes(d.kind)).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</NativeSelect></div> : undefined} />
       {!r ? <LoadingRows rows={6} /> : (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
           <Card className="overflow-hidden"><CardHeader><CardTitle className="flex items-center gap-2"><CalendarClock className="size-4" />Next 3 days</CardTitle></CardHeader>

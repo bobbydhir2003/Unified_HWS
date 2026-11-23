@@ -131,7 +131,7 @@ def _ai_findings(db: Session, c: Claim) -> tuple[list[dict], str | None]:
     """Optional AI consistency check between the signed note and billed codes. Flags only; never edits."""
     from app.ai.openai_provider import available
 
-    if not available():
+    if not available("claims_review"):
         return [], None
     from pydantic import BaseModel
 

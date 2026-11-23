@@ -78,9 +78,12 @@ def test_tool_loop_executes_server_side_and_is_bounded(core):
     text, meta = core.tool_loop(system="s", user="u", tools=[], execute=execute, contains_phi=False)
     assert text == "done" and [n for n, _ in seen] == ["lookup", "forbidden_tool"]
     assert [c["ok"] for c in meta.tool_calls] == [True, False]
-    core.client = SimpleNamespace(responses=FakeResponses([_resp(calls=[("lookup", {})])] * 3))
+    # Budget exhausted: exactly one extra call with tool_choice="none" writes the answer from gathered results.
+    fake = FakeResponses([_resp(calls=[("lookup", {})])] * 3 + [_resp("partial answer from 3 lookups")])
+    core.client = SimpleNamespace(responses=fake)
     text, meta = core.tool_loop(system="s", user="u", tools=[], execute=execute, contains_phi=False, max_steps=3)
-    assert "tool-call limit" in text and len(meta.tool_calls) == 3
+    assert text == "partial answer from 3 lookups" and len(meta.tool_calls) == 3 and meta.tool_limit_reached
+    assert fake.calls[-1]["tool_choice"] == "none"
 
 
 def test_falls_back_to_labeled_simulation_without_key(monkeypatch):
