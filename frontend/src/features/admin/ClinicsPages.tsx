@@ -134,7 +134,7 @@ export function SchedulingSetupPage() {
         </Table>
       </Card>
       <h2 className="mb-3 text-section font-semibold">Provider hours</h2>
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {providers.data?.map((p) => <AvailabilityEditor key={p.id + JSON.stringify(p.availability)} provider={p} clinics={clinics.data ?? []} />)}
       </div>
       <FormDialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)} title={editing === "new" ? "Add visit type" : "Edit visit type"}

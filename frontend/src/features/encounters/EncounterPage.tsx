@@ -399,7 +399,7 @@ export function EncounterPage() {
         <div className="border-t bg-subtle px-4 py-2"><AllergyStrip summary={summary.data} /></div>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         <div className="space-y-4">
           <Card>
             <CardContent className="grid gap-3 pt-4 sm:grid-cols-2">

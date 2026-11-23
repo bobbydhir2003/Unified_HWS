@@ -136,7 +136,7 @@ export function RosterPage() {
       <PageHeader title={manage ? "Staff roster" : "My shifts"} description={`Hard rules: no overlapping shifts, ≥ ${r?.rules.min_rest_hours ?? 10} h rest, ≤ ${r?.rules.max_week_hours ?? 48} h per 7 days, time off and credentials respected. Suggestions explain themselves; managers decide.`}
         actions={manage ? <NativeSelect className="w-56" value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department"><option value="">All departments</option>{depts.data?.filter((d) => ["inpatient", "icu", "emergency"].includes(d.kind)).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</NativeSelect> : undefined} />
       {!r ? <LoadingRows rows={6} /> : (
-        <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
           <Card className="overflow-hidden"><CardHeader><CardTitle className="flex items-center gap-2"><CalendarClock className="size-4" />Next 3 days</CardTitle></CardHeader>
             <CardContent className="space-y-4">{!byDay.length ? <EmptyState icon={Users} title="No shifts" /> : byDay.map(([d, shifts]) => (
               <div key={d}><p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{d}</p>

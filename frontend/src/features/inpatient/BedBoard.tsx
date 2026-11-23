@@ -51,7 +51,7 @@ export function BedBoard() {
             {(["available", "occupied", "cleaning", "blocked"] as const).map((k) => <Mini key={k} label={BED_STYLE[k].label} value={d.totals[k]} dot={BED_STYLE[k].dot} />)}
             <Mini label="Discharges ordered" value={d.discharges_ordered} />
           </div>
-          <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
             <div className="space-y-4">
               <div className="flex flex-wrap gap-1.5">{[{ id: "", name: "All units" }, ...d.units].map((u) => <button key={u.id} onClick={() => setUnitFilter(u.id)} className={cn("rounded-md px-2.5 py-1 text-table font-medium text-muted-foreground hover:bg-muted", unitFilter === u.id && "bg-accent text-accent-foreground")}>{u.name}</button>)}</div>
               {d.units.filter((u) => !unitFilter || u.id === unitFilter).map((u) => (

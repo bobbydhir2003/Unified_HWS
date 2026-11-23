@@ -248,7 +248,7 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
         )}
 
         {active.status === "ready" && active.draft && sections && (
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <section aria-label="Transcript" className="min-w-0">
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="text-table font-semibold">Transcript {active.transcript_edited && <span className="font-normal text-muted-foreground">(edited)</span>}</h3>

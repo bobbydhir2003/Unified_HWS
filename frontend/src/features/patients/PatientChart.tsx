@@ -302,7 +302,7 @@ function Overview({ p, summary }: { p: Patient; summary?: Summary }) {
           {summary.last_vitals ? <VitalsSummary v={summary.last_vitals} /> : none("No vitals recorded.")}
         </Section>
       )}
-      <div className="grid items-start gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {summary.clinical_access ? (
             <Section title="Problems and medications" to={`${base}/problems`} link="Clinical">
@@ -457,7 +457,7 @@ function DemographicsTab({ p }: { p: Patient }) {
   const [checking, setChecking] = React.useState<string | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: ["patient", p.id] });
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader><CardTitle>Demographics</CardTitle></CardHeader>
         <CardContent>
@@ -560,7 +560,7 @@ function AdminNotesTab({ patientId }: { patientId: string }) {
   const [busy, setBusy] = React.useState(false);
   const q = useQuery({ queryKey: ["admin-notes", patientId], queryFn: () => get<AdminNote[]>(`/patients/${patientId}/notes`) });
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.4fr]">
       {dialog}
       {can("patients:write") && (
         <Card>

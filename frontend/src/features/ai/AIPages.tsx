@@ -106,7 +106,7 @@ export function AutomationPage() {
       <nav className="-mx-1 mb-5 flex gap-1 border-b px-1">{tabs.filter((t) => t[2]).map(([k, l]) => <button key={k} onClick={() => setParams({ tab: k })} className={cn("-mb-px border-b-2 border-transparent px-3 py-2 text-table font-medium text-muted-foreground", tab === k && "border-primary text-foreground")}>{l}</button>)}</nav>
       {tab === "workflows" && (
         wfs.isLoading ? <LoadingRows /> : (
-          <div className="grid gap-4 lg:grid-cols-2">{wfs.data?.map((w) => (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{wfs.data?.map((w) => (
             <Card key={w.id} className={cn(!w.is_enabled && "opacity-70")}>
               <CardHeader className="pb-2">
                 <div><CardTitle className="flex items-center gap-2"><Workflow className="size-4 text-primary" />{w.name}</CardTitle><p className="mt-0.5 font-mono text-label text-muted-foreground">on {w.trigger}</p></div>
@@ -191,7 +191,7 @@ export function ReceptionistPage() {
     <>
       <PageHeader title="AI receptionist" description="Sandbox for the phone assistant: test conversations as a caller. Telephony is not connected." actions={<SimulatedBadge label="Sandbox — no real calls" />} />
       <RealtimeVoicePanel />
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_1fr]">
         <Card className="flex h-[calc(100dvh-220px)] min-h-[480px] flex-col">
           <CardHeader className="border-b pb-3">
             <CardTitle className="flex items-center gap-2"><Phone className="size-4" />Call simulator</CardTitle>
