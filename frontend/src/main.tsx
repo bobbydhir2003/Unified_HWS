@@ -1,4 +1,4 @@
-/* © 2026 Sidra Riaz Awan. All rights reserved. Undeclared — unified hospital management system. */
+/* © 2026 Sidra Riaz Awan. All rights reserved. HMS Workflows — unified hospital management system. */
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ShieldAlert } from "lucide-react";
@@ -87,7 +87,7 @@ function Splash() {
     <div className="grid min-h-dvh place-items-center">
       <div className="flex flex-col items-center gap-3 text-muted-foreground">
         <span className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <span className="text-[13px]">Loading workspace…</span>
+        <span className="text-table">Loading workspace…</span>
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ export function ClinicsPage() {
                   <CardDescription>{[c.address_line1, c.city, c.state].filter(Boolean).join(", ") || "No address"}</CardDescription></div>
                 <Button variant="ghost" size="icon-sm" onClick={() => setEditing(c)} aria-label={`Edit ${c.name}`}><Pencil /></Button>
               </CardHeader>
-              <CardContent className="space-y-2 text-[13px]">
+              <CardContent className="space-y-2 text-table">
                 <p className="flex items-center gap-2 text-muted-foreground"><Clock className="size-3.5" />{c.timezone}{c.phone ? ` · ${c.phone}` : ""}</p>
                 <div className="flex flex-wrap gap-1">{c.rooms.map((r) => <Badge key={r} variant="outline">{r}</Badge>)}</div>
                 {!c.is_active && <Badge variant="danger">Inactive</Badge>}
@@ -90,7 +90,7 @@ function AvailabilityEditor({ provider, clinics }: { provider: Provider; clinics
         </div>
       </CardHeader>
       <CardContent>
-        {!blocks.length ? <p className="text-[13px] text-muted-foreground">No scheduled hours — this provider can only be booked with an override.</p> : (
+        {!blocks.length ? <p className="text-table text-muted-foreground">No scheduled hours — this provider can only be booked with an override.</p> : (
           <ul className="space-y-2">
             {blocks.map((b, i) => (
               <li key={i} className="flex flex-wrap items-center gap-2">
@@ -133,7 +133,7 @@ export function SchedulingSetupPage() {
           </TBody>
         </Table>
       </Card>
-      <h2 className="mb-3 text-[15px] font-semibold">Provider hours</h2>
+      <h2 className="mb-3 text-section font-semibold">Provider hours</h2>
       <div className="grid gap-4 xl:grid-cols-2">
         {providers.data?.map((p) => <AvailabilityEditor key={p.id + JSON.stringify(p.availability)} provider={p} clinics={clinics.data ?? []} />)}
       </div>

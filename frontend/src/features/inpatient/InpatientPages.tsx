@@ -43,8 +43,8 @@ export function InpatientsPage() {
       <Card className="overflow-hidden">
         <div className="flex flex-wrap gap-1.5 border-b p-3">
           {([["active", "Current"], ["pending", "Awaiting bed"], ["discharge_ordered", "Discharge ordered"], ["discharged", "Discharged"]] as const).map(([v, l]) => (
-            <button key={v} onClick={() => setStatus(v)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted", status === v && "bg-accent text-accent-foreground")}>{l}</button>))}
-          {membership?.provider_id && <><span className="mx-1 w-px bg-border" /><button onClick={() => setMine(!mine)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted", mine && "bg-accent text-accent-foreground")}>My patients</button></>}
+            <button key={v} onClick={() => setStatus(v)} className={cn("rounded-md px-2.5 py-1 text-table font-medium text-muted-foreground hover:bg-muted", status === v && "bg-accent text-accent-foreground")}>{l}</button>))}
+          {membership?.provider_id && <><span className="mx-1 w-px bg-border" /><button onClick={() => setMine(!mine)} className={cn("rounded-md px-2.5 py-1 text-table font-medium text-muted-foreground hover:bg-muted", mine && "bg-accent text-accent-foreground")}>My patients</button></>}
         </div>
         {q.isLoading ? <LoadingRows /> : q.isError ? <ErrorState error={q.error} retry={q.refetch} /> : !q.data?.length ? <EmptyState icon={BedDouble} title="No patients" /> : (
           <Table><THead><TR><TH>Patient</TH><TH>Bed</TH><TH>Unit</TH><TH>Reason</TH><TH>Attending</TH><TH>LOS</TH><TH>Status</TH></TR></THead>
@@ -88,7 +88,7 @@ export function InpatientDetail() {
           {s.status === "discharge_ordered" && can("adt:write") && (
             <div className="flex flex-col items-end gap-1">
               <Button disabled={!r || (!r.ready && !can("orders:sign"))} aria-describedby="complete-discharge-reason" onClick={() => setDialog(r && !r.ready ? "override" : "discharge")}><CheckCircle2 />Complete discharge</Button>
-              {r && !r.ready && <p id="complete-discharge-reason" className="max-w-xs text-right text-[11.5px] text-muted-foreground">
+              {r && !r.ready && <p id="complete-discharge-reason" className="max-w-xs text-right text-label text-muted-foreground">
                 {can("orders:sign") ? `${r.blocking.length} required step(s) still open — completing now is an audited override.` : `Available when ${r.blocking.length} required step(s) are done (see Discharge tab) — or a physician overrides.`}</p>}
             </div>
           )}
@@ -108,9 +108,9 @@ export function InpatientDetail() {
         <TabsContent value="history">
           <Card><CardContent className="grid gap-6 p-5 md:grid-cols-2">
             <div><h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Beds</h4>
-              <ul className="space-y-1.5 text-[13px]">{s.movements.map((m, i) => <li key={i}><span className="font-medium">{m.bed}</span> <span className="text-muted-foreground">{fmtDateTime(m.start_at)} → {m.end_at ? fmtDateTime(m.end_at) : "now"} · {m.reason}</span></li>)}</ul></div>
+              <ul className="space-y-1.5 text-table">{s.movements.map((m, i) => <li key={i}><span className="font-medium">{m.bed}</span> <span className="text-muted-foreground">{fmtDateTime(m.start_at)} → {m.end_at ? fmtDateTime(m.end_at) : "now"} · {m.reason}</span></li>)}</ul></div>
             <div><h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">ADT events</h4>
-              <ol className="space-y-1.5 text-[13px]">{s.events.map((e, i) => <li key={i}><span className="font-medium">{titleCase(e.kind.replace(/_/g, " "))}</span> <span className="text-muted-foreground">{fmtDateTime(e.at)}{e.note ? ` · ${e.note}` : ""}</span></li>)}</ol></div>
+              <ol className="space-y-1.5 text-table">{s.events.map((e, i) => <li key={i}><span className="font-medium">{titleCase(e.kind.replace(/_/g, " "))}</span> <span className="text-muted-foreground">{fmtDateTime(e.at)}{e.note ? ` · ${e.note}` : ""}</span></li>)}</ol></div>
           </CardContent></Card>
         </TabsContent>
       </Tabs>
@@ -151,7 +151,7 @@ function DischargePanel({ stay, data, onChange }: { stay: StayT; data?: Discharg
   };
   if (!data) return <LoadingRows />;
   if (!r) return (
-    <Card><CardContent className="flex flex-col items-start gap-3 p-6"><p className="text-[13.5px] text-muted-foreground">No discharge plan yet. It starts automatically when discharge is ordered, or start planning early.</p>
+    <Card><CardContent className="flex flex-col items-start gap-3 p-6"><p className="text-body text-muted-foreground">No discharge plan yet. It starts automatically when discharge is ordered, or start planning early.</p>
       {can("clinical:write") && stay.status === "admitted" && <Button variant="outline" onClick={async () => { try { await post(`/adt/stays/${stay.id}/discharge/plan`); toast.success("Discharge planning started"); onChange(); } catch (e) { toastError(e); } }}><ClipboardList />Start discharge planning</Button>}
     </CardContent></Card>
   );
@@ -160,7 +160,7 @@ function DischargePanel({ stay, data, onChange }: { stay: StayT; data?: Discharg
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2"><CardTitle>Discharge checklist</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
-          <AskAI agent="discharge_coordination" size="xs" variant="ghost" label="What's this waiting on?" question={`Summarize what the discharge for ${stay.patient.name} (stay ${stay.id}) is waiting on, which team owns each step, and what should happen next.`} />
+          <AskAI agent="discharge_coordination" size="xs" label="What's this waiting on?" question={`Summarize what the discharge for ${stay.patient.name} (stay ${stay.id}) is waiting on, which team owns each step, and what should happen next.`} />
           <StatusChip status={r.ready ? "done" : "waiting"} label={r.ready ? "Ready to discharge" : `${r.blocking.length} step${r.blocking.length === 1 ? "" : "s"} left`} /></div></CardHeader>
         <CardContent>
         {(() => {
@@ -168,9 +168,9 @@ function DischargePanel({ stay, data, onChange }: { stay: StayT; data?: Discharg
           const open = r.items.filter((it) => it.required && !["done", "not_applicable"].includes(it.status));
           const byOwner = new Map<string, string[]>();
           for (const it of open) byOwner.set(it.owner_role, [...(byOwner.get(it.owner_role) ?? []), it.label]);
-          if (!open.length) return <p className="mb-3 rounded-lg bg-success-soft/60 px-3 py-2 text-[13px]"><strong>All required steps are done.</strong> The discharge can be completed.</p>;
+          if (!open.length) return <p className="mb-3 rounded-lg bg-success-soft/60 px-3 py-2 text-table"><strong>All required steps are done.</strong> The discharge can be completed.</p>;
           return (
-            <div className="mb-3 rounded-lg border border-warning/40 bg-warning-soft/50 px-3 py-2.5 text-[13px]" data-testid="discharge-waiting-on">
+            <div className="mb-3 rounded-lg border border-warning/40 bg-warning-soft/50 px-3 py-2.5 text-table" data-testid="discharge-waiting-on">
               <p><strong>Waiting on:</strong> {[...byOwner.keys()].map((role) => `${ROLE_LABELS[role as Role] ?? role}${roles.includes(role as Role) ? " (you)" : ""}`).join(", ")}</p>
               <ul className="mt-1 space-y-0.5 text-muted-foreground">
                 {[...byOwner.entries()].map(([role, labels]) => <li key={role}><span className="text-foreground">{ROLE_LABELS[role as Role] ?? role}:</span> {labels.join("; ")}</li>)}
@@ -186,7 +186,7 @@ function DischargePanel({ stay, data, onChange }: { stay: StayT; data?: Discharg
             <li key={it.key} className="flex flex-wrap items-center gap-3 py-2.5">
               <Icon className={cn("size-5 shrink-0", it.status === "done" ? "text-success" : it.status === "not_applicable" ? "text-muted-foreground" : "text-warning")} />
               <div className="min-w-0 flex-1">
-                <p className={cn("text-[13.5px] font-medium", it.status === "not_applicable" && "text-muted-foreground line-through")}>{it.label}{!it.required && <span className="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>}</p>
+                <p className={cn("text-body font-medium", it.status === "not_applicable" && "text-muted-foreground line-through")}>{it.label}{!it.required && <span className="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>}</p>
                 <p className="text-xs text-muted-foreground">{ROLE_LABELS[it.owner_role] ?? it.owner_role} · {it.verification === "auto" ? "verified from the record automatically" : "attested by owner"}
                   {it.evidence?.at ? ` · appointment ${fmtDateTime(it.evidence.at)}` : ""}{it.note ? ` · ${it.note}` : ""}{it.completed_at ? ` · ${fromNow(it.completed_at)}` : ""}</p>
               </div>
@@ -201,7 +201,7 @@ function DischargePanel({ stay, data, onChange }: { stay: StayT; data?: Discharg
       <Card>
         <CardHeader className="flex-row items-center justify-between"><CardTitle>Patient instructions</CardTitle>{r.instructions.approved_at ? <Badge variant="success">Approved {fromNow(r.instructions.approved_at)}</Badge> : pending ? <AIBadge label="Draft — needs approval" /> : null}</CardHeader>
         <CardContent className="space-y-3">
-          {r.instructions.approved_at && <p className="whitespace-pre-wrap rounded-lg border bg-muted/30 p-3 text-[13px]">{r.instructions.text}</p>}
+          {r.instructions.approved_at && <p className="whitespace-pre-wrap rounded-lg border bg-muted/30 p-3 text-table">{r.instructions.text}</p>}
           {!r.instructions.approved_at && draft !== null && (
             <>
               <p className="text-xs text-muted-foreground">{pending?.source === "ai" ? "Drafted by the AI provider from the signed discharge summary." : "Drafted from the signed discharge summary (rule-based template)."} Review and edit before approving — nothing reaches the patient until a clinician approves.</p>
@@ -234,7 +234,7 @@ function NursingPanel({ stay }: { stay: StayT }) {
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader className="flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><HeartPulse className="size-4" />Vital signs</CardTitle>{can("clinical:write") && <Button size="sm" variant="outline" onClick={() => setVOpen(true)}>Record vitals</Button>}</CardHeader>
-        {!vit.data?.length ? <CardContent><p className="text-[13px] text-muted-foreground">No vitals recorded.</p></CardContent> : (
+        {!vit.data?.length ? <CardContent><p className="text-table text-muted-foreground">No vitals recorded.</p></CardContent> : (
           <Table><THead><TR><TH>Time</TH><TH>BP</TH><TH>HR</TH><TH>RR</TH><TH>Temp</TH><TH>SpO₂</TH><TH>Pain</TH></TR></THead>
             <TBody>{vit.data.map((v) => <TR key={v.id}><TD>{fmtDateTime(v.measured_at)}</TD><TD>{v.systolic ? `${v.systolic}/${v.diastolic}` : "—"}</TD><TD>{v.heart_rate ?? "—"}</TD><TD>{v.respiratory_rate ?? "—"}</TD><TD>{v.temperature_c ?? "—"}</TD>
               <TD className={cn(v.spo2 != null && v.spo2 < 92 && "font-semibold text-destructive")}>{v.spo2 ?? "—"}</TD><TD>{v.pain_score ?? "—"}</TD></TR>)}</TBody></Table>
@@ -242,9 +242,9 @@ function NursingPanel({ stay }: { stay: StayT }) {
       </Card>
       <Card>
         <CardHeader className="flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><Stethoscope className="size-4" />Shift handoffs (SBAR)</CardTitle>{can("nursing:write") && <Button size="sm" variant="outline" onClick={() => setHOpen(true)}>Write handoff</Button>}</CardHeader>
-        <CardContent>{!ho.data?.length ? <p className="text-[13px] text-muted-foreground">No handoffs yet.</p> : (
+        <CardContent>{!ho.data?.length ? <p className="text-table text-muted-foreground">No handoffs yet.</p> : (
           <ul className="space-y-3">{ho.data.map((h) => (
-            <li key={h.id} className="rounded-lg border p-3 text-[13px]">
+            <li key={h.id} className="rounded-lg border p-3 text-table">
               <div className="mb-1 flex flex-wrap items-center gap-2"><Badge variant="outline">{titleCase(h.shift)} shift</Badge><span className="text-xs text-muted-foreground">{h.author} · {fmtDateTime(h.created_at)}</span>
                 {h.acknowledged_at ? <Badge variant="success">Received by {h.acknowledged_by}</Badge> : can("nursing:write") && h.author_id !== me?.user.id && <Button size="xs" variant="outline" onClick={async () => { try { await post(`/handoffs/${h.id}/acknowledge`); qc.invalidateQueries({ queryKey: ["handoffs", stay.id] }); } catch (e) { toastError(e); } }}>Acknowledge</Button>}</div>
               {(["situation", "background", "assessment", "recommendation"] as const).map((k) => h[k] && <p key={k}><span className="font-medium">{k[0].toUpperCase()}:</span> {h[k]}</p>)}
@@ -304,8 +304,8 @@ function CareTeamPanel({ stayId }: { stayId: string }) {
           <div className="flex gap-2"><NativeSelect className="h-9 w-40" value={role} onChange={(e) => setRole(e.target.value)} aria-label="My role">{["attending", "resident", "nurse", "case_manager", "pharmacist", "therapist"].map((r) => <option key={r} value={r}>{titleCase(r.replace("_", " "))}</option>)}</NativeSelect>
             <Button size="sm" onClick={async () => { try { await post(`/adt/stays/${stayId}/care-team`, { user_id: me.user.id, role }); qc.invalidateQueries({ queryKey: ["careteam", stayId] }); qc.invalidateQueries({ queryKey: ["nursing"] }); } catch (e) { toastError(e); } }}>Add me</Button></div>)}
       </CardHeader>
-      <CardContent>{!q.data?.length ? <p className="text-[13px] text-muted-foreground">No care team members assigned yet.</p> : (
-        <ul className="divide-y">{q.data.map((m) => <li key={m.id} className="flex items-center justify-between py-2 text-[13.5px]"><span className="font-medium">{m.name}</span><span className="text-muted-foreground">{titleCase(m.role.replace("_", " "))} · since {fromNow(m.since)}</span></li>)}</ul>
+      <CardContent>{!q.data?.length ? <p className="text-table text-muted-foreground">No care team members assigned yet.</p> : (
+        <ul className="divide-y">{q.data.map((m) => <li key={m.id} className="flex items-center justify-between py-2 text-body"><span className="font-medium">{m.name}</span><span className="text-muted-foreground">{titleCase(m.role.replace("_", " "))} · since {fromNow(m.since)}</span></li>)}</ul>
       )}</CardContent>
     </Card>
   );
@@ -323,8 +323,8 @@ export function NursingPage() {
     <>
       <PageHeader title="Nursing" description="Your unit at a glance: beds, latest vitals, open tasks, handoffs and discharge progress." />
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <button onClick={() => setMine(false)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted", !mine && "bg-accent text-accent-foreground")}>My units</button>
-        <button onClick={() => setMine(true)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted", mine && "bg-accent text-accent-foreground")}>My assigned patients</button>
+        <button onClick={() => setMine(false)} className={cn("rounded-md px-2.5 py-1 text-table font-medium text-muted-foreground hover:bg-muted", !mine && "bg-accent text-accent-foreground")}>My units</button>
+        <button onClick={() => setMine(true)} className={cn("rounded-md px-2.5 py-1 text-table font-medium text-muted-foreground hover:bg-muted", mine && "bg-accent text-accent-foreground")}>My assigned patients</button>
         {overdue > 0 && <Badge variant="warning"><AlertTriangle />{overdue} with vitals older than 4 h</Badge>}
       </div>
       <Card className="overflow-hidden">
@@ -334,7 +334,7 @@ export function NursingPage() {
               <TR key={r.id}>
                 <TD className="font-semibold">{r.bed?.name ?? "—"}</TD>
                 <TD><button className="text-left hover:underline" onClick={() => nav(`/inpatients/${r.id}`)}><p className="font-medium">{r.patient.name}</p><p className="text-xs text-muted-foreground">{r.reason} · LOS {losLabel(r.los_hours)}</p></button>{r.isolation && <Badge variant="warning" className="mt-1">{r.isolation} isolation</Badge>}</TD>
-                <TD className={cn("text-[13px]", r.vitals_overdue && "text-warning")}>{r.vitals ? <>{r.vitals.bp ?? "—"} · HR {r.vitals.hr ?? "—"} · SpO₂ {r.vitals.spo2 ?? "—"}<p className="text-xs text-muted-foreground">{fromNow(r.vitals.measured_at)}</p></> : "None recorded"}</TD>
+                <TD className={cn("text-table", r.vitals_overdue && "text-warning")}>{r.vitals ? <>{r.vitals.bp ?? "—"} · HR {r.vitals.hr ?? "—"} · SpO₂ {r.vitals.spo2 ?? "—"}<p className="text-xs text-muted-foreground">{fromNow(r.vitals.measured_at)}</p></> : "None recorded"}</TD>
                 <TD className="tabular">{r.open_tasks}</TD>
                 <TD className="text-xs text-muted-foreground">{r.last_handoff_at ? fromNow(r.last_handoff_at) : "—"}</TD>
                 <TD>{r.discharge ? <Badge variant={r.discharge.ready ? "success" : "warning"}>{r.discharge.done}/{r.discharge.total}</Badge> : r.status === "discharge_ordered" ? <Badge variant="info">Ordered</Badge> : "—"}</TD>

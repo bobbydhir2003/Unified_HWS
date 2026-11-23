@@ -60,11 +60,11 @@ export function OrdersPage() {
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-1 border-b p-3">
           {QUEUES.map(([k, l]) => (
-            <button key={k} onClick={() => setParams({ queue: k })} className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted", queue === k && "bg-accent text-accent-foreground")}>
-              {l}{!!counts.data?.[k] && <span className={cn("rounded-full px-1.5 text-[11px] tabular", k === "results" || k === "to_sign" ? "bg-warning text-white" : "bg-muted")}>{counts.data[k]}</span>}
+            <button key={k} onClick={() => setParams({ queue: k })} className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-table font-medium text-muted-foreground hover:bg-muted", queue === k && "bg-accent text-accent-foreground")}>
+              {l}{!!counts.data?.[k] && <span className={cn("rounded-full px-1.5 text-label tabular", k === "results" || k === "to_sign" ? "bg-warning text-white" : "bg-muted")}>{counts.data[k]}</span>}
             </button>
           ))}
-          <label className="ml-auto flex items-center gap-2 text-[13px] text-muted-foreground"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} className="accent-[var(--primary)]" />Only mine</label>
+          <label className="ml-auto flex items-center gap-2 text-table text-muted-foreground"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} className="accent-[var(--primary)]" />Only mine</label>
         </div>
         {q.error ? <ErrorState error={q.error} /> : q.isLoading ? <LoadingRows /> : !q.data?.items.length ? <EmptyState icon={ClipboardList} title="Nothing here" description="Orders appear here as they're drafted, sent and resulted." /> : (
           <OrdersTable orders={q.data.items} onOpen={(o) => setOpenId(o.id)} />
@@ -89,15 +89,15 @@ export function EncounterOrdersCard({ patientId, encounterId, diagnosisCodes, ed
         {editable && can("orders:write") && <Button size="xs" variant="outline" onClick={() => setNewOpen(true)}><Plus />New</Button>}
       </CardHeader>
       <CardContent>
-        {!q.data?.length ? <p className="text-[13px] text-muted-foreground">No orders for this visit.</p> : (
+        {!q.data?.length ? <p className="text-table text-muted-foreground">No orders for this visit.</p> : (
           <ul className="space-y-1.5">
             {q.data.map((o) => {
               const Icon = TYPE_ICON[o.order_type];
               return (
-                <li key={o.id} className="flex items-center gap-2 rounded-lg border px-2.5 py-2 text-[13px]">
+                <li key={o.id} className="flex items-center gap-2 rounded-lg border px-2.5 py-2 text-table">
                   <Icon className="size-4 shrink-0 text-muted-foreground" />
                   <button className="min-w-0 flex-1 truncate text-left font-medium hover:underline" onClick={() => setOpenId(o.id)}>{o.title}</button>
-                  {o.status === "draft" && can("orders:sign") ? <Button size="xs" onClick={() => setSigning(o)}><FileSignature />Sign</Button> : <OrderStatusBadge o={o} />}
+                  {o.status === "draft" && can("orders:sign") ? <Button size="xs" variant="outline" onClick={() => setSigning(o)}><FileSignature />Sign</Button> : <OrderStatusBadge o={o} />}
                 </li>
               );
             })}
@@ -152,7 +152,7 @@ export function PatientResultsTab({ patientId }: { patientId: string }) {
           </CardHeader>
           {trend && (
             <CardContent className="h-52">
-              {series.length < 2 ? <p className="text-[13px] text-muted-foreground">Only one result so far.</p> : (
+              {series.length < 2 ? <p className="text-table text-muted-foreground">Only one result so far.</p> : (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={series} margin={{ left: -16, right: 8 }}>
                     <CartesianGrid vertical={false} stroke="var(--border)" />

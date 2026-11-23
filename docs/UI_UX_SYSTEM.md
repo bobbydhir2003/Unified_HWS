@@ -1,8 +1,22 @@
 # UI / UX system
 
-## Visual direction
+## Visual direction — HMS Workflows (Harbor Blue)
 
-Calm, clinical, high-density but readable. Navy sidebar, white/soft-blue canvas, a single blue primary, semantic tones for status. Inter Variable, 13–14px body, tabular numerals for clinical values.
+Approved redesign: `docs/HMS_WORKFLOWS_VISUAL_REDESIGN_PLAN.md`. Calm, clinical, dense but readable: light sidebar, light work surface,
+one blue (`#1D5BD6`) for actions, colour reserved for meaning. Brand: **HMS Workflows** — continuous-route "W" mark
+(`components/common/Logo.tsx`), tagline *Your Entire Hospital. Working as One.* (`lib/legal.ts`).
+
+**Type scale (7 sizes, Inter):** `text-label` 12/16 · `text-table` 13/18 · `text-body` 14/20 · `text-section` 16/24 · `text-metric` 20/28 ·
+`text-title` 22/28 · `text-display` 28/36. Arbitrary `text-[Npx]` is blocked in CI. The patient portal scales the same tokens up
+(`.portal-scale`, 16 px body).
+
+**Status colours:** red = clinical danger / failure (`Urgent`, `Blocked`, `Failed`), amber = overdue / escalated / needs approval,
+green = done, blue = active workflow, neutral = waiting. Overdue work is never red. Every status has an icon and a label
+(`components/common/Status.tsx`). AI provenance: `ProvenanceChip` — Live AI · Simulated · AI draft · Rule alert · Awaiting approval · Done.
+
+**Density:** Comfortable (default) or Compact from the user menu (`<html data-density="compact">`), driving table row and card padding.
+
+**Patient safety wording:** an empty allergy list reads "Allergies: none recorded" — never "No known allergies" unless documented.
 
 ## Tokens (`frontend/src/index.css`)
 

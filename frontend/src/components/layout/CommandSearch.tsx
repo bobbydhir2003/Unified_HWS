@@ -45,15 +45,15 @@ export function CommandSearch({ open, onOpenChange }: { open: boolean; onOpenCha
             <div className="flex items-center gap-2 border-b px-4">
               <Search className="size-4 text-muted-foreground" />
               <Command.Input value={q} onValueChange={setQ} autoFocus placeholder="Name, MRN, date of birth (MM/DD/YYYY) or phone…"
-                className="h-12 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground" />
+                className="h-12 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground" />
               {isFetching && <span className="size-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />}
             </div>
             <Command.List className="max-h-[60vh] overflow-y-auto p-2">
               {dq.length >= 2 && data && !data.patients.length && (
-                <Command.Empty className="px-3 py-6 text-center text-[13px] text-muted-foreground">No patients match “{dq}”.</Command.Empty>
+                <Command.Empty className="px-3 py-6 text-center text-table text-muted-foreground">No patients match “{dq}”.</Command.Empty>
               )}
               {!!data?.patients.length && dq.length >= 2 && (
-                <Command.Group heading="Patients" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground">
+                <Command.Group heading="Patients" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-label [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground">
                   {data.patients.map((p) => (
                     <Command.Item key={p.id} value={p.id} onSelect={() => go(`/patients/${p.id}`)}
                       className="flex cursor-default items-center gap-3 rounded-lg px-2.5 py-2 data-[selected=true]:bg-accent">
@@ -62,7 +62,7 @@ export function CommandSearch({ open, onOpenChange }: { open: boolean; onOpenCha
                         <span className="flex items-center gap-1.5 font-medium">
                           {p.name}
                           {p.is_restricted && <Lock className="size-3 text-warning" aria-label="Restricted chart" />}
-                          {p.status !== "active" && <span className="text-[11px] font-normal text-destructive">({p.status})</span>}
+                          {p.status !== "active" && <span className="text-label font-normal text-destructive">({p.status})</span>}
                         </span>
                         {/* DOB + sex + MRN always shown together to prevent wrong-patient selection */}
                         <span className="block text-xs text-muted-foreground tabular">
@@ -74,17 +74,17 @@ export function CommandSearch({ open, onOpenChange }: { open: boolean; onOpenCha
                 </Command.Group>
               )}
               {dq.length < 2 && (
-                <Command.Group heading="Go to" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground">
+                <Command.Group heading="Go to" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-label [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground">
                   {pages.map((p) => (
                     <Command.Item key={p.to} value={p.to} onSelect={() => go(p.to)}
-                      className="flex cursor-default items-center gap-3 rounded-lg px-2.5 py-2 text-[13.5px] data-[selected=true]:bg-accent">
+                      className="flex cursor-default items-center gap-3 rounded-lg px-2.5 py-2 text-body data-[selected=true]:bg-accent">
                       <p.icon className="size-4 text-muted-foreground" />{p.label}
                     </Command.Item>
                   ))}
                 </Command.Group>
               )}
             </Command.List>
-            <div className="flex items-center gap-3 border-t px-4 py-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-3 border-t px-4 py-2 text-label text-muted-foreground">
               <span>↑↓ navigate</span><span>↵ open</span><span>esc close</span>
             </div>
           </Command>

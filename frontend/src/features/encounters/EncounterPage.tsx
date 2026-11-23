@@ -128,7 +128,7 @@ function NoteEditor({ note, encounter, onChanged, onDirtyChange }: { note: Note;
       </CardHeader>
       <CardContent className="space-y-5 pt-4">
         {conflict && (
-          <div role="alert" className="flex items-center justify-between gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-[13px]">
+          <div role="alert" className="flex items-center justify-between gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-table">
             Someone else saved this note. Reload to see their version (your edits will be replaced).
             <Button size="xs" variant="outline" onClick={onChanged}>Reload</Button>
           </div>
@@ -136,7 +136,7 @@ function NoteEditor({ note, encounter, onChanged, onDirtyChange }: { note: Note;
         {SECTIONS.map((s) => (
           <div key={s.key}>
             <div className="mb-1.5 flex items-end justify-between gap-2">
-              <label htmlFor={`sec-${s.key}`} className="text-[13px] font-semibold">{s.label}</label>
+              <label htmlFor={`sec-${s.key}`} className="text-table font-semibold">{s.label}</label>
               {s.key === "objective" && latestVitals && editable && (
                 <Button size="xs" variant="ghost" onClick={() => setContent((c) => ({ ...c, objective: `${vitalsText(latestVitals)}\n${c.objective}` }))}>
                   <HeartPulse />Insert vitals
@@ -155,9 +155,9 @@ function NoteEditor({ note, encounter, onChanged, onDirtyChange }: { note: Note;
             <DialogTitle>Sign note</DialogTitle>
             <DialogDescription>Once signed, the note is locked. Corrections must be added as addenda.</DialogDescription>
           </DialogHeader>
-          {missingAP && <div className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">Assessment and Plan are required before signing.</div>}
+          {missingAP && <div className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-table text-destructive">Assessment and Plan are required before signing.</div>}
           {note.has_ai_content && (
-            <label className="flex items-start gap-2 rounded-lg border border-ai/30 bg-ai-soft p-3 text-[13px]">
+            <label className="flex items-start gap-2 rounded-lg border border-ai/30 bg-ai-soft p-3 text-table">
               <Checkbox checked={attest} onCheckedChange={(c) => setAttest(!!c)} className="mt-0.5" />
               <span>I have reviewed and, where needed, corrected the AI-generated content in this note, and it accurately reflects this encounter.</span>
             </label>
@@ -191,16 +191,16 @@ function SignedNote({ note, onChanged }: { note: Note; onChanged: () => void }) 
         <p className="text-xs text-muted-foreground">Signed by <strong className="text-foreground">{note.signed_by?.name}</strong> · {fmtDateTime(note.signed_at)} · v{note.current_version}</p>
         {SECTIONS.map((s) => (
           <section key={s.key}>
-            <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">{s.label}</h3>
-            <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed">{note.content[s.key] || <span className="text-muted-foreground">—</span>}</p>
+            <h3 className="mb-1 text-label font-semibold uppercase tracking-wide text-muted-foreground">{s.label}</h3>
+            <p className="whitespace-pre-wrap text-body leading-relaxed">{note.content[s.key] || <span className="text-muted-foreground">—</span>}</p>
           </section>
         ))}
         {note.addenda.length > 0 && (
           <section className="space-y-2 border-t pt-4">
-            <h3 className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">Addenda</h3>
+            <h3 className="text-label font-semibold uppercase tracking-wide text-muted-foreground">Addenda</h3>
             {note.addenda.map((a) => (
               <div key={a.id} className="rounded-lg border-l-4 border-primary bg-muted/40 px-3 py-2">
-                <p className="whitespace-pre-wrap text-[13.5px]">{a.body}</p>
+                <p className="whitespace-pre-wrap text-body">{a.body}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{a.author.name} · {fmtDateTime(a.created_at)}</p>
               </div>
             ))}
@@ -213,7 +213,7 @@ function SignedNote({ note, onChanged }: { note: Note; onChanged: () => void }) 
             try { await post(`/notes/${note.id}/addenda`, { body }); setBody(""); setAddOpen(false); toast.success("Addendum added"); onChanged(); }
             catch (err) { toastError(err); } finally { setBusy(false); }
           }}>
-            <label htmlFor="addendum" className="text-[13px] font-semibold">New addendum</label>
+            <label htmlFor="addendum" className="text-table font-semibold">New addendum</label>
             <Textarea id="addendum" rows={3} value={body} onChange={(e) => setBody(e.target.value)} autoFocus />
             <p className="text-xs text-muted-foreground">Addenda are timestamped, attributed to you and cannot be edited.</p>
             <div className="flex justify-end gap-2">
@@ -234,15 +234,15 @@ function VersionHistory({ noteId, open, onOpenChange }: { noteId: string; open: 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <SheetContent className="max-w-2xl" aria-describedby={undefined}>
-        <div className="border-b px-6 py-4"><D.Title className="text-base font-semibold">Version history</D.Title><p className="text-[13px] text-muted-foreground">Every save is kept. Versions can't be edited or deleted.</p></div>
+        <div className="border-b px-6 py-4"><D.Title className="text-base font-semibold">Version history</D.Title><p className="text-table text-muted-foreground">Every save is kept. Versions can't be edited or deleted.</p></div>
         <div className="grid min-h-0 flex-1 grid-cols-[180px_1fr]">
           <ul className="overflow-y-auto border-r p-2">
             {q.data?.map((x) => (
               <li key={x.version}>
-                <button onClick={() => setSel(x.version)} className={cn("w-full rounded-md px-2.5 py-2 text-left text-[13px] hover:bg-muted", v?.version === x.version && "bg-accent")}>
+                <button onClick={() => setSel(x.version)} className={cn("w-full rounded-md px-2.5 py-2 text-left text-table hover:bg-muted", v?.version === x.version && "bg-accent")}>
                   <span className="flex items-center gap-1.5 font-medium">v{x.version}{x.source === "sign" && <Lock className="size-3" />}{x.source === "ai_scribe" && <Badge variant="ai" className="px-1">AI</Badge>}</span>
                   <span className="block text-xs text-muted-foreground">{titleCase(x.source)} · {x.created_by?.name ?? "—"}</span>
-                  <span className="block text-[11px] text-muted-foreground">{fmtDateTime(x.created_at)}</span>
+                  <span className="block text-label text-muted-foreground">{fmtDateTime(x.created_at)}</span>
                 </button>
               </li>
             ))}
@@ -251,8 +251,8 @@ function VersionHistory({ noteId, open, onOpenChange }: { noteId: string; open: 
             {q.isLoading && <LoadingRows />}
             {v && SECTIONS.map((s) => (
               <section key={s.key}>
-                <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">{s.label}</h3>
-                <p className="whitespace-pre-wrap text-[13px]">{v.content[s.key] || "—"}</p>
+                <h3 className="mb-1 text-label font-semibold uppercase tracking-wide text-muted-foreground">{s.label}</h3>
+                <p className="whitespace-pre-wrap text-table">{v.content[s.key] || "—"}</p>
               </section>
             ))}
           </div>
@@ -276,10 +276,10 @@ function Diagnoses({ enc, onChanged }: { enc: EncounterDetail; onChanged: () => 
     <Card>
       <CardHeader className="pb-2"><CardTitle>Diagnoses</CardTitle>{busy && <span className="size-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />}</CardHeader>
       <CardContent className="space-y-3">
-        {!enc.diagnoses.length && <p className="text-[13px] text-muted-foreground">No diagnoses yet. At least one is required to complete the visit.</p>}
+        {!enc.diagnoses.length && <p className="text-table text-muted-foreground">No diagnoses yet. At least one is required to complete the visit.</p>}
         <ol className="space-y-1.5">
           {enc.diagnoses.map((d, i) => (
-            <li key={d.id} className="flex items-start gap-2 rounded-lg border px-2.5 py-2 text-[13px]">
+            <li key={d.id} className="flex items-start gap-2 rounded-lg border px-2.5 py-2 text-table">
               <span className="mt-0.5 w-4 text-xs font-semibold text-muted-foreground">{i + 1}</span>
               <span className="min-w-0 flex-1"><span className="font-mono text-xs font-semibold text-primary">{d.code}</span><span className="block">{d.description}</span></span>
               {editable && <Button variant="ghost" size="icon-sm" aria-label={`Remove ${d.code}`} onClick={() => update(current.filter((c) => c.code !== d.code))}><X /></Button>}
@@ -313,7 +313,7 @@ function IntakeCard({ appointmentId }: { appointmentId: string }) {
   return (
     <Card className="border-primary/25">
       <CardHeader className="pb-2"><CardTitle>Pre-visit intake</CardTitle><span className="text-xs text-muted-foreground">from patient · {fmtDateTime(q.data.submitted_at)}</span></CardHeader>
-      <CardContent className="space-y-2 text-[13px]">
+      <CardContent className="space-y-2 text-table">
         <p>{a.reason_details}</p>
         {!!a.symptoms.length && <p><span className="text-muted-foreground">Symptoms:</span> {a.symptoms.join(", ")}{a.symptom_duration ? ` · ${a.symptom_duration}` : ""}{a.pain_score != null ? ` · pain ${a.pain_score}/10` : ""}</p>}
         {!a.medications_confirmed && <p className="text-warning"><strong>Medication changes:</strong> {a.medication_changes || "patient indicated the list is incorrect"}</p>}
@@ -373,7 +373,7 @@ export function EncounterPage() {
               <Link to={`/patients/${enc.patient_id}`} className="text-lg font-semibold tracking-tight hover:underline">{enc.patient.name}</Link>
               <Badge variant={open ? "ai" : enc.status === "completed" ? "success" : "danger"}>{open ? "Visit in progress" : titleCase(enc.status)}</Badge>
             </div>
-            <p className="mt-0.5 text-[13px] text-muted-foreground tabular">
+            <p className="mt-0.5 text-table text-muted-foreground tabular">
               {sexShort(enc.patient.sex_at_birth)} · DOB {fmtDob(enc.patient.date_of_birth)} · MRN <span className="font-mono">{enc.patient.mrn}</span> · {titleCase(enc.encounter_type)} · {enc.provider.name} · started {fmtDateTime(enc.started_at)}
             </p>
           </div>
@@ -396,7 +396,7 @@ export function EncounterPage() {
             )}
           </div>
         </div>
-        <div className="border-t bg-muted/30 px-4 py-2"><AllergyStrip summary={summary.data} /></div>
+        <div className="border-t bg-subtle px-4 py-2"><AllergyStrip summary={summary.data} /></div>
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
@@ -404,12 +404,12 @@ export function EncounterPage() {
           <Card>
             <CardContent className="grid gap-3 pt-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="cc" className="text-[13px] font-semibold">Chief complaint</label>
+                <label htmlFor="cc" className="text-table font-semibold">Chief complaint</label>
                 <Input id="cc" className="mt-1.5" readOnly={!writable} value={cc ?? enc.chief_complaint ?? ""} onChange={(e) => setCc(e.target.value)}
                   onBlur={() => { if (cc !== null && cc !== (enc.chief_complaint ?? "")) saveField("chief_complaint", cc); setCc(null); }} placeholder="Reason for visit" />
               </div>
               <div>
-                <label htmlFor="fu" className="text-[13px] font-semibold">Follow-up</label>
+                <label htmlFor="fu" className="text-table font-semibold">Follow-up</label>
                 <Input id="fu" className="mt-1.5" readOnly={!writable} value={followUp ?? enc.follow_up ?? ""} onChange={(e) => setFollowUp(e.target.value)}
                   onBlur={() => { if (followUp !== null && followUp !== (enc.follow_up ?? "")) saveField("follow_up", followUp); setFollowUp(null); }} placeholder="e.g. Return in 3 months" />
               </div>
@@ -438,7 +438,7 @@ export function EncounterPage() {
                       catch (e) { toastError(e); } finally { setCreating(false); }
                     }}><Plus />Start note</Button>
                   </div>
-                ) : <p className="text-[13px] text-muted-foreground">This visit was closed without a note.</p>}
+                ) : <p className="text-table text-muted-foreground">This visit was closed without a note.</p>}
               </CardContent>
             </Card>
           ) : note.status === "signed" ? <SignedNote note={note} onChanged={refresh} /> : <NoteEditor note={note} encounter={enc} onChanged={refresh} onDirtyChange={setNoteDirty} />}
@@ -453,7 +453,7 @@ export function EncounterPage() {
             <CardContent>
               {enc.vitals[0] ? (
                 <><VitalsSummary v={enc.vitals[0]} className="sm:grid-cols-4" /><p className="mt-2 text-xs text-muted-foreground">{fmtDateTime(enc.vitals[0].measured_at)}{enc.vitals.length > 1 ? ` · ${enc.vitals.length} sets this visit` : ""}</p></>
-              ) : <p className="text-[13px] text-muted-foreground">Not recorded for this visit.</p>}
+              ) : <p className="text-table text-muted-foreground">Not recorded for this visit.</p>}
             </CardContent>
           </Card>
           {enc.appointment_id && <IntakeCard appointmentId={enc.appointment_id} />}
@@ -461,8 +461,8 @@ export function EncounterPage() {
           {can("clinical:read") && <EncounterOrdersCard patientId={enc.patient_id} encounterId={enc.id} diagnosisCodes={enc.diagnoses.map((d) => d.code)} editable={open} />}
           {summary.data?.clinical_access && (
             <Card>
-              <CardHeader className="pb-2"><CardTitle>Patient context</CardTitle><Link to={`/patients/${enc.patient_id}`} className="text-[12.5px] font-medium text-primary hover:underline">Full chart</Link></CardHeader>
-              <CardContent className="space-y-3 text-[13px]">
+              <CardHeader className="pb-2"><CardTitle>Patient context</CardTitle><Link to={`/patients/${enc.patient_id}`} className="text-table font-medium text-primary hover:underline">Full chart</Link></CardHeader>
+              <CardContent className="space-y-3 text-table">
                 <div>
                   <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active problems</p>
                   {summary.data.problems?.length ? <ul className="space-y-0.5">{summary.data.problems.map((p) => <li key={p.id}>{p.description}</li>)}</ul> : <p className="text-muted-foreground">None</p>}
@@ -475,7 +475,7 @@ export function EncounterPage() {
             </Card>
           )}
           {!open && (
-            <div className="flex items-center gap-2 rounded-lg border bg-success-soft px-3 py-2 text-[13px] text-success">
+            <div className="flex items-center gap-2 rounded-lg border bg-success-soft px-3 py-2 text-table text-success">
               <ClipboardCheck className="size-4" />Visit {enc.status} {enc.completed_at ? fmtDateTime(enc.completed_at) : ""}
             </div>
           )}

@@ -1,6 +1,6 @@
 import { AlertTriangle, FlaskConical, Inbox, type LucideIcon, RefreshCw, Sparkles } from "lucide-react";
 import * as React from "react";
-import { useBlocker } from "react-router-dom";
+import { Link, useBlocker } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,29 +11,44 @@ import { ApiError } from "@/lib/api";
 import type { AppointmentStatus } from "@/lib/types";
 import { cn, titleCase } from "@/lib/utils";
 
+/** Page header: optional eyebrow (department · facility · date), one title, a one-line description, actions on the right
+ *  (at most one primary), and an optional toolbar row for filters. */
 export function PageHeader({
-  title, description, actions, children, className,
-}: { title: React.ReactNode; description?: React.ReactNode; actions?: React.ReactNode; children?: React.ReactNode; className?: string }) {
+  title, description, actions, children, className, eyebrow, toolbar,
+}: { title: React.ReactNode; description?: React.ReactNode; actions?: React.ReactNode; children?: React.ReactNode; className?: string;
+  eyebrow?: React.ReactNode; toolbar?: React.ReactNode }) {
   return (
-    <div className={cn("mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between", className)}>
-      <div className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight sm:text-[22px]">{title}</h1>
-        {description && <p className="mt-1 text-[13px] text-muted-foreground">{description}</p>}
-        {children}
+    <div className={cn("mb-5 space-y-3", className)}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          {eyebrow && <p className="mb-0.5 text-label font-medium text-muted-foreground">{eyebrow}</p>}
+          <h1 className="text-title font-semibold tracking-tight text-heading">{title}</h1>
+          {description && <p className="mt-1 max-w-3xl text-body text-muted-foreground">{description}</p>}
+          {children}
+        </div>
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {toolbar && <div className="flex flex-wrap items-center gap-2">{toolbar}</div>}
     </div>
   );
 }
 
 export function EmptyState({
-  icon: Icon = Inbox, title, description, action, className,
-}: { icon?: LucideIcon; title: string; description?: React.ReactNode; action?: React.ReactNode; className?: string }) {
+  icon: Icon = Inbox, title, description, action, className, compact,
+}: { icon?: LucideIcon; title: string; description?: React.ReactNode; action?: React.ReactNode; className?: string; compact?: boolean }) {
+  if (compact) {
+    return (
+      <div className={cn("flex items-center gap-2 px-4 py-3 text-table text-muted-foreground", className)}>
+        <Icon className="size-4 shrink-0" aria-hidden /><span><span className="font-medium text-foreground">{title}</span>{description ? <> — {description}</> : null}</span>
+        {action && <span className="ml-auto">{action}</span>}
+      </div>
+    );
+  }
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-2 px-6 py-12 text-center", className)}>
-      <div className="mb-1 rounded-full bg-muted p-3 text-muted-foreground"><Icon className="size-5" /></div>
-      <p className="font-medium">{title}</p>
-      {description && <p className="max-w-sm text-[13px] text-muted-foreground">{description}</p>}
+    <div className={cn("flex flex-col items-center justify-center gap-2 px-6 py-10 text-center", className)}>
+      <div className="mb-1 rounded-full bg-muted p-2.5 text-muted-foreground"><Icon className="size-5" /></div>
+      <p className="font-medium text-heading">{title}</p>
+      {description && <p className="max-w-sm text-table text-muted-foreground">{description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );
@@ -46,7 +61,7 @@ export function ErrorState({ error, retry, className }: { error: unknown; retry?
     <div role="alert" className={cn("flex flex-col items-center gap-2 px-6 py-10 text-center", className)}>
       <div className="rounded-full bg-destructive-soft p-3 text-destructive"><AlertTriangle className="size-5" /></div>
       <p className="font-medium">{status === 403 ? "You don't have access to this" : status === 404 ? "Not found" : "Couldn't load this"}</p>
-      <p className="max-w-md text-[13px] text-muted-foreground">{msg}</p>
+      <p className="max-w-md text-table text-muted-foreground">{msg}</p>
       {retry && status !== 403 && status !== 404 && (
         <Button variant="outline" size="sm" onClick={retry} className="mt-1"><RefreshCw /> Try again</Button>
       )}
@@ -66,16 +81,17 @@ export function toastError(err: unknown, fallback = "Something went wrong") {
   toast.error(err instanceof Error ? err.message : fallback);
 }
 
+// Blue = active workflow, neutral = waiting/inactive, green = done, amber = needs attention. (Violet is AI-only.)
 const APPT_STATUS: Record<AppointmentStatus, { label: string; variant: React.ComponentProps<typeof Badge>["variant"] }> = {
   scheduled: { label: "Scheduled", variant: "neutral" },
   confirmed: { label: "Confirmed", variant: "info" },
-  checked_in: { label: "Checked in", variant: "warning" },
+  checked_in: { label: "Checked in", variant: "primary" },
   roomed: { label: "Roomed", variant: "primary" },
-  in_progress: { label: "With provider", variant: "ai" },
+  in_progress: { label: "With provider", variant: "primary" },
   completed: { label: "Visit done", variant: "success" },
   checked_out: { label: "Checked out", variant: "success" },
-  cancelled: { label: "Cancelled", variant: "danger" },
-  no_show: { label: "No-show", variant: "danger" },
+  cancelled: { label: "Cancelled", variant: "neutral" },
+  no_show: { label: "No-show", variant: "warning" },
 };
 
 export function AppointmentStatusBadge({ status, className }: { status: AppointmentStatus; className?: string }) {
@@ -89,7 +105,7 @@ export function AIBadge({ label = "AI-generated", className }: { label?: string;
 
 export function SimulatedBadge({ className, label = "Simulated" }: { className?: string; label?: string }) {
   return (
-    <Badge variant="warning" className={className} title="No real external system is contacted">
+    <Badge variant="neutral" className={cn("border-dashed", className)} title="No real external system is contacted">
       <FlaskConical />{label}
     </Badge>
   );
@@ -121,7 +137,7 @@ export function useConfirm() {
         </DialogHeader>
         {state?.requireReason && (
           <div className="grid gap-1.5">
-            <label className="text-[13px] font-medium" htmlFor="confirm-reason">{state.reasonLabel ?? "Reason"}</label>
+            <label className="text-table font-medium" htmlFor="confirm-reason">{state.reasonLabel ?? "Reason"}</label>
             <Textarea id="confirm-reason" autoFocus value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
           </div>
         )}
@@ -166,21 +182,48 @@ export function useUnsavedChanges(dirty: boolean) {
   );
 }
 
-export function Stat({ label, value, sub, icon: Icon, tone = "primary" }: {
-  label: string; value: React.ReactNode; sub?: React.ReactNode; icon?: LucideIcon; tone?: "primary" | "success" | "warning" | "ai" | "danger";
+type Tone = "primary" | "success" | "warning" | "ai" | "danger";
+const TONE_TEXT: Partial<Record<Tone, string>> = { warning: "text-warning", danger: "text-destructive" };
+
+/** One metric: label (12), value (20, tabular), optional sub-line and bar. Neutral unless a rule makes it a warning. */
+export function Metric({ label, value, sub, tone, bar, to, className }: {
+  label: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode; tone?: Tone; bar?: number; to?: string; className?: string;
 }) {
-  const tones = {
-    primary: "bg-accent text-accent-foreground", success: "bg-success-soft text-success",
-    warning: "bg-warning-soft text-warning", ai: "bg-ai-soft text-ai", danger: "bg-destructive-soft text-destructive",
-  };
+  const body = (
+    <>
+      <p className="truncate text-label font-medium text-muted-foreground">{label}</p>
+      <p className={cn("text-metric font-semibold tabular text-heading", tone && TONE_TEXT[tone])}>{value}</p>
+      {bar != null && (
+        <div className="my-1 h-1.5 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${Math.round(bar)}%`}>
+          <div className={cn("h-full rounded-full", bar >= 90 ? "bg-destructive" : bar >= 80 ? "bg-warning" : "bg-primary")} style={{ width: `${Math.min(100, Math.max(0, bar))}%` }} />
+        </div>
+      )}
+      {sub && <p className="truncate text-label text-muted-foreground">{sub}</p>}
+    </>
+  );
+  const cls = cn("block min-w-0 bg-card px-4 py-3", className);
+  return to ? <Link to={to} className={cn(cls, "hover:bg-muted/60 focus-visible:relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50")}>{body}</Link> : <div className={cls}>{body}</div>;
+}
+
+/** A row of metrics in one bordered strip with dividers (replaces separate KPI tiles). */
+export function MetricStrip({ children, className, cols }: { children: React.ReactNode; className?: string; cols?: 2 | 3 | 4 | 5 | 6 }) {
+  const n = cols ?? Math.min(6, React.Children.toArray(children).filter(Boolean).length) as 2 | 3 | 4 | 5 | 6;
+  const lg = { 1: "lg:grid-cols-1", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5", 6: "lg:grid-cols-6" }[n] ?? "lg:grid-cols-4";
+  return <div className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-3", lg, className)}>{children}</div>;
+}
+
+/** Back-compatible single metric tile (bordered). Icons stay muted so colour is not decoration. */
+export function Stat({ label, value, sub, icon: Icon, tone }: {
+  label: string; value: React.ReactNode; sub?: React.ReactNode; icon?: LucideIcon; tone?: Tone;
+}) {
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-      <div className="flex items-center justify-between">
-        <p className="text-[13px] font-medium text-muted-foreground">{label}</p>
-        {Icon && <span className={cn("rounded-lg p-1.5", tones[tone])}><Icon className="size-4" /></span>}
+    <div className="rounded-lg border bg-card px-4 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="truncate text-label font-medium text-muted-foreground">{label}</p>
+        {Icon && <Icon className={cn("size-4 shrink-0 text-muted-foreground", tone && TONE_TEXT[tone])} aria-hidden />}
       </div>
-      <p className="mt-2 text-2xl font-semibold tracking-tight tabular">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+      <p className={cn("text-metric font-semibold tabular text-heading", tone && TONE_TEXT[tone])}>{value}</p>
+      {sub && <p className="mt-0.5 text-label text-muted-foreground">{sub}</p>}
     </div>
   );
 }
@@ -189,7 +232,7 @@ export function KeyValue({ label, value, className }: { label: string; value: Re
   return (
     <div className={cn("min-w-0", className)}>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 truncate text-[13.5px]">{value || <span className="text-muted-foreground">—</span>}</dd>
+      <dd className="mt-0.5 truncate text-body">{value || <span className="text-muted-foreground">—</span>}</dd>
     </div>
   );
 }

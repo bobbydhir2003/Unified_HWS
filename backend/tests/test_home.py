@@ -26,8 +26,9 @@ def test_home_profiles_priorities_and_today(as_user):
         assert len(d["priorities"]) <= 5
         for p in d["priorities"]:
             assert p["kind"] in ("case", "task", "approval", "critical_result") and p["owner"] and p["link"] and p["action"]
-        flags = [(0 if p["overdue"] else 1) for p in d["priorities"]]
-        assert flags == sorted(flags)  # overdue items first
+        sev = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+        keys = [(sev.get(p["severity"], 2), 0 if p["overdue"] else 1) for p in d["priorities"]]
+        assert keys == sorted(keys)  # clinical severity first, then overdue within a severity
         assert isinstance(d["today"]["metrics"], list)
     # Department numbers match the department screens.
     bm = as_user("bedmanager@harborview.dev")

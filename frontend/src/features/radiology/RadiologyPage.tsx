@@ -46,8 +46,8 @@ export function RadiologyPage() {
                 <TBody>{d.to_schedule.map((o) => (
                   <TR key={o.order_id}><TD><Badge variant={o.priority === "stat" ? "danger" : o.priority === "urgent" ? "warning" : "outline"}>{titleCase(o.priority)}</Badge></TD>
                     <TD className="font-medium">{o.modality} · {o.title}</TD><TD>{o.patient.name} <span className="text-xs text-muted-foreground">{o.patient.mrn}</span></TD>
-                    <TD className="max-w-72 truncate text-[13px]">{o.clinical_question}</TD><TD>{fromNow(o.signed_at)}</TD>
-                    <TD className="text-right"><Button size="xs" onClick={() => act("/radiology/studies", { order_id: o.order_id }, "Study scheduled")}><CalendarPlus />Schedule</Button></TD></TR>))}</TBody></Table>
+                    <TD className="max-w-72 truncate text-table">{o.clinical_question}</TD><TD>{fromNow(o.signed_at)}</TD>
+                    <TD className="text-right"><Button size="xs" variant="outline" onClick={() => act("/radiology/studies", { order_id: o.order_id }, "Study scheduled")}><CalendarPlus />Schedule</Button></TD></TR>))}</TBody></Table>
             )}
           </Card>
           <Card className="overflow-hidden">
@@ -63,8 +63,8 @@ export function RadiologyPage() {
                       {s.status === "scheduled" && <Button size="xs" variant="outline" onClick={() => act(`/radiology/studies/${s.id}/status`, { to: "arrived" }, "Patient arrived")}>Arrived</Button>}
                       {s.status === "arrived" && <Button size="xs" variant="outline" onClick={() => act(`/radiology/studies/${s.id}/status`, { to: "in_progress" }, "Exam started")}><Play />Start exam</Button>}
                       {s.status === "in_progress" && <Button size="xs" variant="outline" onClick={() => act(`/radiology/studies/${s.id}/status`, { to: "completed" }, "Exam completed — ready to read")}><SquareCheckBig />Complete</Button>}
-                      {["completed", "preliminary"].includes(s.status) && can("radiology:sign") && <Button size="xs" onClick={() => { setRep(s); setF({ findings: s.findings ?? "", impression: s.impression ?? "", critical_finding: s.critical_finding }); }}><FilePen />{s.status === "preliminary" ? "Edit report" : "Report"}</Button>}
-                      {s.status === "preliminary" && can("radiology:sign") && <Button size="xs" onClick={() => act(`/radiology/studies/${s.id}/sign`, {}, "Report signed and sent")}><Signature />Sign</Button>}
+                      {["completed", "preliminary"].includes(s.status) && can("radiology:sign") && <Button size="xs" variant="outline" onClick={() => { setRep(s); setF({ findings: s.findings ?? "", impression: s.impression ?? "", critical_finding: s.critical_finding }); }}><FilePen />{s.status === "preliminary" ? "Edit report" : "Report"}</Button>}
+                      {s.status === "preliminary" && can("radiology:sign") && <Button size="xs" variant="outline" onClick={() => act(`/radiology/studies/${s.id}/sign`, {}, "Report signed and sent")}><Signature />Sign</Button>}
                     </div></TD></TR>))}</TBody></Table>
             )}
           </Card>
@@ -74,7 +74,7 @@ export function RadiologyPage() {
         <DialogContent size="lg"><DialogHeader><DialogTitle>Report — {rep?.modality} {rep?.order.title}</DialogTitle><DialogDescription>{rep?.patient.name} · Clinical question: {rep?.order.clinical_question}</DialogDescription></DialogHeader>
           <Field label="Findings" required><Textarea rows={7} value={f.findings} onChange={(e) => setF({ ...f, findings: e.target.value })} /></Field>
           <Field label="Impression" required><Textarea rows={3} value={f.impression} onChange={(e) => setF({ ...f, impression: e.target.value })} /></Field>
-          <label className="flex items-center gap-2 text-[13.5px]"><Checkbox checked={f.critical_finding} onCheckedChange={(v) => setF({ ...f, critical_finding: !!v })} />Critical finding — requires ordering clinician acknowledgment</label>
+          <label className="flex items-center gap-2 text-body"><Checkbox checked={f.critical_finding} onCheckedChange={(v) => setF({ ...f, critical_finding: !!v })} />Critical finding — requires ordering clinician acknowledgment</label>
           <DialogFooter><Button variant="outline" onClick={() => setRep(null)}>Cancel</Button>
             <Button disabled={f.findings.trim().length < 3 || f.impression.trim().length < 3} onClick={async () => { if (await act(`/radiology/studies/${rep!.id}/report`, f, "Draft saved", "put")) setRep(null); }}><CheckCircle2 />Save draft</Button></DialogFooter>
         </DialogContent>

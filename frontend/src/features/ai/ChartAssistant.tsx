@@ -27,9 +27,9 @@ function AnswerText({ text, citations }: { text: string; citations: Citation[] }
         if (!m) return <React.Fragment key={i}>{p}</React.Fragment>;
         return c ? (
           <Tooltip key={i} content={`${c.title}${c.date ? ` · ${c.date}` : ""}`}>
-            <Link to={c.link} className="mx-0.5 inline-flex rounded bg-accent px-1 align-baseline font-mono text-[10.5px] font-semibold text-accent-foreground hover:underline">{m[1]}</Link>
+            <Link to={c.link} className="mx-0.5 inline-flex rounded bg-accent px-1 align-baseline font-mono text-label font-semibold text-accent-foreground hover:underline">{m[1]}</Link>
           </Tooltip>
-        ) : <span key={i} className="font-mono text-[10.5px] text-muted-foreground">{p}</span>;
+        ) : <span key={i} className="font-mono text-label text-muted-foreground">{p}</span>;
       })}
     </p>
   );
@@ -59,14 +59,14 @@ export function ChartAssistant({ patientId, patientName, open, onOpenChange }: {
       <SheetContent className="max-w-lg" aria-describedby={undefined}>
         <div className="border-b px-5 py-4">
           <D.Title className="flex items-center gap-2 text-base font-semibold"><Sparkles className="size-4 text-ai" />Chart assistant</D.Title>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">Answers come only from {patientName}'s chart, with sources. It won't prescribe, order or diagnose.</p>
+          <p className="mt-0.5 text-table text-muted-foreground">Answers come only from {patientName}'s chart, with sources. It won't prescribe, order or diagnose.</p>
           <div className="mt-2 flex gap-1.5"><AIBadge label="AI — verify before acting" />{provider === "simulated" && <SimulatedBadge label="Rule-based simulation" />}</div>
         </div>
-        <div ref={pane} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 text-[13.5px]">
+        <div ref={pane} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 text-body">
           {!turns.length && (
             <div className="space-y-2">
-              <p className="text-[13px] text-muted-foreground">Try asking:</p>
-              <div className="flex flex-wrap gap-1.5">{SUGGESTIONS.map((s) => <button key={s} onClick={() => ask(s)} className="rounded-full border px-3 py-1 text-[12.5px] hover:border-primary hover:text-primary">{s}</button>)}</div>
+              <p className="text-table text-muted-foreground">Try asking:</p>
+              <div className="flex flex-wrap gap-1.5">{SUGGESTIONS.map((s) => <button key={s} onClick={() => ask(s)} className="rounded-full border px-3 py-1 text-table hover:border-primary hover:text-primary">{s}</button>)}</div>
             </div>
           )}
           {turns.map((t, i) => t.role === "user" ? (
@@ -78,7 +78,7 @@ export function ChartAssistant({ patientId, patientName, open, onOpenChange }: {
                 <AnswerText text={t.content} citations={t.reply?.citations ?? []} />
               </div>
               {!!t.reply?.citations.length && (
-                <details className="text-[12px]">
+                <details className="text-label">
                   <summary className="cursor-pointer text-muted-foreground">{t.reply.citations.length} source{t.reply.citations.length > 1 ? "s" : ""}</summary>
                   <ul className="mt-1.5 space-y-1">{t.reply.citations.map((c) => (
                     <li key={c.id}><Link to={c.link} className="block rounded-md border px-2 py-1.5 hover:bg-muted/50"><span className="font-mono font-semibold text-primary">{c.id}</span> {titleCase(c.type)} · {c.title}{c.date ? ` · ${c.date}` : ""}<span className="block truncate text-muted-foreground">{c.snippet}</span></Link></li>

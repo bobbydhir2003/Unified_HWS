@@ -39,12 +39,12 @@ export function PatientPicker({ value, onChange }: { value: PatientPick | null; 
       </div>
       {dq.length >= 2 && (
         <ul className="mt-1.5 max-h-48 overflow-y-auto rounded-lg border">
-          {isFetching && !data && <li className="px-3 py-2 text-[13px] text-muted-foreground">Searching…</li>}
-          {data?.patients.length === 0 && <li className="px-3 py-2 text-[13px] text-muted-foreground">No matches.</li>}
+          {isFetching && !data && <li className="px-3 py-2 text-table text-muted-foreground">Searching…</li>}
+          {data?.patients.length === 0 && <li className="px-3 py-2 text-table text-muted-foreground">No matches.</li>}
           {data?.patients.map((p) => (
             <li key={p.id}>
               <button type="button" onClick={() => onChange(p)} className="flex w-full flex-col px-3 py-2 text-left hover:bg-muted">
-                <span className="text-[13.5px] font-medium">{p.name}</span>
+                <span className="text-body font-medium">{p.name}</span>
                 <span className="text-xs text-muted-foreground tabular">DOB {fmtDob(p.date_of_birth)}{p.sex_at_birth ? ` · ${sexShort(p.sex_at_birth)}` : ""} · MRN {p.mrn}</span>
               </button>
             </li>
@@ -161,7 +161,7 @@ export function AppointmentDialog({ open, onOpenChange, patient: fixedPatient, i
         </DialogHeader>
         <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); submit(false); }}>
           {error && (
-            <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">
+            <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-table text-destructive">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               <div className="flex-1">
                 {error}
@@ -196,7 +196,7 @@ export function AppointmentDialog({ open, onOpenChange, patient: fixedPatient, i
             <Field label="Time" required><Input type="time" step={300} value={time} onChange={(e) => setTime(e.target.value)} /></Field>
           </div>
           <div>
-            <p className="mb-1.5 text-[13px] font-medium">Open slots</p>
+            <p className="mb-1.5 text-table font-medium">Open slots</p>
             {slots.isLoading ? <p className="text-xs text-muted-foreground">Loading availability…</p> : !slots.data?.slots.length ? (
               <p className="text-xs text-muted-foreground">No open slots for this provider, location and day. You can still choose a time manually.</p>
             ) : (

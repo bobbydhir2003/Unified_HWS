@@ -36,7 +36,7 @@ export function FacilitiesPage() {
           {fac.isLoading ? <LoadingRows /> : <ul className="divide-y">{fac.data?.map((f) => (
             <li key={f.id}><button onClick={() => setSel(f.id)} className={cn("flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40", current?.id === f.id && "bg-accent")}>
               {f.facility_type === "hospital" ? <Hospital className="size-4 text-primary" /> : <Building2 className="size-4 text-muted-foreground" />}
-              <div className="min-w-0 flex-1"><p className="truncate text-[13.5px] font-medium">{f.name}</p><p className="text-xs text-muted-foreground">{titleCase(f.facility_type.replace("_", " "))} · {f.department_count} depts · {f.bed_count} beds</p></div>
+              <div className="min-w-0 flex-1"><p className="truncate text-body font-medium">{f.name}</p><p className="text-xs text-muted-foreground">{titleCase(f.facility_type.replace("_", " "))} · {f.department_count} depts · {f.bed_count} beds</p></div>
             </button></li>))}</ul>}
         </Card>
         {current ? <FacilityDetail f={current} /> : <EmptyState title="Select a facility" />}
@@ -79,7 +79,7 @@ function FacilityDetail({ f }: { f: Facility }) {
               return (
                 <li key={u.id} className="rounded-lg border">
                   <details>
-                    <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-[13.5px]">
+                    <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-body">
                       <ChevronRight className="size-4 text-muted-foreground transition-transform [details[open]_&]:rotate-90" />
                       <span className="font-medium">{u.name}</span><span className="text-xs text-muted-foreground">{u.code} · {titleCase(u.kind.replace("_", " "))}{deptName(u.department_id) ? ` · ${deptName(u.department_id)}` : ""}</span>
                       <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground"><DoorOpen className="size-3.5" />{rooms.filter((r) => r.kind === "room").length}<BedDouble className="ml-1 size-3.5" />{beds.length}</span>

@@ -45,11 +45,11 @@ export function AIWorkspace() {
       <Card className="mb-5">
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-3">
           <div><CardTitle className="flex items-center gap-2"><Bot className="size-4" />AI provider</CardTitle>
-            {s && <p className="mt-1 text-[13px] text-muted-foreground">{s.note}</p>}</div>
-          {s && (s.live ? <Badge variant="ai">Live: {titleCase(s.active)}</Badge> : <SimulatedBadge label="Rule-based simulation" />)}
+            {s && <p className="mt-1 text-table text-muted-foreground">{s.note}</p>}</div>
+          {s && (s.live ? <Badge variant="ai">Live: {s.active === "openai" ? "OpenAI" : titleCase(s.active)}</Badge> : <SimulatedBadge label="Rule-based simulation" />)}
         </CardHeader>
         <CardContent>{!s ? <LoadingRows rows={2} /> : (
-          <div className="grid gap-3 text-[13px] sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 text-table sm:grid-cols-2 lg:grid-cols-4">
             <div><p className="text-xs text-muted-foreground">Configured provider</p><p className="font-medium">{titleCase(s.configured)}{s.configured === "openai" && !s.openai_key_configured ? " (no key)" : ""}</p></div>
             <div><p className="text-xs text-muted-foreground">Models</p><p className="font-medium">{s.models.text ?? "—"}{s.models.transcription ? ` · ${s.models.transcription}` : ""}</p></div>
             <div><p className="text-xs text-muted-foreground">Patient data policy</p><p className="font-medium">{s.phi_allowed ? "External AI allowed (BAA required)" : s.org_is_synthetic ? "Synthetic org — demo data only" : "Blocked for patient data"}</p></div>
@@ -63,17 +63,17 @@ export function AIWorkspace() {
       <div className="mb-5 grid gap-4 md:grid-cols-2">{TOOLS.map((t) => (
         <Link key={t.title} to={t.to} className="group rounded-xl border bg-card p-5 hover:border-primary/40 hover:shadow-sm">
           <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><t.icon className="size-4" /></span><p className="font-semibold">{t.title}</p><AIBadge label="Draft only" className="ml-auto" /></div>
-          <p className="mt-2 text-[13.5px] text-muted-foreground">{t.body}</p>
+          <p className="mt-2 text-body text-muted-foreground">{t.body}</p>
           <p className="mt-3 text-xs font-medium text-primary group-hover:underline">{t.how} →</p>
         </Link>))}</div>
       <Card className="mb-5 border-warning/40">
-        <CardContent className="flex gap-3 p-4 text-[13px]"><ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" />
+        <CardContent className="flex gap-3 p-4 text-table"><ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" />
           <p>AI never signs notes, prescribes, diagnoses, changes claim codes or messages patients on its own. Those actions require an authorized person, and agent actions wait in the approval queue (<Link className="text-primary hover:underline" to="/worklist">My work → Approvals</Link>).</p></CardContent>
       </Card>
       {can("clinic:manage") && (
         <Card className="overflow-hidden">
           <CardHeader className="flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><Stethoscope className="size-4" />Recent AI activity</CardTitle>
-            {jobs.data && <span className="text-[13px] text-muted-foreground">{jobs.data.cost_tracking ? `Cost (30 days): ${usd(jobs.data.cost_30d_usd)}` : "Cost tracking off (set AI_PRICES)"}</span>}</CardHeader>
+            {jobs.data && <span className="text-table text-muted-foreground">{jobs.data.cost_tracking ? `Cost (30 days): ${usd(jobs.data.cost_30d_usd)}` : "Cost tracking off (set AI_PRICES)"}</span>}</CardHeader>
           {jobs.isLoading ? <LoadingRows /> : (
             <Table><THead><TR><TH>When</TH><TH>Task</TH><TH>Provider</TH><TH>Status</TH><TH className="text-right">Tokens</TH><TH className="text-right">Latency</TH><TH className="text-right">Cost</TH></TR></THead>
               <TBody>{(jobs.data?.jobs ?? []).slice(0, 25).map((j) => (

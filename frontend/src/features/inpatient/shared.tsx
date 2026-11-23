@@ -46,7 +46,7 @@ export function PatientPicker({ value, onChange }: { value: PatientHit | null; o
   const [q, setQ] = React.useState("");
   const res = useQuery({ queryKey: ["patients", "pick", q], queryFn: () => get<{ items: PatientHit[] }>("/patients", { q, page_size: 6 }), enabled: q.length >= 2 });
   if (value) return (
-    <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-[13.5px]">
+    <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-body">
       <span><span className="font-medium">{value.first_name} {value.last_name}</span> <span className="text-xs text-muted-foreground">{value.mrn} · DOB {fmtDate(value.date_of_birth)}</span></span>
       <button className="text-xs text-primary hover:underline" onClick={() => onChange(null)}>Change</button>
     </div>
@@ -55,7 +55,7 @@ export function PatientPicker({ value, onChange }: { value: PatientHit | null; o
     <div>
       <div className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input className="pl-9" placeholder="Search by name or MRN…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Find patient" /></div>
       {res.data?.items.length ? <ul className="mt-1 max-h-48 divide-y overflow-auto rounded-lg border">{res.data.items.map((p) => (
-        <li key={p.id}><button className="w-full px-3 py-2 text-left text-[13px] hover:bg-muted/50" onClick={() => onChange(p)}>{p.first_name} {p.last_name} <span className="text-xs text-muted-foreground">{p.mrn} · {fmtDate(p.date_of_birth)}</span></button></li>))}</ul> : null}
+        <li key={p.id}><button className="w-full px-3 py-2 text-left text-table hover:bg-muted/50" onClick={() => onChange(p)}>{p.first_name} {p.last_name} <span className="text-xs text-muted-foreground">{p.mrn} · {fmtDate(p.date_of_birth)}</span></button></li>))}</ul> : null}
     </div>
   );
 }

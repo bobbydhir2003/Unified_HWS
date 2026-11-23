@@ -37,7 +37,7 @@ export function RevenuePage() {
   return (
     <>
       <PageHeader title="Claims & authorizations" description="Prior authorizations, claim review and coding — catching problems before claims go out. Reviews only flag issues; people decide."
-        actions={<AskAI agent="claims_review" label="Explain claim problems" variant="outline" question="Explain which claims need attention and why, citing case references, most urgent first." />} />
+        actions={<AskAI agent="claims_review" label="Explain claim problems" question="Explain which claims need attention and why, citing case references, most urgent first." />} />
       <Tabs value={tab} onValueChange={(v) => setParams({ tab: v })}>
         <TabsList>
           {can("insurance:write") && <TabsTrigger value="prior-auth">Prior authorizations</TabsTrigger>}
@@ -71,13 +71,13 @@ function PriorAuths() {
           <TBody>{q.data.map((p) => (
             <TR key={p.id}><TD className="tabular">{p.number}</TD><TD><p className="font-medium">{p.service_description}</p><p className="text-xs text-muted-foreground">{p.service_code}{p.source === "monitor" && " · drafted automatically"}</p></TD>
               <TD>{p.patient.name}</TD><TD>{p.payer_name ?? "—"}</TD><TD><Badge variant={PA_V[p.status] ?? "neutral"}>{titleCase(p.status)}</Badge>{p.denial_reason && <p className="text-xs text-destructive">{p.denial_reason}</p>}</TD>
-              <TD className="text-[13px]">{p.valid_to ? `${fmtDate(p.valid_from)} → ${fmtDate(p.valid_to)}` : "—"}{p.auth_number && <p className="text-xs text-muted-foreground">{p.auth_number}</p>}</TD>
-              <TD className="text-right">{["draft", "pended"].includes(p.status) && <Button size="xs" onClick={() => setOpen(p)}>Work</Button>}</TD></TR>))}</TBody></Table>
+              <TD className="text-table">{p.valid_to ? `${fmtDate(p.valid_from)} → ${fmtDate(p.valid_to)}` : "—"}{p.auth_number && <p className="text-xs text-muted-foreground">{p.auth_number}</p>}</TD>
+              <TD className="text-right">{["draft", "pended"].includes(p.status) && <Button size="xs" variant="outline" onClick={() => setOpen(p)}>Work</Button>}</TD></TR>))}</TBody></Table>
       )}
       <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
         <DialogContent size="md"><DialogHeader><DialogTitle>Authorization #{open?.number} — {open?.service_description}</DialogTitle><DialogDescription>{open?.patient.name} · {open?.payer_name} · {open?.clinical_summary}</DialogDescription></DialogHeader>
           <ul className="space-y-2">{open?.checklist.map((c) => (
-            <li key={c.key}><label className="flex items-center gap-2 text-[13.5px]"><Checkbox checked={c.done} onCheckedChange={async (v) => { const r = await act(`/prior-auths/${open.id}/checklist`, { key: c.key, done: !!v }); if (r) setOpen(r); }} />{c.label}{c.key === "prior_treatment" && <span className="text-xs text-muted-foreground">(if required)</span>}</label></li>))}</ul>
+            <li key={c.key}><label className="flex items-center gap-2 text-body"><Checkbox checked={c.done} onCheckedChange={async (v) => { const r = await act(`/prior-auths/${open.id}/checklist`, { key: c.key, done: !!v }); if (r) setOpen(r); }} />{c.label}{c.key === "prior_treatment" && <span className="text-xs text-muted-foreground">(if required)</span>}</label></li>))}</ul>
           <DialogFooter><Button variant="ghost" onClick={async () => { if (await act(`/prior-auths/${open!.id}/cancel`, {}, "Cancelled")) setOpen(null); }}>Cancel request</Button>
             <Button onClick={async () => { const r = await act(`/prior-auths/${open!.id}/submit`, {}); if (r) { toast[r.status === "approved" ? "success" : "warning"](`Payer response: ${r.status}${r.denial_reason ? ` — ${r.denial_reason}` : ""}`); setOpen(null); } }}><BadgeCheck />Submit to payer</Button></DialogFooter>
         </DialogContent>
@@ -103,20 +103,20 @@ function ClaimReview() {
         {claims.isLoading ? <LoadingRows /> : !list.length ? <EmptyState icon={BadgeCheck} title="No held claims" /> : (
           <ul className="divide-y">{list.map((c) => (
             <li key={c.id}><button className={`w-full px-4 py-2.5 text-left hover:bg-muted/40 ${sel?.id === c.id ? "bg-accent" : ""}`} onClick={() => setSel(c)}>
-              <p className="text-[13.5px] font-medium">{c.claim_number} · {c.patient?.name}</p><p className="text-xs text-muted-foreground">{c.payer_name} · {fmtMoney(c.total_charge_cents)} · {c.scrub_errors.length} scrub issue(s)</p></button></li>))}</ul>
+              <p className="text-body font-medium">{c.claim_number} · {c.patient?.name}</p><p className="text-xs text-muted-foreground">{c.payer_name} · {fmtMoney(c.total_charge_cents)} · {c.scrub_errors.length} scrub issue(s)</p></button></li>))}</ul>
         )}
       </Card>
-      {!sel ? <Card className="grid place-items-center p-10 text-[13px] text-muted-foreground">Select a claim to review</Card> : (
+      {!sel ? <Card className="grid place-items-center p-10 text-table text-muted-foreground">Select a claim to review</Card> : (
         <Card>
           <CardHeader className="flex-row items-center justify-between"><CardTitle>{sel.claim_number} — findings</CardTitle>
             {can("billing:write") && <Button size="sm" loading={busy} onClick={async () => { setBusy(true); try { await post(`/claims/${sel.id}/review`); toast.success("Review complete"); qc.invalidateQueries({ queryKey: ["revenue", "findings", sel.id] }); } catch (e) { toastError(e); } finally { setBusy(false); } }}><FileSearch />Run review</Button>}</CardHeader>
           <CardContent className="space-y-3">
-            {sel.scrub_errors.length > 0 && <div className="rounded-lg border border-warning/40 bg-warning-soft/40 p-3 text-[13px]"><p className="mb-1 font-medium">Scrubber</p><ul className="list-disc pl-5">{sel.scrub_errors.map((e) => <li key={e}>{e}</li>)}</ul></div>}
-            {!f.data?.length ? <p className="text-[13px] text-muted-foreground">No findings yet — run a review.</p> : (
+            {sel.scrub_errors.length > 0 && <div className="rounded-lg border border-warning/40 bg-warning-soft/40 p-3 text-table"><p className="mb-1 font-medium">Scrubber</p><ul className="list-disc pl-5">{sel.scrub_errors.map((e) => <li key={e}>{e}</li>)}</ul></div>}
+            {!f.data?.length ? <p className="text-table text-muted-foreground">No findings yet — run a review.</p> : (
               <ul className="divide-y">{f.data.map((x) => (
                 <li key={x.id} className="flex flex-wrap items-start gap-3 py-2.5">
-                  <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><Badge variant={SEV_V[x.severity]}>{titleCase(x.severity)}</Badge>{x.source === "ai" && <Badge variant="ai"><Bot />AI{x.model ? ` · ${x.model}` : ""}</Badge>}<span className="text-[13.5px] font-medium">{titleCase(x.code.replace(/_/g, " "))}</span>{x.status !== "open" && <Badge variant="outline">{x.status}</Badge>}</div>
-                    <p className="text-[13px] text-muted-foreground">{x.message}{x.resolution_note ? ` · ${x.resolution_note}` : ""}</p></div>
+                  <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><Badge variant={SEV_V[x.severity]}>{titleCase(x.severity)}</Badge>{x.source === "ai" && <Badge variant="ai"><Bot />AI{x.model ? ` · ${x.model}` : ""}</Badge>}<span className="text-body font-medium">{titleCase(x.code.replace(/_/g, " "))}</span>{x.status !== "open" && <Badge variant="outline">{x.status}</Badge>}</div>
+                    <p className="text-table text-muted-foreground">{x.message}{x.resolution_note ? ` · ${x.resolution_note}` : ""}</p></div>
                   {x.status === "open" && can("billing:write") && <Button size="xs" variant="outline" onClick={() => { setClosing(x); setNote(""); setHow("resolved"); }}>Close</Button>}
                 </li>))}</ul>
             )}
@@ -155,10 +155,10 @@ function DenialsPanel() {
   const d = q.data;
   return (
     <Card><CardHeader className="flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><TrendingDown className="size-4" />Denials (180 days)</CardTitle>
-      {d && <span className="text-[13px] text-muted-foreground">{d.denied} of {d.submitted} submitted · {d.denial_rate_pct ?? "—"}%</span>}</CardHeader>
+      {d && <span className="text-table text-muted-foreground">{d.denied} of {d.submitted} submitted · {d.denial_rate_pct ?? "—"}%</span>}</CardHeader>
       <CardContent>{!d ? <LoadingRows /> : !d.by_reason.length ? <EmptyState icon={ShieldAlert} title="No denials" /> : (
         <Table><THead><TR><TH>Reason</TH><TH>Payer</TH><TH className="text-right">Claims</TH><TH className="text-right">Charges</TH><TH>Prevented by</TH></TR></THead>
-          <TBody>{d.by_reason.map((r, i) => <TR key={i}><TD><span className="font-medium">{r.code}</span> {r.reason}</TD><TD>{r.payer}</TD><TD className="text-right tabular">{r.count}</TD><TD className="text-right tabular">{fmtMoney(r.charges_cents)}</TD><TD className="text-[13px] text-muted-foreground">{r.prevention ?? "—"}</TD></TR>)}</TBody></Table>
+          <TBody>{d.by_reason.map((r, i) => <TR key={i}><TD><span className="font-medium">{r.code}</span> {r.reason}</TD><TD>{r.payer}</TD><TD className="text-right tabular">{r.count}</TD><TD className="text-right tabular">{fmtMoney(r.charges_cents)}</TD><TD className="text-table text-muted-foreground">{r.prevention ?? "—"}</TD></TR>)}</TBody></Table>
       )}</CardContent></Card>
   );
 }

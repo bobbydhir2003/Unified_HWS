@@ -59,7 +59,7 @@ export function AISettingsPage() {
       <PageHeader title="AI settings" description="Platform AI provider for every organization. The API key is encrypted on the server and can never be viewed again — only replaced or removed."
         actions={s.active_provider === "openai" ? <Badge variant="ai">Live: OpenAI</Badge> : <SimulatedBadge label="Rule-based simulation active" />} />
       {s.demo_scope && (
-        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-[13.5px]" data-testid="ai-demo-scope">
+        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-body" data-testid="ai-demo-scope">
           <ShieldAlert className="mt-0.5 size-4 shrink-0 text-primary" />
           <div className="space-y-1">
             <p><strong>Demo session settings.</strong> Everything you save here applies only to this demo sign-in — the platform configuration and other visitors are never affected. A key you enter is checked with OpenAI, stored encrypted, never shown again, and deleted when this session expires{s.demo_scope.expires_at ? ` (${fmtDateTime(s.demo_scope.expires_at)})` : ""}.</p>
@@ -68,7 +68,7 @@ export function AISettingsPage() {
         </div>
       )}
       {s.demo_restricted && (
-        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning-soft/60 p-4 text-[13.5px]" data-testid="ai-demo-notice">
+        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning-soft/60 p-4 text-body" data-testid="ai-demo-notice">
           <Lock className="mt-0.5 size-4 shrink-0" />
           <p><strong>View only — demo account.</strong> You're signed in with the one-click demo Super Admin, which can't change AI keys, models or run connection tests. To configure OpenAI, sign out and sign in with a real administrator account (email and password).</p>
         </div>
@@ -79,7 +79,7 @@ export function AISettingsPage() {
             <CardHeader><CardTitle className="flex items-center gap-2"><KeyRound className="size-4" />Provider & API key</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <Field label="Provider"><NativeSelect value={f.provider} onChange={(e) => setF({ ...f, provider: e.target.value })}><option value="openai">OpenAI</option><option value="simulated">Rule-based simulation (no external AI)</option></NativeSelect></Field>
-              <div className="rounded-lg border bg-muted/30 p-3 text-[13px]">
+              <div className="rounded-lg border bg-muted/30 p-3 text-table">
                 {s.key.configured ? <p className="flex items-center gap-2"><Lock className="size-4 text-success" />Key stored ({s.key.hint}){s.key.updated_at ? ` · updated ${fmtDateTime(s.key.updated_at)}` : ""}{s.source === "environment" ? " · from server environment" : ""}</p>
                   : <p className="flex items-center gap-2 text-muted-foreground"><Lock className="size-4" />No key stored</p>}
               </div>
@@ -114,7 +114,7 @@ export function AISettingsPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader><CardTitle>Connection test</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-[13px]">{!shown ? <p className="text-muted-foreground">Not tested yet. Live validation is pending until a key is saved and tested.</p> : (
+            <CardContent className="space-y-2 text-table">{!shown ? <p className="text-muted-foreground">Not tested yet. Live validation is pending until a key is saved and tested.</p> : (
               <>
                 <p className="flex items-center gap-2 font-medium">{shown.ok ? <CheckCircle2 className="size-4 text-success" /> : <XCircle className="size-4 text-destructive" />}{shown.ok ? "Connected" : "Not connected"}{"at" in shown && shown.at ? <span className="font-normal text-muted-foreground">· {fmtDateTime(shown.at as string)}</span> : null}</p>
                 {shown.error && <p className="text-destructive">{shown.error}</p>}
@@ -123,7 +123,7 @@ export function AISettingsPage() {
             )}</CardContent>
           </Card>
           <Card className="border-warning/40">
-            <CardContent className="space-y-2 p-4 text-[13px]">
+            <CardContent className="space-y-2 p-4 text-table">
               <p className="flex items-center gap-2 font-medium"><ShieldAlert className="size-4 text-warning" />Patient data policy</p>
               <p className="text-muted-foreground">{s.phi_allowed ? "External AI is allowed for patient data (server setting AI_PHI_ALLOWED). A BAA must cover the provider." : "Real patient data is never sent to external AI (AI_PHI_ALLOWED=false). Organizations flagged as synthetic may use it for demos."}</p>
               <p className="text-muted-foreground">Key encryption: {s.encryption}.</p>

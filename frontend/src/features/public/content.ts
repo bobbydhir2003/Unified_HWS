@@ -135,7 +135,7 @@ export const MODULE_GROUPS: { id: string; title: string; intro: string; modules:
 
 /** Homepage ecosystem: six systems around the platform core. `to` points at the matching /modules section. */
 export const ECOSYSTEM: { id: string; title: string; icon: LucideIcon; text: string; to: string }[] = [
-  { id: "eco-ai", title: "Undeclared AI", icon: Sparkles, text: "Medical scribe, document intelligence, chart assistant, configurable agents and realtime voice.", to: "/modules#ai" },
+  { id: "eco-ai", title: "HMS Workflows AI", icon: Sparkles, text: "Medical scribe, document intelligence, chart assistant, configurable agents and realtime voice.", to: "/modules#ai" },
   { id: "eco-ehr", title: "Electronic Health Records", icon: Stethoscope, text: "Charts, encounters, notes, vitals, medications and allergies.", to: "/modules#ehr" },
   { id: "eco-ops", title: "Hospital Operations", icon: Hospital, text: "Emergency, admissions, nursing, beds, transfers and discharge.", to: "/modules#group-operations" },
   { id: "eco-revenue", title: "Insurance & Billing", icon: Receipt, text: "Insurance Guardian, eligibility, claims, prior authorizations and billing.", to: "/modules#revenue" },

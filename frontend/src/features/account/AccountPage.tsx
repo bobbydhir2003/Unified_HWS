@@ -43,7 +43,7 @@ function MfaCard() {
           }}>
             <div className="rounded-lg border bg-white p-3"><QRCodeSVG value={setup.otpauth_uri} size={148} /></div>
             <div className="space-y-3">
-              <p className="text-[13px]">1. Scan the QR code with your authenticator app, or enter this key manually:</p>
+              <p className="text-table">1. Scan the QR code with your authenticator app, or enter this key manually:</p>
               <code className="block break-all rounded bg-muted px-2 py-1.5 font-mono text-xs">{setup.secret}</code>
               <Field label="2. Enter the 6-digit code">
                 <Input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" className="max-w-40 tracking-widest tabular" />
@@ -115,7 +115,7 @@ function SessionsCard() {
             <li key={s.id} className="flex items-center gap-3 px-5 py-3">
               <Laptop className="size-5 text-muted-foreground" />
               <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-medium">{browser(s.user_agent)} {s.current && <Badge variant="success" className="ml-1">This device</Badge>}</p>
+                <p className="text-body font-medium">{browser(s.user_agent)} {s.current && <Badge variant="success" className="ml-1">This device</Badge>}</p>
                 <p className="text-xs text-muted-foreground">{s.ip_address ?? "—"} · signed in {fmtDateTime(s.created_at)} · active {fromNow(s.last_used_at)}</p>
               </div>
               {!s.current && <Button size="xs" variant="outline" onClick={async () => { try { await del(`/auth/sessions/${s.id}`); qc.invalidateQueries({ queryKey: ["sessions"] }); toast.success("Session signed out"); } catch (e) { toastError(e); } }}>Sign out</Button>}
@@ -139,8 +139,8 @@ export function AccountPage() {
     <>
       <PageHeader title="Account & security" description={me.user.email} />
       {(params.get("mfa") === "required" || me.mfa_enrollment_required) && (
-        <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3 text-[13px]">
-          <ShieldAlert className="size-4 text-warning" />Your role requires two-factor authentication. Set it up below to continue using Undeclared.
+        <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3 text-table">
+          <ShieldAlert className="size-4 text-warning" />Your role requires two-factor authentication. Set it up below to continue using HMS Workflows.
         </div>
       )}
       <div className="grid gap-4 lg:grid-cols-2">

@@ -1,5 +1,11 @@
 import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/** tailwind-merge must know the HMS Workflows type tokens are font sizes, or `text-label text-muted-foreground` would be
+ *  treated as two colours and one silently dropped. */
+const twMerge = extendTailwindMerge({
+  extend: { theme: { text: ["label", "table", "body", "section", "metric", "title", "display"] } },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

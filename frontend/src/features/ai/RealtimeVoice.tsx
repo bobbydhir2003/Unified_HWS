@@ -73,7 +73,7 @@ export function RealtimeVoicePanel() {
           ? <Button size="sm" variant="destructive" onClick={stop}><PhoneOff />End</Button>
           : <Button size="sm" onClick={start} loading={state === "connecting"} disabled={!st || st.mode !== "openai"}><Mic />Start voice session</Button>}
       </CardHeader>
-      <CardContent className="space-y-2 text-[13px]">
+      <CardContent className="space-y-2 text-table">
         {st?.mode !== "openai" && <p className="text-muted-foreground">{st?.reason ?? "Checking configuration…"} Until then, use the typed call simulator below.</p>}
         {st?.mode === "openai" && <p className="text-muted-foreground">Uses synthetic scenarios only. Administrative help — the assistant gives no medical advice. Your microphone audio goes to OpenAI for this session.</p>}
         {!!lines.length && (

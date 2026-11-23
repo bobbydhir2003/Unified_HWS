@@ -50,7 +50,7 @@ export function LabPage() {
 }
 
 function Count({ n, alert }: { n: number; alert?: boolean }) {
-  return <span className={cn("ml-1.5 rounded-full px-1.5 text-[11px] tabular", alert ? "bg-destructive text-white" : "bg-muted text-muted-foreground")}>{n}</span>;
+  return <span className={cn("ml-1.5 rounded-full px-1.5 text-label tabular", alert ? "bg-destructive text-white" : "bg-muted text-muted-foreground")}>{n}</span>;
 }
 
 function useRefresh() {
@@ -70,7 +70,7 @@ function Collect({ data }: { data?: WL }) {
           <TBody>{data.to_collect.map((x) => (
             <TR key={x.order_id}><TD>{x.priority === "stat" ? <Badge variant="danger">STAT</Badge> : <Badge variant="outline">Routine</Badge>}</TD><TD className="font-medium">{x.title}</TD>
               <TD>{x.patient.name} <span className="text-xs text-muted-foreground">{x.patient.mrn}</span></TD><TD>{x.location}</TD><TD>{fromNow(x.signed_at)}</TD>
-              <TD className="text-right"><Button size="xs" onClick={() => { setO(x); setF({ specimen_type: "blood", container: "" }); }}><TestTube />Collect</Button></TD></TR>))}</TBody></Table>
+              <TD className="text-right"><Button size="xs" variant="outline" onClick={() => { setO(x); setF({ specimen_type: "blood", container: "" }); }}><TestTube />Collect</Button></TD></TR>))}</TBody></Table>
       )}
       <Dialog open={!!o} onOpenChange={(v) => !v && setO(null)}>
         <DialogContent size="sm"><DialogHeader><DialogTitle>Collect — {o?.title}</DialogTitle><DialogDescription>{o?.patient.name} · confirm two identifiers before collecting.</DialogDescription></DialogHeader>
@@ -106,15 +106,15 @@ function Bench({ data }: { data?: WL }) {
         const prelim = s.results.filter((r) => r.status === "preliminary");
         const mineEntered = prelim.some((r) => r.entered_by_id === me?.user.id);
         return (
-          <Card key={s.id}>
+          <Card key={s.id} data-testid="specimen-card">
             <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 py-3">
-              <div><CardTitle className="text-[15px]">#{s.accession_number} · {s.order.title} {s.order.priority === "stat" && <Badge variant="danger" className="ml-1">STAT</Badge>}</CardTitle>
+              <div><CardTitle className="text-section">#{s.accession_number} · {s.order.title} {s.order.priority === "stat" && <Badge variant="danger" className="ml-1">STAT</Badge>}</CardTitle>
                 <p className="text-xs text-muted-foreground">{s.patient.name} ({s.patient.mrn}) · {s.specimen_type}{s.container ? ` · ${s.container}` : ""} · collected {fromNow(s.collected_at)}{s.received_at ? ` · received ${fromNow(s.received_at)}` : ""}</p></div>
               <div className="flex flex-wrap items-center gap-2"><Badge variant={s.status === "collected" ? "warning" : "info"}>{titleCase(s.status.replace("_", " "))}</Badge>
-                {s.status === "collected" && can("lab:work") && <><Button size="xs" onClick={() => act(`/lab/specimens/${s.id}/receive`, {}, "Accessioned")}><PackageCheck />Receive</Button>
+                {s.status === "collected" && can("lab:work") && <><Button size="xs" variant="outline" onClick={() => act(`/lab/specimens/${s.id}/receive`, {}, "Accessioned")}><PackageCheck />Receive</Button>
                   <Button size="xs" variant="ghost" onClick={() => { const reason = window.prompt("Rejection reason (e.g. hemolyzed, clotted, mislabeled)?"); if (reason) act(`/lab/specimens/${s.id}/reject`, { reason }, "Specimen rejected — recollection requested"); }}><XCircle />Reject</Button></>}
                 {s.status !== "collected" && can("lab:work") && <Button size="xs" variant="outline" onClick={() => openEntry(s)}><Pencil />{prelim.length ? "Edit results" : "Enter results"}</Button>}
-                {prelim.length > 0 && can("lab:verify") && <Button size="xs" disabled={mineEntered} title={mineEntered ? "Results must be verified by a different person" : undefined} onClick={() => act(`/lab/specimens/${s.id}/verify`, {}, "Verified and sent to the clinician")}><CheckCircle2 />Verify</Button>}
+                {prelim.length > 0 && can("lab:verify") && <Button size="xs" variant="outline" disabled={mineEntered} title={mineEntered ? "Results must be verified by a different person" : undefined} onClick={() => act(`/lab/specimens/${s.id}/verify`, {}, "Verified and sent to the clinician")}><CheckCircle2 />Verify</Button>}
               </div>
             </CardHeader>
             {s.results.length > 0 && (
@@ -167,7 +167,7 @@ function Critical({ data, loading }: { data?: Crit[]; loading: boolean }) {
       {!data?.length ? <EmptyState icon={CheckCircle2} title="All critical results acknowledged" /> : (
         <ul className="divide-y">{data.map((a) => (
           <li key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <div className="min-w-0 flex-1"><p className="text-[13.5px] font-semibold text-destructive">{a.summary}</p><p className="text-xs text-muted-foreground">{a.patient.name} ({a.patient.mrn}) · verified {fmtDateTime(a.created_at)} ({fromNow(a.created_at)}){a.mine ? " · your patient" : ""}</p></div>
+            <div className="min-w-0 flex-1"><p className="text-body font-semibold text-destructive">{a.summary}</p><p className="text-xs text-muted-foreground">{a.patient.name} ({a.patient.mrn}) · verified {fmtDateTime(a.created_at)} ({fromNow(a.created_at)}){a.mine ? " · your patient" : ""}</p></div>
             {can("clinical:write") && (a.mine || can("orders:sign")) && <Button size="sm" onClick={() => { setAck(a); setRb(""); }}><ClipboardList />Acknowledge</Button>}
           </li>))}</ul>
       )}

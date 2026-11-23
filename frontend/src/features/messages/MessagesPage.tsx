@@ -41,16 +41,16 @@ export function MessagesPage() {
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card className="overflow-hidden">
           <div className="flex items-center gap-1 border-b p-2.5">
-            {(["open", "closed"] as const).map((s) => <button key={s} onClick={() => setStatus(s)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium capitalize text-muted-foreground", status === s && "bg-accent text-accent-foreground")}>{s}</button>)}
-            <label className="ml-auto flex items-center gap-1.5 text-[12.5px] text-muted-foreground"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} />My patients</label>
+            {(["open", "closed"] as const).map((s) => <button key={s} onClick={() => setStatus(s)} className={cn("rounded-md px-2.5 py-1 text-table font-medium capitalize text-muted-foreground", status === s && "bg-accent text-accent-foreground")}>{s}</button>)}
+            <label className="ml-auto flex items-center gap-1.5 text-table text-muted-foreground"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} />My patients</label>
           </div>
           {list.isLoading ? <LoadingRows /> : !list.data?.items.length ? <EmptyState icon={Inbox} title="Inbox zero" /> : (
             <ul className="max-h-[70vh] divide-y overflow-y-auto">
               {list.data.items.map((t) => (
                 <li key={t.id}>
                   <button onClick={() => open(t.id)} className={cn("block w-full px-4 py-3 text-left hover:bg-muted/40", t.id === threadId && "bg-accent/50")}>
-                    <span className="flex items-center gap-2"><span className={cn("truncate text-[13.5px]", t.unread ? "font-semibold" : "font-medium")}>{t.patient?.name}</span>{t.unread > 0 && <span className="size-2 shrink-0 rounded-full bg-primary" />}<span className="ml-auto shrink-0 text-[11px] text-muted-foreground">{fmtDateTime(t.last_message_at)}</span></span>
-                    <span className="block truncate text-[13px]">{t.subject}</span>
+                    <span className="flex items-center gap-2"><span className={cn("truncate text-body", t.unread ? "font-semibold" : "font-medium")}>{t.patient?.name}</span>{t.unread > 0 && <span className="size-2 shrink-0 rounded-full bg-primary" />}<span className="ml-auto shrink-0 text-label text-muted-foreground">{fmtDateTime(t.last_message_at)}</span></span>
+                    <span className="block truncate text-table">{t.subject}</span>
                     <span className="block truncate text-xs text-muted-foreground">{t.messages[t.messages.length - 1]?.body}</span>
                   </button>
                 </li>
@@ -85,9 +85,9 @@ export function MessagesPage() {
               </div>
               <ol className="flex-1 space-y-3 overflow-y-auto p-5">
                 {thread.data.messages.map((m) => (
-                  <li key={m.id} className={cn("max-w-[80%] rounded-2xl px-4 py-2.5 text-[13.5px]", m.from_patient ? "bg-muted" : "ml-auto bg-primary text-primary-foreground")}>
+                  <li key={m.id} className={cn("max-w-[80%] rounded-2xl px-4 py-2.5 text-body", m.from_patient ? "bg-muted" : "ml-auto bg-primary text-primary-foreground")}>
                     <p className="whitespace-pre-wrap">{m.body}</p>
-                    <p className={cn("mt-1 text-[11px]", m.from_patient ? "text-muted-foreground" : "text-primary-foreground/70")}>{m.sender} · {fmtDateTime(m.created_at)}</p>
+                    <p className={cn("mt-1 text-label", m.from_patient ? "text-muted-foreground" : "text-primary-foreground/70")}>{m.sender} · {fmtDateTime(m.created_at)}</p>
                   </li>
                 ))}
               </ol>

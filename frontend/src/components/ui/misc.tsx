@@ -16,7 +16,7 @@ export function Avatar({ name, className, tone = "primary" }: { name: string; cl
     <span
       aria-hidden
       className={cn(
-        "inline-flex size-8 shrink-0 select-none items-center justify-center rounded-full text-[11px] font-semibold",
+        "inline-flex size-8 shrink-0 select-none items-center justify-center rounded-full text-label font-semibold",
         tone === "primary" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground",
         className,
       )}
@@ -55,5 +55,5 @@ export function Switch({ className, ...props }: React.ComponentProps<typeof S.Ro
 }
 
 export function Kbd({ children }: { children: React.ReactNode }) {
-  return <kbd className="rounded border bg-muted px-1.5 py-0.5 font-sans text-[10.5px] font-medium text-muted-foreground">{children}</kbd>;
+  return <kbd className="rounded border bg-muted px-1.5 py-0.5 font-sans text-label font-medium text-muted-foreground">{children}</kbd>;
 }

@@ -64,13 +64,13 @@ export function OrSchedulePage() {
             <div className="ml-40 flex border-b text-xs text-muted-foreground">{HOURS.map((h) => <div key={h} className="flex-1 border-l px-1 py-1.5">{h}:00</div>)}</div>
             {q.data.rooms.map((r) => (
               <div key={r.id} className="flex border-b last:border-0">
-                <div className="w-40 shrink-0 px-3 py-3"><p className="text-[13.5px] font-medium">{r.name}</p><p className="text-xs text-muted-foreground">{r.booked_hours} h · {r.utilization_pct}%</p></div>
+                <div className="w-40 shrink-0 px-3 py-3"><p className="text-body font-medium">{r.name}</p><p className="text-xs text-muted-foreground">{r.booked_hours} h · {r.utilization_pct}%</p></div>
                 <div className="relative h-16 flex-1">
                   {HOURS.map((h, i) => <div key={h} className="absolute inset-y-0 border-l border-dashed border-border/60" style={{ left: `${(i / 12) * 100}%` }} />)}
                   {q.data.cases.filter((c) => c.room.id === r.id && c.status !== "cancelled").map((c) => (
                     <div key={c.id} className="absolute inset-y-1.5" style={{ left: `${pos(c.start_at)}%`, width: `${Math.max(pos(c.blocked_until) - pos(c.start_at), 4)}%` }}>
                       <div className="flex h-full">
-                        <button className={cn("h-full grow overflow-hidden rounded-l-md border px-2 py-1 text-left text-[11.5px]", c.status === "in_room" ? "border-primary bg-primary/15" : c.status === "completed" ? "border-success/40 bg-success-soft" : "border-primary/30 bg-accent")}
+                        <button className={cn("h-full grow overflow-hidden rounded-l-md border px-2 py-1 text-left text-label", c.status === "in_room" ? "border-primary bg-primary/15" : c.status === "completed" ? "border-success/40 bg-success-soft" : "border-primary/30 bg-accent")}
                           style={{ flexBasis: `${((new Date(c.end_at).getTime() - new Date(c.start_at).getTime()) / (new Date(c.blocked_until).getTime() - new Date(c.start_at).getTime())) * 100}%` }}
                           title={`${c.procedure} — ${c.patient.name} (${c.surgeon}) ${fmtTime(c.start_at)}–${fmtTime(c.end_at)}`}
                           onClick={() => { if (c.status === "scheduled" && window.confirm(`${c.procedure}: mark patient in room? (Cancel to see other options)`)) act(c.id, "in_room"); else if (c.status === "in_room") act(c.id, "completed"); else if (c.status === "scheduled" && window.confirm("Cancel this case?")) act(c.id, "cancelled"); }}>
@@ -141,22 +141,22 @@ export function RosterPage() {
             <CardContent className="space-y-4">{!byDay.length ? <EmptyState icon={Users} title="No shifts" /> : byDay.map(([d, shifts]) => (
               <div key={d}><p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{d}</p>
                 <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">{shifts.map((s) => (
-                  <div key={s.id} className={cn("rounded-lg border px-3 py-2 text-[13px]", s.user_id === me?.user.id && "border-primary/40 bg-accent/50")}>
+                  <div key={s.id} className={cn("rounded-lg border px-3 py-2 text-table", s.user_id === me?.user.id && "border-primary/40 bg-accent/50")}>
                     <p className="font-medium">{s.name}</p><p className="text-xs text-muted-foreground">{s.department} · {titleCase(s.role)} · {fmtTime(s.start_at)}–{fmtTime(s.end_at)}</p>
                     {s.user_id === me?.user.id && <button className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline" onClick={async () => { const reason = window.prompt("Why do you need cover?"); if (reason === null) return; try { await post("/roster/swaps", { shift_id: s.id, reason }); toast.success("Offered for swap"); refresh(); } catch (e) { toastError(e); } }}><Repeat className="size-3" />Offer swap</button>}
                   </div>))}</div></div>))}</CardContent></Card>
           <div className="space-y-4">
-            {manage && <Card><CardHeader><CardTitle>Coverage gaps</CardTitle></CardHeader><CardContent>{!r.gaps.length ? <p className="text-[13px] text-muted-foreground">All shifts meet minimum staffing.</p> : (
+            {manage && <Card><CardHeader><CardTitle>Coverage gaps</CardTitle></CardHeader><CardContent>{!r.gaps.length ? <p className="text-table text-muted-foreground">All shifts meet minimum staffing.</p> : (
               <ul className="space-y-2">{r.gaps.map((g) => (
-                <li key={g.department_id + g.start + g.role} className="rounded-lg border border-warning/50 bg-warning-soft/30 p-2.5 text-[13px]">
+                <li key={g.department_id + g.start + g.role} className="rounded-lg border border-warning/50 bg-warning-soft/30 p-2.5 text-table">
                   <p className="font-medium">{g.department}: {g.short} {g.role} short</p><p className="text-xs text-muted-foreground">{titleCase(g.window)} · {new Date(g.start).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" })} · {g.scheduled}/{g.required}</p>
-                  <Button size="xs" className="mt-1.5" onClick={() => setFill(g)}><UserPlus />Find staff</Button>
+                  <Button size="xs" variant="outline" className="mt-1.5" onClick={() => setFill(g)}><UserPlus />Find staff</Button>
                 </li>))}</ul>)}</CardContent></Card>}
-            <Card><CardHeader><CardTitle>Swap requests</CardTitle></CardHeader><CardContent>{!r.swaps.length ? <p className="text-[13px] text-muted-foreground">None open.</p> : (
+            <Card><CardHeader><CardTitle>Swap requests</CardTitle></CardHeader><CardContent>{!r.swaps.length ? <p className="text-table text-muted-foreground">None open.</p> : (
               <ul className="space-y-2">{r.swaps.map((w) => {
                 const s = r.shifts.find((x) => x.id === w.shift_id);
                 return (
-                  <li key={w.id} className="rounded-lg border p-2.5 text-[13px]"><p className="font-medium">{s ? `${s.name} · ${s.department} ${fmtTime(s.start_at)}` : "Shift"}</p><p className="text-xs text-muted-foreground">{w.reason} · {w.status}</p>
+                  <li key={w.id} className="rounded-lg border p-2.5 text-table"><p className="font-medium">{s ? `${s.name} · ${s.department} ${fmtTime(s.start_at)}` : "Shift"}</p><p className="text-xs text-muted-foreground">{w.reason} · {w.status}</p>
                     <div className="mt-1.5 flex gap-1">{w.status === "open" && w.requested_by_id !== me?.user.id && <Button size="xs" variant="outline" onClick={async () => { try { await post(`/roster/swaps/${w.id}/accept`); toast.success("You accepted — waiting for manager approval"); refresh(); } catch (e) { toastError(e); } }}>Take shift</Button>}
                       {w.status === "accepted" && manage && <><Button size="xs" onClick={async () => { try { await post(`/roster/swaps/${w.id}/decide`, { approve: true }); toast.success("Swap approved"); refresh(); } catch (e) { toastError(e); } }}>Approve</Button><Button size="xs" variant="ghost" onClick={async () => { try { await post(`/roster/swaps/${w.id}/decide`, { approve: false }); refresh(); } catch (e) { toastError(e); } }}>Reject</Button></>}</div>
                   </li>);
@@ -166,9 +166,9 @@ export function RosterPage() {
       )}
       <Dialog open={!!fill} onOpenChange={(o) => !o && setFill(null)}>
         <DialogContent size="md"><DialogHeader><DialogTitle>Fill {fill?.department} {fill?.window} shift</DialogTitle><DialogDescription>{cands.data?.method}</DialogDescription></DialogHeader>
-          {!cands.data ? <LoadingRows rows={3} /> : !cands.data.candidates.length ? <p className="text-[13px]">No eligible staff without breaking a rule. Consider float pool or agency; overrides require a documented reason.</p> : (
+          {!cands.data ? <LoadingRows rows={3} /> : !cands.data.candidates.length ? <p className="text-table">No eligible staff without breaking a rule. Consider float pool or agency; overrides require a documented reason.</p> : (
             <ul className="divide-y">{cands.data.candidates.map((c) => (
-              <li key={c.user_id} className="flex items-center gap-3 py-2"><div className="flex-1"><p className="text-[13.5px] font-medium">{c.name}</p><p className="text-xs text-muted-foreground">{c.reasons.join(" · ")}</p></div>
+              <li key={c.user_id} className="flex items-center gap-3 py-2"><div className="flex-1"><p className="text-body font-medium">{c.name}</p><p className="text-xs text-muted-foreground">{c.reasons.join(" · ")}</p></div>
                 <Button size="sm" onClick={async () => { try { await post("/roster/shifts", { user_id: c.user_id, department_id: fill!.department_id, role: fill!.role, start_at: fill!.start, end_at: fill!.end }); toast.success(`${c.name} scheduled`); setFill(null); refresh(); } catch (e) { toastError(e); } }}>Assign</Button></li>))}</ul>
           )}
           <DialogFooter><Button variant="outline" onClick={() => setFill(null)}>Close</Button></DialogFooter>

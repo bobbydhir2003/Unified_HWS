@@ -63,7 +63,7 @@ export function FormDialog({
           }
           try { await onSubmit(out); onOpenChange(false); } catch (e) { setError(e instanceof Error ? e.message : "Save failed"); }
         })}>
-          {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">{error}</div>}
+          {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-table text-destructive">{error}</div>}
           <div className="grid gap-4 sm:grid-cols-2">
             {fields.map((f, i) => {
               const err = form.formState.errors[f.name]?.message as string | undefined;
@@ -72,7 +72,7 @@ export function FormDialog({
               if (f.type === "checkbox") {
                 return (
                   <Controller key={f.name} control={form.control} name={f.name} render={({ field }) => (
-                    <label className={cn("flex items-center gap-2 text-[13px]", span)}>
+                    <label className={cn("flex items-center gap-2 text-table", span)}>
                       <Checkbox checked={!!field.value} onCheckedChange={(c) => field.onChange(!!c)} />{f.label}
                     </label>
                   )} />
@@ -148,14 +148,14 @@ export function Icd10Picker({ value, onPick, placeholder = "Search ICD-10 by cod
           {items.map((c, i) => (
             <li key={c.code} role="option" aria-selected={i === active}>
               <button type="button" onMouseEnter={() => setActive(i)} onClick={() => pick(c)}
-                className={cn("flex w-full gap-3 rounded-md px-2 py-1.5 text-left text-[13px]", i === active && "bg-muted")}>
+                className={cn("flex w-full gap-3 rounded-md px-2 py-1.5 text-left text-table", i === active && "bg-muted")}>
                 <span className="w-16 shrink-0 font-mono text-xs font-semibold text-primary">{c.code}</span>
                 <span className="min-w-0">{c.description}</span>
               </button>
             </li>
           ))}
         </ul>
-        <p className="border-t px-2 pt-1.5 text-[11px] text-muted-foreground">Common-code subset · full ICD-10-CM import pending</p>
+        <p className="border-t px-2 pt-1.5 text-label text-muted-foreground">Common-code subset · full ICD-10-CM import pending</p>
       </PopoverContent>
     </Popover>
   );

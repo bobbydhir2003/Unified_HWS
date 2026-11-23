@@ -191,7 +191,7 @@ export function VideoVisit({ portal = false }: { portal?: boolean }) {
     return (
       <div className="mx-auto mt-16 max-w-md space-y-3 text-center">
         <p className="text-lg font-semibold">The video visit has ended</p>
-        <p className="text-[13.5px] text-muted-foreground">{portal ? "Your visit summary will appear in your portal after your clinician signs the note." : "Remember to complete and sign the visit note."}</p>
+        <p className="text-body text-muted-foreground">{portal ? "Your visit summary will appear in your portal after your clinician signs the note." : "Remember to complete and sign the visit note."}</p>
         <Button onClick={() => navigate(portal ? "/portal" : info.encounter_id ? `/encounters/${info.encounter_id}` : "/schedule")}>{portal ? "Back to portal" : info.encounter_id ? "Open visit notes" : "Back to schedule"}</Button>
       </div>
     );
@@ -201,10 +201,10 @@ export function VideoVisit({ portal = false }: { portal?: boolean }) {
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-lg font-semibold tracking-tight">Video visit with {other}</h1>
         <Badge variant={tone}>{call.state === "connected" ? <Wifi /> : call.state === "waiting" ? <WifiOff /> : <Loader2 className="animate-spin" />}{label}</Badge>
-        <span className="text-[13px] text-muted-foreground">Scheduled {fmtTime(info.appointment.start_at)}{info.appointment.reason ? ` · ${info.appointment.reason}` : ""}</span>
+        <span className="text-table text-muted-foreground">Scheduled {fmtTime(info.appointment.start_at)}{info.appointment.reason ? ` · ${info.appointment.reason}` : ""}</span>
         <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground"><ShieldCheck className="size-3.5" />Peer-to-peer encrypted (WebRTC) · not recorded</span>
       </div>
-      {call.mediaError && <div role="alert" className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-[13px]"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />{call.mediaError}</div>}
+      {call.mediaError && <div role="alert" className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-table"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />{call.mediaError}</div>}
       <div className={cn("grid gap-3", !portal && "xl:grid-cols-[1fr_300px]")}>
         <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-950">
           <video ref={call.remoteRef} autoPlay playsInline className={cn("size-full object-cover", !call.remoteVideo && "hidden")} aria-label={`${other}'s video`} />
@@ -212,8 +212,8 @@ export function VideoVisit({ portal = false }: { portal?: boolean }) {
             <div className="absolute inset-0 grid place-items-center text-center text-slate-300">
               <div>
                 <Loader2 className="mx-auto mb-3 size-7 animate-spin opacity-70" />
-                <p className="text-[15px] font-medium">{info.role === "patient" ? "You're in the virtual waiting room" : `Waiting for ${other} to join`}</p>
-                <p className="mt-1 text-[13px] opacity-70">{info.role === "patient" ? "Your clinician will connect shortly. Keep this page open." : "The patient has been notified when they joined; they'll appear here."}</p>
+                <p className="text-section font-medium">{info.role === "patient" ? "You're in the virtual waiting room" : `Waiting for ${other} to join`}</p>
+                <p className="mt-1 text-table opacity-70">{info.role === "patient" ? "Your clinician will connect shortly. Keep this page open." : "The patient has been notified when they joined; they'll appear here."}</p>
               </div>
             </div>
           )}
@@ -238,7 +238,7 @@ export function VideoVisit({ portal = false }: { portal?: boolean }) {
               <Stethoscope />{info.encounter_id ? "Open visit notes" : "Start visit notes"}
             </Button>
             <Button className="w-full" variant="outline" onClick={() => leave.mutate(true)}><PhoneOff />End visit for everyone</Button>
-            <p className="text-[11.5px] text-muted-foreground">Development video uses direct browser-to-browser WebRTC with STUN only. Production requires a BAA-covered video vendor with TURN relays.</p>
+            <p className="text-label text-muted-foreground">Development video uses direct browser-to-browser WebRTC with STUN only. Production requires a BAA-covered video vendor with TURN relays.</p>
           </aside>
         )}
       </div>

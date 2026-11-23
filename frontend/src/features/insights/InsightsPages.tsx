@@ -70,12 +70,12 @@ export function InsightsPage() {
             {b.error ? <ErrorState error={b.error} /> : b.isLoading || !b.data ? <LoadingRows /> : (
               <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
                 <div>
-                  <p className="whitespace-pre-line text-[13.5px] leading-relaxed" data-testid="briefing-narrative">{b.data.narrative}</p>
+                  <p className="whitespace-pre-line text-body leading-relaxed" data-testid="briefing-narrative">{b.data.narrative}</p>
                   <p className="mt-2 text-xs text-muted-foreground">Generated {fmtDateTime(b.data.generated_at)}. References in brackets point to the numbered metrics and cases.</p>
                   {!!b.data.discharge_bottlenecks.length && (
                     <div className="mt-4">
-                      <h3 className="mb-1.5 text-[13px] font-medium">Discharge bottlenecks</h3>
-                      <ul className="space-y-1 text-[13px]">
+                      <h3 className="mb-1.5 text-table font-medium">Discharge bottlenecks</h3>
+                      <ul className="space-y-1 text-table">
                         {b.data.discharge_bottlenecks.slice(0, 5).map((d) => (
                           <li key={d.item} className="flex justify-between gap-2"><span>{d.item} <span className="text-muted-foreground">· {titleCase(d.owner ?? "")}</span></span><span className="tabular">{d.open_plans}</span></li>
                         ))}
@@ -106,7 +106,7 @@ export function InsightsPage() {
       )}
       {can("analytics:read") && (
         <section className="space-y-3">
-          <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-[13px]" data-testid="forecast-label">
+          <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-table" data-testid="forecast-label">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <div><strong className="font-medium">Shadow mode.</strong> {f.data?.label ?? "Baseline model — not validated."} {f.data?.evaluation_note}</div>
           </div>
@@ -131,7 +131,7 @@ export function InsightsPage() {
                 </Card>
                 <Card>
                   <CardHeader><CardTitle className="text-sm">No-shows</CardTitle></CardHeader>
-                  <CardContent className="text-[13.5px]">
+                  <CardContent className="text-body">
                     <p>90-day no-show rate <strong className="tabular">{(f.data.series.no_shows.rate_90d * 100).toFixed(1)}%</strong></p>
                     <p>Tomorrow: {f.data.series.no_shows.tomorrow_appointments} booked → about <strong className="tabular">{f.data.series.no_shows.expected_no_shows_tomorrow}</strong> no-shows expected</p>
                     {f.data.evaluation && (
@@ -162,7 +162,7 @@ export function JourneyTab({ patientId }: { patientId: string }) {
   const items = all.filter((e) => filter === "all" || e.kind === filter);
   return (
     <div>
-      <p className="mb-3 text-[13px] text-muted-foreground">Everything that happened to this patient across departments. You only see sources your role can access.</p>
+      <p className="mb-3 text-table text-muted-foreground">Everything that happened to this patient across departments. You only see sources your role can access.</p>
       <div className="mb-4 flex flex-wrap gap-1.5">
         {kinds.map((k) => <Button key={k} size="xs" variant={filter === k ? "default" : "outline"} onClick={() => setFilter(k)}>{k === "all" ? "All" : titleCase(k)}</Button>)}
       </div>
@@ -172,8 +172,8 @@ export function JourneyTab({ patientId }: { patientId: string }) {
             const Icon = J_ICON[e.kind] ?? FileText;
             const body = (
               <>
-                <p className="text-[13.5px] font-medium">{e.title}{e.department && <span className="ml-2 text-xs font-normal text-muted-foreground">{e.department}</span>}</p>
-                {e.detail && <p className="text-[13px] text-muted-foreground">{e.detail}</p>}
+                <p className="text-body font-medium">{e.title}{e.department && <span className="ml-2 text-xs font-normal text-muted-foreground">{e.department}</span>}</p>
+                {e.detail && <p className="text-table text-muted-foreground">{e.detail}</p>}
                 <p className="mt-0.5 text-xs text-muted-foreground">{fmtDateTime(e.at)}</p>
               </>
             );

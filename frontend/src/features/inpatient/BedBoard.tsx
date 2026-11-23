@@ -53,10 +53,10 @@ export function BedBoard() {
           </div>
           <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
             <div className="space-y-4">
-              <div className="flex flex-wrap gap-1.5">{[{ id: "", name: "All units" }, ...d.units].map((u) => <button key={u.id} onClick={() => setUnitFilter(u.id)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted", unitFilter === u.id && "bg-accent text-accent-foreground")}>{u.name}</button>)}</div>
+              <div className="flex flex-wrap gap-1.5">{[{ id: "", name: "All units" }, ...d.units].map((u) => <button key={u.id} onClick={() => setUnitFilter(u.id)} className={cn("rounded-md px-2.5 py-1 text-table font-medium text-muted-foreground hover:bg-muted", unitFilter === u.id && "bg-accent text-accent-foreground")}>{u.name}</button>)}</div>
               {d.units.filter((u) => !unitFilter || u.id === unitFilter).map((u) => (
                 <Card key={u.id}>
-                  <CardHeader className="flex-row items-center justify-between py-3"><CardTitle className="text-[15px]">{u.name}</CardTitle>
+                  <CardHeader className="flex-row items-center justify-between py-3"><CardTitle className="text-section">{u.name}</CardTitle>
                     <span className="text-xs text-muted-foreground tabular">{u.counts.occupied}/{u.beds.length - u.counts.blocked} occupied · {u.counts.available} open · {u.counts.cleaning} cleaning</span></CardHeader>
                   <CardContent className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-6">
                     {u.beds.map((b) => (
@@ -65,12 +65,12 @@ export function BedBoard() {
                         <div className="flex items-center justify-between"><span className="font-semibold">{b.name}</span><BedStatusChip status={b.status} /></div>
                         {b.stay ? (
                           <div className="mt-1.5 space-y-0.5">
-                            <p className="truncate text-[13px] font-medium">{b.stay.patient_name}</p>
+                            <p className="truncate text-table font-medium">{b.stay.patient_name}</p>
                             <p className="text-muted-foreground">LOS {losLabel(b.stay.los_hours)}</p>
-                            <div className="flex flex-wrap gap-1">{b.stay.discharge_ordered && <Badge variant="info" className="px-1 py-0 text-[10px]"><LogOut className="size-3" />Discharge</Badge>}{b.stay.isolation && <Badge variant="warning" className="px-1 py-0 text-[10px]"><ShieldAlert className="size-3" />{b.stay.isolation}</Badge>}</div>
+                            <div className="flex flex-wrap gap-1">{b.stay.discharge_ordered && <Badge variant="info" className="px-1 py-0 text-label"><LogOut className="size-3" />Discharge</Badge>}{b.stay.isolation && <Badge variant="warning" className="px-1 py-0 text-label"><ShieldAlert className="size-3" />{b.stay.isolation}</Badge>}</div>
                           </div>
                         ) : b.ed_visit ? (
-                          <div className="mt-1.5 space-y-0.5"><p className="truncate text-[13px] font-medium">{b.ed_visit.patient_name}</p>
+                          <div className="mt-1.5 space-y-0.5"><p className="truncate text-table font-medium">{b.ed_visit.patient_name}</p>
                             <p className="text-muted-foreground">ED{b.ed_visit.esi ? ` · ESI ${b.ed_visit.esi}` : ""}{b.ed_visit.status === "boarding" ? " · boarding" : ""}</p></div>
                         ) : b.status === "cleaning" ? <p className="mt-1.5 flex items-center gap-1 text-muted-foreground"><Clock className="size-3" />{fromNow(b.since)}</p>
                           : b.status === "blocked" ? <p className="mt-1.5 line-clamp-2 text-muted-foreground">{b.status_reason}</p> : <p className="mt-1.5 text-muted-foreground">Ready</p>}
@@ -80,12 +80,12 @@ export function BedBoard() {
             </div>
             <Card className="h-fit">
               <CardHeader><CardTitle className="flex items-center gap-2"><Clock className="size-4" />Waiting for a bed</CardTitle></CardHeader>
-              <CardContent>{!d.pending_admissions.length ? <p className="text-[13px] text-muted-foreground">No pending admissions.</p> : (
+              <CardContent>{!d.pending_admissions.length ? <p className="text-table text-muted-foreground">No pending admissions.</p> : (
                 <ul className="space-y-2">{d.pending_admissions.map((s) => (
-                  <li key={s.id} className={cn("rounded-lg border p-3 text-[13px]", (s.waiting_hours ?? 0) >= 1 && "border-warning/50 bg-warning-soft/30")}>
+                  <li key={s.id} className={cn("rounded-lg border p-3 text-table", (s.waiting_hours ?? 0) >= 1 && "border-warning/50 bg-warning-soft/30")}>
                     <p className="font-medium">{s.patient.name}</p><p className="text-xs text-muted-foreground">{s.reason}</p>
                     <p className="mt-1 text-xs">{s.level_of_care.replace("_", "-")} · {s.admit_source.toUpperCase()} · waiting <span className="font-medium tabular">{losLabel(s.waiting_hours)}</span></p>
-                    {can("adt:write") && <Button size="sm" className="mt-2" onClick={() => setPlacing(s)}><BedDouble />Assign bed</Button>}
+                    {can("adt:write") && <Button size="sm" variant="outline" className="mt-2" onClick={() => setPlacing(s)}><BedDouble />Assign bed</Button>}
                   </li>))}</ul>
               )}</CardContent>
             </Card>
@@ -126,7 +126,7 @@ function BedDialog({ bed, board, onClose }: { bed: BedT | null; board?: Board; o
         <DialogContent size="sm">
           <DialogHeader><DialogTitle>Bed {bed.code}</DialogTitle><DialogDescription><BedStatusChip status={bed.status} />{bed.status_reason ? ` · ${bed.status_reason}` : ""}</DialogDescription></DialogHeader>
           {bed.stay ? (
-            <div className="space-y-3 text-[13.5px]">
+            <div className="space-y-3 text-body">
               <p><span className="font-medium">{bed.stay.patient_name}</span> {bed.stay.mrn && <span className="text-xs text-muted-foreground">{bed.stay.mrn}</span>}</p>
               <p className="text-muted-foreground">Attending {bed.stay.attending ?? "—"} · LOS {losLabel(bed.stay.los_hours)}</p>
               {can("adt:write") && (

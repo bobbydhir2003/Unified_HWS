@@ -1,6 +1,6 @@
 /** Shared operations UI: case types, severity/SLA badges, case list rows and the case drawer used by every department. */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlarmClock, ArrowUpRight, Bell, Bot, CheckCircle2, CircleDot, Clock, MessageSquare, ShieldCheck, UserCheck, UserRound, XCircle } from "lucide-react";
+import { AlarmClock, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2, CircleDot, Clock, MessageSquare, ShieldCheck, UserCheck, UserRound, XCircle } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import { get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime, fromNow } from "@/lib/format";
 import { ROLE_LABELS, STAFF_ROLES, type Role } from "@/lib/types";
-import { StatusChip, toWorkStatus } from "@/components/common/Status";
+import { dueLabel, StatusChip, toWorkStatus } from "@/components/common/Status";
 import { cn, titleCase } from "@/lib/utils";
 
 export type CaseT = {
@@ -41,17 +41,22 @@ type DeliveryT = { id: string; channel: string; category: string; subject: strin
 type CaseDetail = { case: CaseT; events: CaseEventT[]; tasks: TaskT[]; deliveries: DeliveryT[]; approvals: ApprovalT[] };
 
 export const SEVERITY_VARIANT: Record<Severity, React.ComponentProps<typeof Badge>["variant"]> = {
-  critical: "danger", high: "danger", medium: "warning", low: "info", info: "neutral",
+  critical: "danger", high: "warning", medium: "neutral", low: "neutral", info: "neutral",
 };
+/** Categories where a HIGH case is a clinical-safety issue (red); elsewhere high severity is attention (amber). */
+export const CLINICAL_CATEGORIES = new Set(["clinical", "lab", "radiology", "ed"]);
+export function isClinicalDanger(c: { severity: string; category?: string }) {
+  return c.severity === "critical" || (c.severity === "high" && !!c.category && CLINICAL_CATEGORIES.has(c.category));
+}
 export const CATEGORY_LABEL: Record<string, string> = {
   insurance: "Insurance", scheduling: "Scheduling", clinical: "Clinical", lab: "Laboratory", radiology: "Radiology", pharmacy: "Pharmacy",
   inventory: "Inventory", bed: "Beds", ed: "Emergency", discharge: "Discharge", billing: "Billing", staffing: "Staffing", or: "Operating rooms",
   equipment: "Equipment", patient_followup: "Follow-up", documents: "Documents", operations: "Operations", automation: "Automation",
 };
 
-export function SeverityBadge({ severity, className }: { severity: Severity; className?: string }) {
+export function SeverityBadge({ severity, className, category }: { severity: Severity; className?: string; category?: string }) {
   return (
-    <Badge variant={SEVERITY_VARIANT[severity]} className={className}>
+    <Badge variant={isClinicalDanger({ severity, category }) ? "danger" : SEVERITY_VARIANT[severity]} className={className}>
       <span className={cn("size-1.5 rounded-full", severity === "critical" ? "bg-destructive animate-pulse" : "bg-current opacity-70")} aria-hidden />
       {titleCase(severity)}
     </Badge>
@@ -60,18 +65,17 @@ export function SeverityBadge({ severity, className }: { severity: Severity; cla
 
 export function CaseStatusBadge({ status }: { status: string }) {
   const v: Record<string, React.ComponentProps<typeof Badge>["variant"]> = {
-    open: "primary", in_progress: "info", waiting: "neutral", snoozed: "outline", escalated: "danger", resolved: "success", cancelled: "neutral",
+    open: "neutral", in_progress: "info", waiting: "neutral", snoozed: "outline", escalated: "warning", resolved: "success", cancelled: "neutral",
   };
   return <Badge variant={v[status] ?? "neutral"}>{titleCase(status.replace("_", " "))}</Badge>;
 }
 
 export function SlaBadge({ c }: { c: Pick<CaseT, "due_at" | "overdue" | "status" | "snoozed_until" | "escalation_level"> }) {
-  if (c.status === "snoozed" && c.snoozed_until) return <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><AlarmClock className="size-3.5" />Snoozed until {fmtDateTime(c.snoozed_until)}</span>;
+  if (c.status === "snoozed" && c.snoozed_until) return <span className="inline-flex items-center gap-1 text-label text-muted-foreground"><AlarmClock className="size-3.5" />Snoozed until {fmtDateTime(c.snoozed_until)}</span>;
   if (!c.due_at || ["resolved", "cancelled"].includes(c.status)) return null;
   return (
-    <span className={cn("inline-flex items-center gap-1 text-xs tabular", c.overdue ? "font-medium text-destructive" : "text-muted-foreground")}>
-      <Clock className="size-3.5" />{c.overdue ? `Overdue ${fromNow(c.due_at)}` : `Due ${fromNow(c.due_at)}`}
-      {c.escalation_level > 0 && <span className="ml-1 text-muted-foreground">· escalated</span>}
+    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap text-label tabular", c.overdue ? "font-medium text-warning-foreground" : "text-muted-foreground")}>
+      <Clock className="size-3.5" aria-hidden />{dueLabel(c.due_at)}
     </span>
   );
 }
@@ -80,23 +84,40 @@ export function ownerLabel(c: Pick<CaseT, "assigned_user_name" | "assigned_role"
   return c.assigned_user_name ?? (c.assigned_role ? ROLE_LABELS[c.assigned_role] ?? titleCase(c.assigned_role) : "Unassigned");
 }
 
+/** Column template shared by the case list header and rows (Problem · Patient · Owner · Due · Status). */
+export const CASE_COLS = "grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-3 md:grid-cols-[1.25rem_minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_8.5rem]";
+
+export function CaseListHeader() {
+  return (
+    <li aria-hidden className={cn(CASE_COLS, "hidden border-b bg-subtle px-4 py-2 text-label font-medium text-muted-foreground md:grid")}>
+      <span /><span>Problem</span><span>Patient</span><span>Owner</span><span>Due</span><span>Status</span>
+    </li>
+  );
+}
+
+export function SeverityIcon({ c }: { c: { severity: string; category?: string } }) {
+  const danger = isClinicalDanger(c);
+  if (danger || c.severity === "high") return <AlertTriangle className={cn("mt-0.5 size-4", danger ? "text-destructive" : "text-warning")} aria-label={`${titleCase(c.severity)} severity${danger ? ", clinical" : ""}`} />;
+  return <span className={cn("mt-1.5 ml-1 block size-2 rounded-full", c.severity === "medium" ? "bg-muted-foreground/60" : "bg-muted-foreground/30")} aria-label={`${titleCase(c.severity)} severity`} role="img" />;
+}
+
 export function CaseRow({ c, onOpen, compact }: { c: CaseT; onOpen: (id: string) => void; compact?: boolean }) {
+  const status = toWorkStatus(c.escalation_level > 0 && !c.overdue ? "escalated" : c.status, { overdue: c.overdue, severity: c.severity === "critical" ? "critical" : undefined });
   return (
     <li>
-      <button onClick={() => onOpen(c.id)} className={cn("flex w-full items-start gap-3 px-4 text-left hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none", compact ? "py-2.5" : "py-3")}>
-        <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", { critical: "bg-destructive", high: "bg-destructive/70", medium: "bg-warning", low: "bg-primary/60", info: "bg-muted-foreground/40" }[c.severity])} aria-hidden />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-[13.5px] font-medium">{c.title}</span>
-            <span className="sr-only">Severity {c.severity}.</span>
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-            <span>#{c.number} · {CATEGORY_LABEL[c.category] ?? c.category}{c.source === "monitor" ? " · rule alert" : ""}</span>
-            <span className="inline-flex items-center gap-1"><UserRound className="size-3" />Owner: {ownerLabel(c)}</span>
-            <SlaBadge c={c} />
-          </div>
-        </div>
-        {!compact && <StatusChip status={toWorkStatus(c.status, { overdue: c.overdue })} className="mt-0.5" />}
+      <button onClick={() => onOpen(c.id)} className={cn(CASE_COLS, "w-full px-4 text-left text-table hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50", compact ? "py-2" : "py-(--row-y)")}>
+        <SeverityIcon c={c} />
+        <span className="min-w-0">
+          <span className="block text-body font-medium text-heading">{c.title}</span>
+          <span className="block text-label text-muted-foreground">#{c.number} · {CATEGORY_LABEL[c.category] ?? c.category}{c.source === "monitor" ? " · rule alert" : ""}{c.escalation_level > 0 ? " · escalated" : ""}</span>
+          <span className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-label text-muted-foreground md:hidden">
+            {c.patient_name && <span>{c.patient_name}</span>}<span className="inline-flex items-center gap-1"><UserRound className="size-3" />Owner: {ownerLabel(c)}</span><SlaBadge c={c} />
+          </span>
+        </span>
+        <span className="hidden min-w-0 truncate md:block">{c.patient_name ?? <span className="text-muted-foreground">—</span>}</span>
+        <span className="hidden min-w-0 truncate md:block"><span className="sr-only">Owner: </span>{ownerLabel(c)}</span>
+        <span className="hidden md:block">{c.due_at ? <SlaBadge c={c} /> : <span className="text-muted-foreground">—</span>}</span>
+        <span><StatusChip status={status} /></span>
       </button>
     </li>
   );
@@ -131,16 +152,16 @@ export function CaseDrawer({ caseId, onClose }: { caseId: string | null; onClose
           <div className="flex flex-col">
             <div className="border-b p-5 pr-12">
               <p className="text-xs text-muted-foreground">Case #{c.number} · {CATEGORY_LABEL[c.category] ?? c.category}{c.rule_key ? ` · rule ${c.rule_key} v${c.rule_version ?? 0}` : ""}</p>
-              <DialogTitle className="mt-1 text-[17px] font-semibold leading-snug">{c.title}</DialogTitle>
-              <div className="mt-2 flex flex-wrap items-center gap-2"><SeverityBadge severity={c.severity} /><CaseStatusBadge status={c.status} /><SlaBadge c={c} /></div>
-              {c.summary && <p className="mt-3 text-[13.5px] text-muted-foreground">{c.summary}</p>}
-              <dl className="mt-3 grid grid-cols-2 gap-3 text-[13px]">
+              <DialogTitle className="mt-1 text-section font-semibold leading-snug">{c.title}</DialogTitle>
+              <div className="mt-2 flex flex-wrap items-center gap-2"><SeverityBadge severity={c.severity} category={c.category} /><CaseStatusBadge status={c.status} /><SlaBadge c={c} /></div>
+              {c.summary && <p className="mt-3 text-body text-muted-foreground">{c.summary}</p>}
+              <dl className="mt-3 grid grid-cols-2 gap-3 text-table">
                 <div><dt className="text-xs text-muted-foreground">Owner</dt><dd className="font-medium">{ownerLabel(c)}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Patient</dt><dd>{c.patient_id ? <Link className="font-medium text-primary hover:underline" to={`/patients/${c.patient_id}`}>{c.patient_name ?? "Open chart"}</Link> : "—"}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">Detected</dt><dd>{fmtDateTime(c.created_at)}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">{closed ? "Closed" : "Last confirmed"}</dt><dd>{fmtDateTime(closed ? c.resolved_at : c.last_detected_at)}</dd></div>
               </dl>
-              {closed && c.resolution && <p className="mt-3 rounded-lg bg-success-soft px-3 py-2 text-[13px] text-success"><CheckCircle2 className="mr-1 inline size-4" />{c.resolution}</p>}
+              {closed && c.resolution && <p className="mt-3 rounded-lg bg-success-soft px-3 py-2 text-table text-success"><CheckCircle2 className="mr-1 inline size-4" />{c.resolution}</p>}
               {work && !closed && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {c.assigned_user_id !== me?.user.id && <Button size="sm" onClick={() => act("assign", {}, "Assigned to you")}><UserCheck />Take it</Button>}
@@ -161,7 +182,7 @@ export function CaseDrawer({ caseId, onClose }: { caseId: string | null; onClose
               <section className="border-b p-5">
                 <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tasks</h4>
                 <ul className="space-y-1.5">{q.data!.tasks.map((t) => (
-                  <li key={t.id} className="flex items-center gap-2 text-[13px]">
+                  <li key={t.id} className="flex items-center gap-2 text-table">
                     {t.status === "done" ? <CheckCircle2 className="size-4 text-success" /> : <CircleDot className="size-4 text-muted-foreground" />}
                     <span className={cn("flex-1", t.status === "done" && "text-muted-foreground line-through")}>{t.title}</span>
                     <span className="text-xs text-muted-foreground">{t.assigned_role ? ROLE_LABELS[t.assigned_role] : "Assigned"}</span>
@@ -177,7 +198,7 @@ export function CaseDrawer({ caseId, onClose }: { caseId: string | null; onClose
             {q.data!.deliveries.length > 0 && (
               <section className="border-b p-5">
                 <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notifications</h4>
-                <ul className="space-y-1 text-[13px]">{q.data!.deliveries.map((d) => (
+                <ul className="space-y-1 text-table">{q.data!.deliveries.map((d) => (
                   <li key={d.id} className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{d.channel.replace("_", "-")}</Badge><span className="flex-1 truncate">{d.subject}</span>
                     <Badge variant={d.status === "failed" ? "danger" : d.status === "suppressed" ? "neutral" : d.status === "simulated" ? "warning" : "success"} title={d.status_reason ?? undefined}>{d.status}</Badge>
@@ -191,7 +212,7 @@ export function CaseDrawer({ caseId, onClose }: { caseId: string | null; onClose
                 return (
                   <li key={e.id} className="relative">
                     <span className="absolute -left-[27px] top-0.5 grid size-[18px] place-items-center rounded-full border bg-background"><Icon className="size-3 text-muted-foreground" /></span>
-                    <p className="text-[13px]">{e.message}</p>
+                    <p className="text-table">{e.message}</p>
                     <p className="text-xs text-muted-foreground">{fmtDateTime(e.at)} · {e.actor_name ?? (e.actor_kind === "agent" ? "AI agent" : e.actor_kind === "system" ? "Automation" : "Staff")}</p>
                   </li>);
               })}</ol>
@@ -233,7 +254,7 @@ export function CaseDrawer({ caseId, onClose }: { caseId: string | null; onClose
 function Evidence({ data }: { data: Record<string, unknown> }) {
   const entries = Object.entries(data).filter(([, v]) => v !== null && v !== undefined && v !== "");
   return (
-    <dl className="grid grid-cols-1 gap-x-4 gap-y-1.5 text-[13px] sm:grid-cols-2">
+    <dl className="grid grid-cols-1 gap-x-4 gap-y-1.5 text-table sm:grid-cols-2">
       {entries.map(([k, v]) => (
         <div key={k} className={cn("min-w-0", (Array.isArray(v) || typeof v === "object") && "sm:col-span-2")}>
           <dt className="text-xs text-muted-foreground">{titleCase(k.replace(/_/g, " "))}</dt>
@@ -273,11 +294,11 @@ export function ApprovalList({ items, empty }: { items: ApprovalT[]; empty?: Rea
       <ul className="divide-y">{items.map((a) => (
         <li key={a.id} className="flex flex-wrap items-start gap-3 py-3">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2"><span className="text-[13.5px] font-medium">{a.title}</span>
+            <div className="flex flex-wrap items-center gap-2"><span className="text-body font-medium">{a.title}</span>
               {a.requested_by_agent && <Badge variant="ai"><Bot />{a.requested_by_agent}</Badge>}
               {a.status !== "pending" && <Badge variant={a.status === "executed" ? "success" : a.status === "failed" ? "danger" : "neutral"}>{a.status}</Badge>}
             </div>
-            {a.summary && <p className="mt-0.5 whitespace-pre-line text-[13px] text-muted-foreground">{a.summary}</p>}
+            {a.summary && <p className="mt-0.5 whitespace-pre-line text-table text-muted-foreground">{a.summary}</p>}
             <p className="mt-0.5 text-xs text-muted-foreground">Requested {fromNow(a.created_at)} · needs <code>{a.required_permission}</code>{a.error ? ` · ${a.error}` : ""}</p>
           </div>
           {a.can_decide && (

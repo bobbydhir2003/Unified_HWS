@@ -232,7 +232,7 @@ def _create_invitation(ctx: TenantContext, org_id: uuid.UUID, body: InvitationIn
     ctx.db.flush()
     link = f"{settings.frontend_url}/accept-invite?token={token}"
     org = ctx.db.get(Organization, org_id)
-    send_email(ctx.db, inv.email, f"You're invited to {org.name} on Undeclared",
+    send_email(ctx.db, inv.email, f"You're invited to {org.name} on HMS Workflows",
                f"{ctx.user.full_name} invited you to join {org.name}.\nAccept within 7 days: {link}", org_id)
     audit.record(ctx.db, "user.invited", org_id=org_id, actor_id=ctx.user.id, resource_type="invitation",
                  resource_id=inv.id, request=ctx.request, details={"roles": inv.roles})

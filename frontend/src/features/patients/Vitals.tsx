@@ -21,26 +21,32 @@ const RANGES = {
   systolic: [90, 139], diastolic: [60, 89], heart_rate: [50, 100], respiratory_rate: [12, 20], spo2: [94, 100], temp_f: [97, 100.3],
 } as const;
 const flag = (k: keyof typeof RANGES, v: number | null | undefined) => v != null && (v < RANGES[k][0] || v > RANGES[k][1]);
+/** "High" / "Low" / null — abnormal values are marked with an arrow AND a word, never colour alone. */
+const dir = (k: keyof typeof RANGES, v: number | null | undefined): "High" | "Low" | null =>
+  v == null ? null : v < RANGES[k][0] ? "Low" : v > RANGES[k][1] ? "High" : null;
 
 export function VitalsSummary({ v, className }: { v: Vitals; className?: string }) {
   const f = cToF(v.temperature_c);
   const lb = v.weight_kg ? Math.round(Number(v.weight_kg) * 2.20462) : null;
-  const items: [string, React.ReactNode, boolean][] = [
-    ["BP", v.systolic ? `${v.systolic}/${v.diastolic}` : null, flag("systolic", v.systolic) || flag("diastolic", v.diastolic)],
-    ["HR", v.heart_rate, flag("heart_rate", v.heart_rate)],
-    ["RR", v.respiratory_rate, flag("respiratory_rate", v.respiratory_rate)],
-    ["Temp", f ? `${f}°F` : null, flag("temp_f", f)],
-    ["SpO₂", v.spo2 ? `${v.spo2}%` : null, flag("spo2", v.spo2)],
-    ["Wt", lb ? `${lb} lb` : null, false],
-    ["BMI", v.bmi, (v.bmi ?? 0) >= 30],
-    ["Pain", v.pain_score != null ? `${v.pain_score}/10` : null, (v.pain_score ?? 0) >= 7],
+  const items: [string, React.ReactNode, "High" | "Low" | null][] = [
+    ["BP", v.systolic ? `${v.systolic}/${v.diastolic}` : null, dir("systolic", v.systolic) ?? dir("diastolic", v.diastolic)],
+    ["Heart rate", v.heart_rate, dir("heart_rate", v.heart_rate)],
+    ["Resp. rate", v.respiratory_rate, dir("respiratory_rate", v.respiratory_rate)],
+    ["Temp", f ? `${f} °F` : null, dir("temp_f", f)],
+    ["SpO₂", v.spo2 ? `${v.spo2}%` : null, dir("spo2", v.spo2)],
+    ["Weight", lb ? `${lb} lb` : null, null],
+    ["BMI", v.bmi, (v.bmi ?? 0) >= 30 ? "High" : null],
+    ["Pain", v.pain_score != null ? `${v.pain_score}/10` : null, (v.pain_score ?? 0) >= 7 ? "High" : null],
   ];
   return (
-    <dl className={cn("grid grid-cols-4 gap-x-4 gap-y-2 sm:grid-cols-8", className)}>
+    <dl className={cn("grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 xl:grid-cols-8", className)}>
       {items.map(([k, val, bad]) => (
         <div key={k}>
-          <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{k}</dt>
-          <dd className={cn("text-[14px] font-semibold tabular", bad && "text-destructive")}>{val ?? <span className="font-normal text-muted-foreground">—</span>}</dd>
+          <dt className="text-label font-medium text-muted-foreground">{k}</dt>
+          <dd className={cn("flex flex-wrap items-baseline gap-x-1.5 text-section font-semibold tabular text-heading", bad && "text-destructive")}>
+            {val ?? <span className="font-normal text-muted-foreground">—</span>}
+            {bad && val != null && <span className="inline-flex items-center rounded-full border border-destructive/30 bg-destructive-soft px-1.5 text-label font-medium">{bad === "High" ? "▲" : "▼"} {bad}</span>}
+          </dd>
         </div>
       ))}
     </dl>
@@ -89,7 +95,7 @@ export function VitalsDialog({ patientId, encounterId, open, onOpenChange }: { p
       <DialogContent size="md">
         <DialogHeader><DialogTitle>Record vitals</DialogTitle><DialogDescription>Enter what was measured; leave the rest blank.</DialogDescription></DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
-          {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">{error}</div>}
+          {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-table text-destructive">{error}</div>}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {inp("systolic", "Systolic", "mmHg")}{inp("diastolic", "Diastolic", "mmHg")}{inp("heart_rate", "Heart rate", "bpm")}
             {inp("respiratory_rate", "Resp. rate", "/min")}{inp("temp_f", "Temperature", "°F")}{inp("spo2", "SpO₂", "%")}

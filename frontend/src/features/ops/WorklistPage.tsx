@@ -3,18 +3,19 @@ import { Bot, CheckCircle2, ChevronRight, ListChecks, ShieldCheck } from "lucide
 import * as React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingRows, PageHeader, toastError } from "@/components/common";
-import { StatusChip } from "@/components/common/Status";
+import { dueLabel, StatusChip } from "@/components/common/Status";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Segmented, TabCount, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { get, post } from "@/lib/api";
 import { fromNow } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/types";
 import { cn, titleCase } from "@/lib/utils";
-import { type ApprovalT, ApprovalList, CaseDrawer, CaseRow, type CaseT, CATEGORY_LABEL, type TaskT } from "./ops";
+import { type ApprovalT, ApprovalList, CASE_COLS, CaseDrawer, CaseListHeader, CaseRow, type CaseT, CATEGORY_LABEL, ownerLabel, SlaBadge, type TaskT } from "./ops";
 
 type Worklist = { cases: CaseT[]; tasks: TaskT[]; approvals: ApprovalT[]; counts: { cases: number; tasks: number; approvals: number; overdue: number } };
-const PRIO: Record<string, React.ComponentProps<typeof Badge>["variant"]> = { urgent: "danger", high: "warning", normal: "neutral", low: "outline" };
+const PRIO: Record<string, React.ComponentProps<typeof Badge>["variant"]> = { urgent: "danger", high: "warning", normal: "neutral", low: "neutral" };
 
 /** Group cases that come from the same rule (e.g. 16 staffing gaps) so one row stands for many. */
 function groupCases(cases: CaseT[]): (CaseT | { group: string; items: CaseT[] })[] {
@@ -34,18 +35,22 @@ function CaseGroup({ items, onOpen }: { items: CaseT[]; onOpen: (id: string) => 
   const [open, setOpen] = React.useState(false);
   const first = items[0];
   const overdue = items.filter((c) => c.overdue).length;
+  const patients = [...new Set(items.map((c) => c.patient_name).filter(Boolean))];
   return (
     <li>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none">
-        <ChevronRight className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />
-        <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-medium">{CATEGORY_LABEL[first.category] ?? titleCase(first.category)}: {items.length} similar alerts</p>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">Most urgent: {first.title}{overdue ? ` · ${overdue} overdue` : ""}</p>
-        </div>
-        <StatusChip status={overdue ? "urgent" : "not_started"} label={overdue ? `${overdue} overdue` : `${items.length} open`} />
+        className={cn(CASE_COLS, "w-full bg-subtle px-4 py-(--row-y) text-left text-table hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50")}>
+        <ChevronRight className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} aria-hidden />
+        <span className="min-w-0">
+          <span className="block text-body font-medium text-heading">{CATEGORY_LABEL[first.category] ?? titleCase(first.category)}: {items.length} similar alerts</span>
+          <span className="block truncate text-label text-muted-foreground">Most urgent: {first.title}</span>
+        </span>
+        <span className="hidden min-w-0 truncate text-muted-foreground md:block">{patients.length ? `${patients.length} patient${patients.length === 1 ? "" : "s"}` : "—"}</span>
+        <span className="hidden min-w-0 truncate md:block">{ownerLabel(first)}</span>
+        <span className="hidden md:block">{first.due_at ? <SlaBadge c={first} /> : "—"}</span>
+        <span><StatusChip status={overdue ? "overdue" : "not_started"} label={overdue ? `${overdue} overdue` : `${items.length} open`} /></span>
       </button>
-      {open && <ul className="divide-y border-t bg-muted/20">{items.map((c) => <CaseRow key={c.id} c={c} onOpen={onOpen} compact />)}</ul>}
+      {open && <ul className="divide-y border-t">{items.map((c) => <CaseRow key={c.id} c={c} onOpen={onOpen} compact />)}</ul>}
     </li>
   );
 }
@@ -66,23 +71,24 @@ export function WorklistPage() {
   const setCase = (id: string | null) => { const n = new URLSearchParams(params); if (id) n.set("case", id); else n.delete("case"); setParams(n, { replace: true }); };
   return (
     <>
-      <PageHeader title="My work" description="Everything waiting on you or your team, most urgent first. Cases are problems found automatically by rules; tasks are pieces of work assigned to you; approvals are decisions only you can make." />
+      <PageHeader title="My work" description="Everything waiting on you or your team — clinical severity first, then overdue work." />
       {q.isError ? <ErrorState error={q.error} retry={q.refetch} /> : (
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="cases">Cases {q.data && <CountPill n={q.data.counts.cases} alert={q.data.counts.overdue > 0} />}</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks {q.data && <CountPill n={q.data.counts.tasks} />}</TabsTrigger>
-            <TabsTrigger value="approvals">Approvals {q.data && <CountPill n={q.data.counts.approvals} alert={q.data.counts.approvals > 0} />}</TabsTrigger>
+            <TabsTrigger value="cases">Cases {q.data && <TabCount n={q.data.counts.cases} />}</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks {q.data && <TabCount n={q.data.counts.tasks} />}</TabsTrigger>
+            <TabsTrigger value="approvals">Approvals {q.data && <TabCount n={q.data.counts.approvals} />}</TabsTrigger>
           </TabsList>
           <TabsContent value="cases">
             <Card className="overflow-hidden">
               {cats.length > 1 && (
-                <div className="flex flex-wrap gap-1.5 border-b p-3">
-                  {["all", ...cats].map((c) => <button key={c} onClick={() => setCat(c)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted", cat === c && "bg-accent text-accent-foreground")}>{c === "all" ? "All" : CATEGORY_LABEL[c] ?? c}</button>)}
+                <div className="flex flex-wrap items-center gap-2 border-b p-3">
+                  <Segmented label="Filter cases by area" value={cat} onChange={setCat}
+                    options={["all", ...cats].map((c) => ({ value: c, label: c === "all" ? "All" : CATEGORY_LABEL[c] ?? c, count: c === "all" ? q.data?.cases.length : q.data?.cases.filter((x) => x.category === c).length }))} />
                 </div>
               )}
               {q.isLoading ? <LoadingRows /> : !cases.length ? <EmptyState icon={CheckCircle2} title="No open cases for you" description="Automations open cases here when something needs attention." /> : (
-                <ul className="divide-y">{groupCases(cases).map((c) => "group" in c ? <CaseGroup key={c.group} items={c.items} onOpen={setCase} /> : <CaseRow key={c.id} c={c} onOpen={setCase} />)}</ul>
+                <ul className="divide-y"><CaseListHeader />{groupCases(cases).map((c) => "group" in c ? <CaseGroup key={c.group} items={c.items} onOpen={setCase} /> : <CaseRow key={c.id} c={c} onOpen={setCase} />)}</ul>
               )}
             </Card>
           </TabsContent>
@@ -93,10 +99,6 @@ export function WorklistPage() {
       <CaseDrawer caseId={openCase} onClose={() => setCase(null)} />
     </>
   );
-}
-
-function CountPill({ n, alert }: { n: number; alert?: boolean }) {
-  return <span className={cn("ml-1.5 rounded-full px-1.5 py-px text-[11px] tabular", alert ? "bg-destructive text-white" : "bg-muted text-muted-foreground")}>{n}</span>;
 }
 
 export function TaskList({ tasks, onOpenCase }: { tasks: TaskT[]; onOpenCase?: (id: string) => void }) {
@@ -111,20 +113,20 @@ export function TaskList({ tasks, onOpenCase }: { tasks: TaskT[]; onOpenCase?: (
         <button onClick={() => act(t, "complete")} className="mt-0.5 size-5 shrink-0 rounded-full border-2 border-input hover:border-primary" aria-label={`Mark "${t.title}" done`} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            {t.link ? <Link to={t.link} className="text-[13.5px] font-medium hover:underline">{t.title}</Link> : <span className="text-[13.5px] font-medium">{t.title}</span>}
+            {t.link ? <Link to={t.link} className="text-body font-medium hover:underline">{t.title}</Link> : <span className="text-body font-medium">{t.title}</span>}
             {t.priority !== "normal" && <Badge variant={PRIO[t.priority]}>{titleCase(t.priority)}</Badge>}
             {t.status === "in_progress" && <Badge variant="info">In progress</Badge>}
             {t.source !== "manual" && <Badge variant="ai"><Bot />Automation</Badge>}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {t.assigned_role ? ROLE_LABELS[t.assigned_role] : "Assigned to you"}{t.patient_name ? ` · ${t.patient_name}` : ""} · created {fromNow(t.created_at)}
-            {t.due_at && <> · <span className={cn(new Date(t.due_at) < new Date() && "font-medium text-destructive")}>due {fromNow(t.due_at)}</span></>}
+          <p className="text-label text-muted-foreground">
+            Owner: {t.assigned_role ? ROLE_LABELS[t.assigned_role] : "You"}{t.patient_name ? ` · ${t.patient_name}` : ""} · created {fromNow(t.created_at)}
+            {t.due_at && <> · <span className={cn("inline-flex items-center gap-1", new Date(t.due_at) < new Date() && "font-medium text-warning-foreground")}>{dueLabel(t.due_at)}</span></>}
           </p>
         </div>
         <div className="flex shrink-0 gap-1">
-          {!t.acknowledged_at && <button className="rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-accent" onClick={() => act(t, "acknowledge")}>Acknowledge</button>}
-          {t.status === "open" && <button className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted" onClick={() => act(t, "start")}>Start</button>}
-          {t.case_id && onOpenCase && <button className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted" onClick={() => onOpenCase(t.case_id!)}>Case</button>}
+          {!t.acknowledged_at && <Button variant="outline" size="xs" onClick={() => act(t, "acknowledge")}>Acknowledge</Button>}
+          {t.status === "open" && <Button variant="ghost" size="xs" onClick={() => act(t, "start")}>Start</Button>}
+          {t.case_id && onOpenCase && <Button variant="ghost" size="xs" onClick={() => onOpenCase(t.case_id!)}>Case</Button>}
         </div>
       </li>
     ))}</ul>

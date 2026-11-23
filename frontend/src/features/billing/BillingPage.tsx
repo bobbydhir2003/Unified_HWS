@@ -50,7 +50,7 @@ export function BillingPage() {
       <PageHeader title="Billing" description="Charges, claims, denials and patient balances." actions={<SimulatedBadge label="Clearinghouse, payer & card processor simulated" />} />
       <nav className="-mx-1 mb-5 flex gap-1 overflow-x-auto border-b px-1" aria-label="Billing sections">
         {TABS.map(([k, l]) => (
-          <button key={k} onClick={() => setParams({ tab: k })} className={cn("-mb-px shrink-0 border-b-2 border-transparent px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground", tab === k && "border-primary text-foreground")}>{l}</button>
+          <button key={k} onClick={() => setParams({ tab: k })} className={cn("-mb-px shrink-0 border-b-2 border-transparent px-3 py-2 text-table font-medium text-muted-foreground hover:text-foreground", tab === k && "border-primary text-foreground")}>{l}</button>
         ))}
       </nav>
       {tab === "overview" && <Overview />}
@@ -93,7 +93,7 @@ function Overview() {
           </BarChart></ResponsiveContainer>
         </CardContent></Card>
         <Card><CardHeader><CardTitle>Collections (6 months)</CardTitle></CardHeader><CardContent className="h-60">
-          {!months.length ? <p className="text-[13px] text-muted-foreground">No payments yet.</p> : (
+          {!months.length ? <p className="text-table text-muted-foreground">No payments yet.</p> : (
             <ResponsiveContainer><BarChart data={months} margin={{ left: -8 }}><CartesianGrid vertical={false} stroke="var(--border)" />
               <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
               <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
@@ -103,11 +103,11 @@ function Overview() {
           )}
         </CardContent></Card>
         <Card><CardHeader><CardTitle>Claims by status</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">
-          {Object.entries(s.claims_by_status).map(([k, v]) => <span key={k} className="flex items-center gap-1.5"><ClaimBadge s={k} /><span className="text-[13px] font-semibold tabular">{v}</span></span>)}
-          {!Object.keys(s.claims_by_status).length && <p className="text-[13px] text-muted-foreground">No claims yet.</p>}
+          {Object.entries(s.claims_by_status).map(([k, v]) => <span key={k} className="flex items-center gap-1.5"><ClaimBadge s={k} /><span className="text-table font-semibold tabular">{v}</span></span>)}
+          {!Object.keys(s.claims_by_status).length && <p className="text-table text-muted-foreground">No claims yet.</p>}
         </CardContent></Card>
         <Card><CardHeader><CardTitle>Top denial reasons</CardTitle></CardHeader><CardContent>
-          {!s.top_denials.length ? <p className="text-[13px] text-muted-foreground">No denials.</p> : <ul className="space-y-1.5 text-[13px]">{s.top_denials.map((d) => <li key={d.code} className="flex justify-between gap-2"><span><span className="font-mono text-xs font-semibold">{d.code}</span> {d.reason}</span><span className="tabular">{d.count}</span></li>)}</ul>}
+          {!s.top_denials.length ? <p className="text-table text-muted-foreground">No denials.</p> : <ul className="space-y-1.5 text-table">{s.top_denials.map((d) => <li key={d.code} className="flex justify-between gap-2"><span><span className="font-mono text-xs font-semibold">{d.code}</span> {d.reason}</span><span className="tabular">{d.count}</span></li>)}</ul>}
         </CardContent></Card>
       </div>
     </div>
@@ -164,22 +164,22 @@ function ChargeDrawer({ encounterId, onOpenChange }: { encounterId: string | nul
       <SheetContent className="max-w-2xl" aria-describedby={undefined}>
         <div className="border-b px-6 py-5">
           <D.Title className="text-base font-semibold">Charge capture</D.Title>
-          {d && <p className="text-[13px] text-muted-foreground">{d.encounter.patient.name} · {fmtDate(d.encounter.service_date)} · {d.encounter.provider}</p>}
+          {d && <p className="text-table text-muted-foreground">{d.encounter.patient.name} · {fmtDate(d.encounter.service_date)} · {d.encounter.provider}</p>}
         </div>
         {!d ? <LoadingRows /> : (
           <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
-            <div className="flex flex-wrap gap-2 text-[13px]">
+            <div className="flex flex-wrap gap-2 text-table">
               {d.insurance ? <Badge variant="info">{d.insurance.payer_name} · {d.insurance.member_id}</Badge> : <Badge variant="warning">No active insurance (self-pay)</Badge>}
               {d.encounter.diagnoses.map((x) => <Badge key={x.code} variant="outline">{x.code} {x.description}</Badge>)}
             </div>
             {d.suggestions.length > 0 && (
-              <div className="rounded-lg border border-ai/25 bg-ai-soft/50 p-3 text-[12.5px]">
+              <div className="rounded-lg border border-ai/25 bg-ai-soft/50 p-3 text-table">
                 <p className="mb-1 font-medium text-ai">Suggested codes (rule-based)</p>
                 {d.suggestions.map((s) => <p key={s.code}><span className="font-mono font-semibold">{s.code}</span> — {s.reason}</p>)}
               </div>
             )}
-            <table className="w-full text-[13px]">
-              <thead><tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground"><th className="pb-1">Code</th><th>Units</th><th>Dx pointers</th><th className="text-right">Amount</th><th /></tr></thead>
+            <table className="w-full text-table">
+              <thead><tr className="text-left text-label uppercase tracking-wide text-muted-foreground"><th className="pb-1">Code</th><th>Units</th><th>Dx pointers</th><th className="text-right">Amount</th><th /></tr></thead>
               <tbody>{lines.map((l, i) => (
                 <tr key={i} className="border-t">
                   <td className="py-1.5 pr-2"><NativeSelect value={l.code} onChange={(e) => setLines(lines.map((x, j) => j === i ? { ...x, code: e.target.value } : x))} aria-label="Code">
@@ -189,7 +189,7 @@ function ChargeDrawer({ encounterId, onOpenChange }: { encounterId: string | nul
                   <td className="pr-2"><div className="flex flex-wrap gap-1">{d.encounter.diagnoses.map((dx) => {
                     const on = l.diagnosis_codes.includes(dx.code);
                     return <button key={dx.code} type="button" onClick={() => setLines(lines.map((x, j) => j === i ? { ...x, diagnosis_codes: on ? x.diagnosis_codes.filter((c) => c !== dx.code) : [...x.diagnosis_codes, dx.code].slice(0, 4) } : x))}
-                      className={cn("rounded border px-1.5 py-0.5 font-mono text-[11px]", on && "border-primary bg-primary text-primary-foreground")}>{dx.code}</button>;
+                      className={cn("rounded border px-1.5 py-0.5 font-mono text-label", on && "border-primary bg-primary text-primary-foreground")}>{dx.code}</button>;
                   })}</div></td>
                   <td className="text-right tabular">{fmtMoney((feeMap.get(l.code)?.price_cents ?? 0) * l.units)}</td>
                   <td><Button variant="ghost" size="icon-sm" onClick={() => setLines(lines.filter((_, j) => j !== i))} aria-label="Remove line"><Trash2 /></Button></td>
@@ -239,7 +239,7 @@ export function ClaimsList({ statuses }: { statuses: string }) {
           <THead><TR><TH>Claim</TH><TH>Patient</TH><TH className="hidden md:table-cell">Payer</TH><TH className="text-right">Billed</TH><TH className="hidden text-right lg:table-cell">Paid</TH><TH>Status</TH></TR></THead>
           <TBody>{items.map((c) => (
             <TR key={c.id} data-clickable tabIndex={0} onClick={() => setOpenId(c.id)} onKeyDown={(e) => e.key === "Enter" && setOpenId(c.id)}>
-              <TD><span className="font-mono text-[12.5px] font-medium">{c.claim_number}</span><span className="block text-xs text-muted-foreground">DOS {fmtDate(c.service_date)}</span></TD>
+              <TD><span className="font-mono text-table font-medium">{c.claim_number}</span><span className="block text-xs text-muted-foreground">DOS {fmtDate(c.service_date)}</span></TD>
               <TD>{c.patient?.name}<span className="block text-xs text-muted-foreground">{c.patient?.mrn}</span></TD>
               <TD className="hidden md:table-cell">{c.payer_name}</TD>
               <TD className="text-right tabular">{fmtMoney(c.total_charge_cents)}</TD>
@@ -277,15 +277,15 @@ export function ClaimDrawer({ claim: c, onOpenChange }: { claim: ClaimT | null; 
             <div className="flex h-full flex-col">
               <div className="border-b px-6 py-5">
                 <D.Title className="flex items-center gap-2 text-base font-semibold"><span className="font-mono">{c.claim_number}</span><ClaimBadge s={c.status} /></D.Title>
-                <p className="mt-1 text-[13px] text-muted-foreground"><Link to={`/patients/${c.patient_id}`} className="text-primary hover:underline">{c.patient?.name}</Link> · {c.payer_name} · member {c.member_id} · DOS {fmtDate(c.service_date)}</p>
+                <p className="mt-1 text-table text-muted-foreground"><Link to={`/patients/${c.patient_id}`} className="text-primary hover:underline">{c.patient?.name}</Link> · {c.payer_name} · member {c.member_id} · DOS {fmtDate(c.service_date)}</p>
               </div>
-              <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5 text-[13px]">
+              <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5 text-table">
                 {c.scrub_errors.length > 0 && ["draft", "ready"].includes(c.status) && (
                   <div className="rounded-lg border border-warning/40 bg-warning-soft p-3">{c.scrub_errors.map((e) => <p key={e} className="flex gap-1.5"><AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" />{e}</p>)}</div>
                 )}
                 {c.denial_code && <div className="rounded-lg border border-destructive/30 bg-destructive-soft p-3 text-destructive"><strong>{c.denial_code}</strong> — {c.denial_reason}</div>}
                 <table className="w-full">
-                  <thead><tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground"><th className="pb-1">Line</th><th>Dx</th><th className="text-right">Amount</th></tr></thead>
+                  <thead><tr className="text-left text-label uppercase tracking-wide text-muted-foreground"><th className="pb-1">Line</th><th>Dx</th><th className="text-right">Amount</th></tr></thead>
                   <tbody>{c.charges.map((ch) => <tr key={ch.id} className="border-t"><td className="py-1.5"><span className="font-mono font-medium">{ch.code}</span> {ch.description}{ch.units > 1 ? ` × ${ch.units}` : ""}</td><td className="font-mono text-xs">{ch.diagnosis_codes.join(", ")}</td><td className="text-right tabular">{fmtMoney(ch.amount_cents)}</td></tr>)}</tbody>
                 </table>
                 <dl className="grid grid-cols-2 gap-2 rounded-lg border p-3 tabular">
@@ -388,7 +388,7 @@ function Balances() {
           <THead><TR><TH>Statement</TH><TH>Patient</TH><TH className="hidden md:table-cell">For</TH><TH className="text-right">Total</TH><TH className="text-right">Balance</TH><TH className="hidden lg:table-cell">Due</TH><TH /></TR></THead>
           <TBody>{q.data.map((i) => (
             <TR key={i.id}>
-              <TD className="font-mono text-[12.5px]">{i.number}</TD>
+              <TD className="font-mono text-table">{i.number}</TD>
               <TD><Link to={`/patients/${i.patient_id}/billing`} className="font-medium hover:underline">{i.patient?.name}</Link></TD>
               <TD className="hidden max-w-72 truncate md:table-cell">{i.description}</TD>
               <TD className="text-right tabular">{fmtMoney(i.total_cents)}</TD>
@@ -420,7 +420,7 @@ function FeeSchedule() {
               <TD className="font-mono font-medium">{f.code}</TD><TD>{f.description}</TD>
               <TD className="text-right">{edit[f.code] !== undefined ? <Input className="ml-auto w-28 text-right" value={edit[f.code]} onChange={(e) => setEdit({ ...edit, [f.code]: e.target.value.replace(/[^\d.]/g, "") })} aria-label={`Price for ${f.code}`} /> : <span className="tabular">{fmtMoney(f.price_cents)}</span>}</TD>
               <TD className="w-28">{can("billing:write") && (edit[f.code] !== undefined
-                ? <Button size="xs" onClick={async () => { try { await put(`/fee-schedule/${f.code}`, { description: f.description, price_cents: Math.round(Number(edit[f.code]) * 100), is_active: f.is_active }); const n = { ...edit }; delete n[f.code]; setEdit(n); qc.invalidateQueries({ queryKey: ["fees"] }); } catch (e) { toastError(e); } }}>Save</Button>
+                ? <Button size="xs" variant="outline" onClick={async () => { try { await put(`/fee-schedule/${f.code}`, { description: f.description, price_cents: Math.round(Number(edit[f.code]) * 100), is_active: f.is_active }); const n = { ...edit }; delete n[f.code]; setEdit(n); qc.invalidateQueries({ queryKey: ["fees"] }); } catch (e) { toastError(e); } }}>Save</Button>
                 : <Button size="xs" variant="ghost" onClick={() => setEdit({ ...edit, [f.code]: (f.price_cents / 100).toFixed(2) })}>Edit</Button>)}</TD>
             </TR>
           ))}</TBody>
@@ -441,18 +441,18 @@ export function PatientBillingTab({ patientId }: { patientId: string }) {
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="lg:col-span-2"><CardContent className="flex items-center gap-4 pt-5"><Wallet className="size-5 text-primary" /><div><p className="text-xs text-muted-foreground">Patient balance</p><p className="text-xl font-semibold tabular">{fmtMoney(d.balance_cents)}</p></div></CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle>Claims</CardTitle></CardHeader><CardContent>
-        {!d.claims.length ? <p className="text-[13px] text-muted-foreground">None.</p> : <ul className="divide-y text-[13px]">{d.claims.map((c) => (
+        {!d.claims.length ? <p className="text-table text-muted-foreground">None.</p> : <ul className="divide-y text-table">{d.claims.map((c) => (
           <li key={c.id}><button onClick={() => setOpenClaim(c.id)} className="flex w-full items-center justify-between gap-2 py-2 text-left hover:underline"><span><span className="font-mono">{c.claim_number}</span> · DOS {fmtDate(c.service_date)}</span><span className="flex items-center gap-2 tabular">{fmtMoney(c.total_charge_cents)}<ClaimBadge s={c.status} /></span></button></li>
         ))}</ul>}
       </CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle>Statements</CardTitle></CardHeader><CardContent>
-        {!d.invoices.length ? <p className="text-[13px] text-muted-foreground">None.</p> : <ul className="divide-y text-[13px]">{d.invoices.map((i) => (
+        {!d.invoices.length ? <p className="text-table text-muted-foreground">None.</p> : <ul className="divide-y text-table">{d.invoices.map((i) => (
           <li key={i.id} className="flex items-center justify-between gap-2 py-2"><span className="min-w-0"><span className="font-mono">{i.number}</span><span className="block truncate text-xs text-muted-foreground">{i.description}</span></span>
             <span className="flex shrink-0 items-center gap-2 tabular">{fmtMoney(i.balance_cents)}{i.status === "open" ? (can("billing:write") && <Button size="xs" variant="outline" onClick={() => setPaying(i)}>Pay</Button>) : <Badge variant="success">Paid</Badge>}</span></li>
         ))}</ul>}
       </CardContent></Card>
       <Card className="lg:col-span-2"><CardHeader className="pb-2"><CardTitle>Payments</CardTitle></CardHeader><CardContent>
-        {!d.payments.length ? <p className="text-[13px] text-muted-foreground">None.</p> : <ul className="divide-y text-[13px]">{d.payments.map((p) => (
+        {!d.payments.length ? <p className="text-table text-muted-foreground">None.</p> : <ul className="divide-y text-table">{d.payments.map((p) => (
           <li key={p.id} className="flex justify-between gap-2 py-2"><span>{fmtDateTime(p.created_at)} · {titleCase(p.source)} · {titleCase(p.method)}{p.reference ? ` · ${p.reference}` : ""}</span><span className="tabular">{fmtMoney(p.amount_cents)}</span></li>
         ))}</ul>}
       </CardContent></Card>

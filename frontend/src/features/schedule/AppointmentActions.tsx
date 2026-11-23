@@ -82,7 +82,7 @@ export function RoomPicker({ rooms, onPick, disabled, loading }: { rooms: string
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild><Button size="xs" variant="outline" disabled={disabled} loading={loading}><DoorOpen />Room</Button></PopoverTrigger>
       <PopoverContent className="w-56 space-y-2">
-        <p className="text-[13px] font-medium">Assign room</p>
+        <p className="text-table font-medium">Assign room</p>
         <NativeSelect value={room} onChange={(e) => setRoom(e.target.value)} aria-label="Room">
           {(rooms.length ? rooms : ["Exam 1"]).map((r) => <option key={r}>{r}</option>)}
         </NativeSelect>
@@ -100,13 +100,13 @@ export function AppointmentButtons({ a, rooms, ctl, compact }: { a: Appointment;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {canWrite && s === "scheduled" && !compact && <Button size="xs" variant="outline" onClick={() => actions.confirm(a)} loading={b("confirm")}><Check />Confirm</Button>}
-      {canWrite && (s === "scheduled" || s === "confirmed") && <Button size="xs" onClick={() => actions.checkIn(a)} loading={b("check_in")}><LogIn />Check in</Button>}
+      {canWrite && (s === "scheduled" || s === "confirmed") && <Button size="xs" variant="outline" onClick={() => actions.checkIn(a)} loading={b("check_in")}><LogIn />Check in</Button>}
       {canWrite && (s === "checked_in" || s === "roomed") && a.mode === "in_person" && <RoomPicker rooms={rooms} onPick={(r) => actions.room(a, r)} loading={b("room")} />}
       {canClinical && a.mode === "telehealth" && !["cancelled", "no_show", "checked_out", "completed"].includes(s) && (
         <Button size="xs" variant="soft" asChild><Link to={`/telehealth/${a.id}`}><Video />Join video</Link></Button>
       )}
       {canClinical && (["checked_in", "roomed", "in_progress"].includes(s) || (a.mode === "telehealth" && ["confirmed", "scheduled"].includes(s))) && (
-        <Button size="xs" variant={s === "in_progress" ? "soft" : "default"} onClick={() => actions.startVisit(a)} loading={b("start")}>
+        <Button size="xs" variant={s === "in_progress" ? "soft" : "outline"} onClick={() => actions.startVisit(a)} loading={b("start")}>
           {a.mode === "telehealth" ? <Video /> : <Stethoscope />}{a.encounter_id ? "Open visit" : "Start visit"}
         </Button>
       )}
@@ -130,7 +130,7 @@ export function AppointmentDrawer({ appt, onOpenChange }: { appt: Appointment | 
             <div className="flex h-full flex-col">
               <div className="border-b px-6 py-5">
                 <D.Title className="text-base font-semibold">{a.appointment_type?.name ?? "Appointment"}</D.Title>
-                <p className="mt-0.5 text-[13px] text-muted-foreground">{fmtDateTime(a.start_at)} – {fmtTime(a.end_at)}</p>
+                <p className="mt-0.5 text-table text-muted-foreground">{fmtDateTime(a.start_at)} – {fmtTime(a.end_at)}</p>
                 <div className="mt-2"><AppointmentStatusBadge status={a.status} /></div>
               </div>
               <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">

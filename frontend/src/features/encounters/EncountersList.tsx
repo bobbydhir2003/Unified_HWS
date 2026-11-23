@@ -20,7 +20,7 @@ export function EncountersList() {
       <PageHeader title="My visits" description="Encounters where you are the rendering provider." />
       <div className="mb-3 inline-flex rounded-lg bg-muted p-0.5">
         {(["in_progress", "completed"] as const).map((s) => (
-          <button key={s} onClick={() => setStatus(s)} className={cn("rounded-md px-3 py-1 text-[13px] font-medium text-muted-foreground", status === s && "bg-card text-foreground shadow-sm")}>
+          <button key={s} onClick={() => setStatus(s)} className={cn("rounded-md px-3 py-1 text-table font-medium text-muted-foreground", status === s && "bg-card text-foreground shadow-sm")}>
             {s === "in_progress" ? "Open" : "Completed"}
           </button>
         ))}

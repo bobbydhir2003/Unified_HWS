@@ -3,10 +3,12 @@ import { Bot, Play, Settings2, ShieldCheck, ThumbsDown, ThumbsUp, Wrench } from 
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { EmptyState, LoadingRows, PageHeader, SimulatedBadge, Stat, toastError } from "@/components/common";
+import { EmptyState, LoadingRows, PageHeader, Stat, toastError } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProvenanceChip } from "@/components/common/Status";
+import { RunProvenance } from "./AskAI";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
@@ -23,7 +25,7 @@ type ToolT = { name: string; description: string; permission: string; kind: stri
 type Run = { id: string; agent_key: string; mode: string; model: string | null; status: string; input: string; output: string | null; tool_calls: { tool: string; ok: boolean; arguments: unknown; result_preview: string }[];
   approvals: string[]; cost_usd: number | null; latency_ms: number | null; error: string | null; started_at: string };
 
-const usd = (n: number | null | undefined) => (n == null ? "—" : "$" + n.toFixed(4));
+const usd = (n: number | null | undefined) => (n == null ? "—" : n > 0 && n < 0.01 ? "< $0.01" : "$" + n.toFixed(2));
 
 export function AgentStudio() {
   const { can } = useAuth();
@@ -41,21 +43,22 @@ export function AgentStudio() {
   return (
     <>
       <PageHeader title="Agent Studio" description="Each agent works only through backend tools, under your permissions. Anything that would change data becomes a proposal in the approval queue."
-        actions={provider.data && (provider.data.live ? <Badge variant="ai">Live: {titleCase(provider.data.active)}</Badge> : <SimulatedBadge label="No AI provider — rule-based summaries" />)} />
+        actions={provider.data && (provider.data.live ? <ProvenanceChip kind="live" label={`Live: ${provider.data.active === "openai" ? "OpenAI" : titleCase(provider.data.active)}`} /> : <ProvenanceChip kind="simulated" label="No AI provider — rule-based summaries" />)} />
       {agents.isLoading ? <LoadingRows rows={6} /> : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{agents.data?.map((a) => (
           <Card key={a.key} className="flex flex-col">
             <CardHeader className="flex-row items-start justify-between gap-2">
-              <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><Bot className="size-4" /></span><div><CardTitle className="text-[15px]">{a.name}</CardTitle><p className="text-xs text-muted-foreground">v{a.version} · {a.trigger === "feature" ? "runs in its workflow" : "on demand"}{a.demo_override ? " · edited in this demo session" : ""}</p></div></div>
+              <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><Bot className="size-4" /></span><div><CardTitle className="text-section">{a.name}</CardTitle><p className="text-xs text-muted-foreground">v{a.version} · {a.trigger === "feature" ? "runs in its workflow" : "on demand"}{a.demo_override ? " · edited in this demo session" : ""}</p></div></div>
               {manage && <Switch checked={a.enabled} aria-label={`Enable ${a.name}`} onCheckedChange={async (v) => { try { await put(`/agents/${a.key}`, { enabled: v }); qc.invalidateQueries({ queryKey: ["ai", "agents"] }); } catch (e) { toastError(e); } }} />}
             </CardHeader>
-            <CardContent className="flex flex-1 flex-col gap-3 text-[13px]">
+            <CardContent className="flex flex-1 flex-col gap-3 text-table">
               <p className="text-muted-foreground">{a.purpose}</p>
-              <div className="flex flex-wrap gap-1">{a.allowed_tools.map((t) => <Badge key={t} variant={t.startsWith("propose") ? "warning" : "outline"} title={t.startsWith("propose") ? "Creates an approval request" : "Read-only"}>{t.replace(/_/g, " ")}</Badge>)}
+              <div className="flex flex-wrap gap-1">{a.allowed_tools.map((t) => <Badge key={t} variant={t.startsWith("propose") ? "warning" : "neutral"} title={t.startsWith("propose") ? "Creates an approval request — a person must approve" : "Reads data only"}>{t.startsWith("propose") ? "Proposes: " + t.replace(/^propose_/, "").replace(/_/g, " ") + " (needs approval)" : "Reads: " + t.replace(/^(get|list)_/, "").replace(/_/g, " ")}</Badge>)}
                 {!a.allowed_tools.length && <span className="text-xs text-muted-foreground">Uses its feature's own pipeline</span>}</div>
-              <p className="text-xs text-muted-foreground">{a.runs_30d} runs (30 d) · {a.failed_30d} failed · {usd(a.cost_30d_usd)} · limits {a.max_tool_calls} tools / {a.timeout_seconds}s / ${a.max_cost_usd}</p>
+              <p className="text-label text-muted-foreground">{a.runs_30d} runs in 30 days · {a.failed_30d} failed · cost {usd(a.cost_30d_usd)}</p>
+              <p className="text-label text-muted-foreground">Limits: up to {a.max_tool_calls} steps, {a.timeout_seconds} s, ${a.max_cost_usd.toFixed(2)} per run</p>
               <div className="mt-auto flex gap-2">
-                {a.can_run && <Button size="sm" onClick={() => { setRunFor(a); setInput(""); setResult(null); }}><Play />Run</Button>}
+                {a.can_run && <Button size="sm" variant="outline" onClick={() => { setRunFor(a); setInput(""); setResult(null); }}><Play />Run</Button>}
                 {a.trigger === "feature" && <Button size="sm" variant="outline" asChild><Link to={a.key === "document_intelligence" ? "/documents" : a.key === "medical_scribe" ? "/encounters" : "/patients"}>Open</Link></Button>}
                 {manage && <Button size="sm" variant="ghost" onClick={() => { setEdit(a); setDraft({ instructions: a.instructions, allowed_tools: a.allowed_tools, model: a.model, max_tool_calls: a.max_tool_calls, timeout_seconds: a.timeout_seconds, max_cost_usd: a.max_cost_usd }); }}><Settings2 />Configure</Button>}
               </div>
@@ -66,8 +69,8 @@ export function AgentStudio() {
         <DialogContent size="lg"><DialogHeader><DialogTitle>{runFor?.name}</DialogTitle><DialogDescription>{runFor?.purpose}</DialogDescription></DialogHeader>
           <Field label="Request"><Textarea rows={3} value={input} onChange={(e) => setInput(e.target.value)} placeholder="e.g. What needs attention on Med-Surg this shift?" /></Field>
           {result && (
-            <div className="space-y-2 rounded-lg border p-3 text-[13px]">
-              <div className="flex flex-wrap items-center gap-2"><Badge variant={result.status === "succeeded" ? "success" : "danger"}>{result.status}</Badge><Badge variant="outline">{result.mode === "rule_based" ? "Rule-based" : result.model}</Badge>
+            <div className="space-y-2 rounded-lg border p-3 text-table">
+              <div className="flex flex-wrap items-center gap-2"><Badge variant={result.status === "succeeded" ? "success" : "danger"}>{result.status}</Badge><RunProvenance run={result} />
                 <span className="text-xs text-muted-foreground">{result.latency_ms} ms · {usd(result.cost_usd)}</span>
                 <span className="ml-auto flex gap-1"><Button size="icon" variant="ghost" aria-label="Helpful" onClick={() => post("/ai/feedback", { agent_run_id: result.id, rating: "up" }).then(() => toast.success("Thanks"))}><ThumbsUp /></Button>
                   <Button size="icon" variant="ghost" aria-label="Not helpful" onClick={() => post("/ai/feedback", { agent_run_id: result.id, rating: "down" }).then(() => toast.success("Thanks"))}><ThumbsDown /></Button></span></div>
@@ -85,8 +88,8 @@ export function AgentStudio() {
         <DialogContent size="lg"><DialogHeader><DialogTitle>Configure {edit?.name}</DialogTitle><DialogDescription>Saving creates a new version (v{(edit?.version ?? 0) + 1}). Tools still check the invoking user's permissions.</DialogDescription></DialogHeader>
           <Field label="Instructions"><Textarea rows={5} value={draft.instructions ?? ""} onChange={(e) => setDraft({ ...draft, instructions: e.target.value })} /></Field>
           <Field label="Allowed tools"><div className="grid gap-1 sm:grid-cols-2">{tools.data?.map((t) => (
-            <label key={t.name} className="flex items-start gap-2 text-[13px]"><Checkbox className="mt-0.5" checked={draft.allowed_tools?.includes(t.name)} onCheckedChange={(v) => setDraft({ ...draft, allowed_tools: v ? [...(draft.allowed_tools ?? []), t.name] : (draft.allowed_tools ?? []).filter((x) => x !== t.name) })} />
-              <span><code>{t.name}</code>{t.kind === "propose" && <Badge variant="warning" className="ml-1 px-1 py-0 text-[10px]">approval</Badge>}<span className="block text-xs text-muted-foreground">{t.description} · needs {t.permission}</span></span></label>))}</div></Field>
+            <label key={t.name} className="flex items-start gap-2 text-table"><Checkbox className="mt-0.5" checked={draft.allowed_tools?.includes(t.name)} onCheckedChange={(v) => setDraft({ ...draft, allowed_tools: v ? [...(draft.allowed_tools ?? []), t.name] : (draft.allowed_tools ?? []).filter((x) => x !== t.name) })} />
+              <span><code>{t.name}</code>{t.kind === "propose" && <Badge variant="warning" className="ml-1 px-1 py-0 text-label">approval</Badge>}<span className="block text-xs text-muted-foreground">{t.description} · needs {t.permission}</span></span></label>))}</div></Field>
           <div className="grid grid-cols-4 gap-3">
             <Field label="Model"><Input value={draft.model ?? ""} placeholder="default" onChange={(e) => setDraft({ ...draft, model: e.target.value || null })} /></Field>
             <Field label="Max tool calls"><Input inputMode="numeric" value={draft.max_tool_calls ?? ""} onChange={(e) => setDraft({ ...draft, max_tool_calls: Number(e.target.value) })} /></Field>
@@ -129,8 +132,8 @@ export function AIGovernancePage() {
             {!g.agents.length ? <EmptyState title="No agent runs yet" /> : <Table><THead><TR><TH>Agent</TH><TH>Mode</TH><TH className="text-right">Runs</TH><TH className="text-right">Problems</TH><TH className="text-right">Avg latency</TH><TH className="text-right">Cost</TH></TR></THead>
               <TBody>{g.agents.map((a) => <TR key={a.agent + a.mode}><TD>{titleCase(a.agent.replace(/_/g, " "))}</TD><TD>{a.mode}</TD><TD className="text-right tabular">{a.runs}</TD><TD className="text-right tabular">{a.problems}</TD><TD className="text-right tabular">{a.avg_latency_ms ?? "—"} ms</TD><TD className="text-right tabular">{usd(a.cost_usd)}</TD></TR>)}</TBody></Table>}</Card>
           <Card><CardHeader><CardTitle>Recent failed or limited runs</CardTitle></CardHeader>
-            <CardContent>{!g.recent_problems.length ? <p className="text-[13px] text-muted-foreground">None.</p> : (
-              <ul className="divide-y">{g.recent_problems.map((r) => <li key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-[13px]"><Badge variant="danger">{r.status}</Badge><span className="font-medium">{titleCase(r.agent_key.replace(/_/g, " "))}</span><span className="flex-1 truncate text-muted-foreground">{r.error ?? r.output}</span><span className="text-xs text-muted-foreground">{fmtDateTime(r.started_at)}</span>
+            <CardContent>{!g.recent_problems.length ? <p className="text-table text-muted-foreground">None.</p> : (
+              <ul className="divide-y">{g.recent_problems.map((r) => <li key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-table"><Badge variant="danger">{r.status}</Badge><span className="font-medium">{titleCase(r.agent_key.replace(/_/g, " "))}</span><span className="flex-1 truncate text-muted-foreground">{r.error ?? r.output}</span><span className="text-xs text-muted-foreground">{fmtDateTime(r.started_at)}</span>
                 <Button size="xs" variant="outline" onClick={async () => { try { await post(`/agents/runs/${r.id}/retry`); toast.success("Retried"); qc.invalidateQueries({ queryKey: ["ai"] }); } catch (e) { toastError(e); } }}>Retry</Button></li>)}</ul>)}</CardContent></Card>
           <EvaluationsCard />
         </div>
@@ -156,21 +159,21 @@ function EvaluationsCard() {
     <Card>
       <CardHeader><CardTitle>Evaluations</CardTitle></CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-[13px] text-muted-foreground">Runs against synthetic labeled samples only. Scores describe these samples, not clinical accuracy.</p>
+        <p className="text-table text-muted-foreground">Runs against synthetic labeled samples only. Scores describe these samples, not clinical accuracy.</p>
         <div className="grid gap-3 md:grid-cols-2">
           {(q.data?.suites ?? []).map((s) => {
             const r = latest(s);
             return (
               <div key={s} className="rounded-lg border p-3" data-testid={`eval-${s}`}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13.5px] font-medium">{SUITE_LABEL[s] ?? s}</span>
+                  <span className="text-body font-medium">{SUITE_LABEL[s] ?? s}</span>
                   <Button size="xs" variant="outline" loading={busy === s} onClick={() => run(s)}>Run</Button>
                 </div>
                 {r ? (
-                  <button type="button" className="mt-2 block w-full text-left text-[13px] hover:underline" onClick={() => setOpen(r)}>
+                  <button type="button" className="mt-2 block w-full text-left text-table hover:underline" onClick={() => setOpen(r)}>
                     <span className="text-lg font-semibold tabular">{Math.round(r.score * 100)}%</span> <span className="text-muted-foreground">on {r.samples} samples · {r.provider}{r.model ? ` / ${r.model}` : ""} · {fmtDateTime(r.created_at)}</span>
                   </button>
-                ) : <p className="mt-2 text-[13px] text-muted-foreground">Not run yet.</p>}
+                ) : <p className="mt-2 text-table text-muted-foreground">Not run yet.</p>}
               </div>
             );
           })}
@@ -179,7 +182,7 @@ function EvaluationsCard() {
       <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>{open ? SUITE_LABEL[open.suite] ?? open.suite : ""}</DialogTitle><DialogDescription>Per-sample results. Expected values come from the synthetic labels.</DialogDescription></DialogHeader>
-          <ul className="max-h-[60vh] divide-y overflow-auto text-[13px]">
+          <ul className="max-h-[60vh] divide-y overflow-auto text-table">
             {open?.cases.map((c) => (
               <li key={c.id} className="py-2">
                 <div className="flex items-center gap-2"><span className="font-mono text-xs">{c.id}</span>

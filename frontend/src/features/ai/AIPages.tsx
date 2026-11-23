@@ -37,9 +37,9 @@ export function TasksPage() {
       <PageHeader title="Tasks" description="Your worklist — created by colleagues, automations and the AI receptionist." actions={<Button onClick={() => setCreating(true)}><Plus />New task</Button>} />
       <Card className="overflow-hidden">
         <div className="flex flex-wrap gap-2 border-b p-3">
-          {(["mine", "all"] as const).map((s) => <button key={s} onClick={() => setScope(s)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium text-muted-foreground", scope === s && "bg-accent text-accent-foreground")}>{s === "mine" ? "Mine & my roles" : "Everyone"}</button>)}
+          {(["mine", "all"] as const).map((s) => <button key={s} onClick={() => setScope(s)} className={cn("rounded-md px-2.5 py-1 text-table font-medium text-muted-foreground", scope === s && "bg-accent text-accent-foreground")}>{s === "mine" ? "Mine & my roles" : "Everyone"}</button>)}
           <span className="mx-1 w-px bg-border" />
-          {(["open", "done"] as const).map((s) => <button key={s} onClick={() => setStatus(s)} className={cn("rounded-md px-2.5 py-1 text-[13px] font-medium capitalize text-muted-foreground", status === s && "bg-accent text-accent-foreground")}>{s}</button>)}
+          {(["open", "done"] as const).map((s) => <button key={s} onClick={() => setStatus(s)} className={cn("rounded-md px-2.5 py-1 text-table font-medium capitalize text-muted-foreground", status === s && "bg-accent text-accent-foreground")}>{s}</button>)}
         </div>
         {q.isLoading ? <LoadingRows /> : !q.data?.length ? <EmptyState icon={ListChecks} title={status === "open" ? "Nothing on your list" : "No completed tasks"} /> : (
           <ul className="divide-y">{q.data.map((t) => (
@@ -49,7 +49,7 @@ export function TasksPage() {
               </button>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  {t.link ? <Link to={t.link} className={cn("text-[13.5px] font-medium hover:underline", t.status === "done" && "line-through opacity-60")}>{t.title}</Link> : <span className="text-[13.5px] font-medium">{t.title}</span>}
+                  {t.link ? <Link to={t.link} className={cn("text-body font-medium hover:underline", t.status === "done" && "line-through opacity-60")}>{t.title}</Link> : <span className="text-body font-medium">{t.title}</span>}
                   {t.priority !== "normal" && <Badge variant={PRIO[t.priority]}>{titleCase(t.priority)}</Badge>}
                   {t.source !== "manual" && <Badge variant="ai"><Bot />{t.source === "automation" ? "Automation" : "AI receptionist"}</Badge>}
                 </div>
@@ -103,16 +103,16 @@ export function AutomationPage() {
   return (
     <>
       <PageHeader title="Automation studio" description="Event-driven workflows that create tasks, route work and draft patient outreach. Anything that reaches a patient waits for staff approval." />
-      <nav className="-mx-1 mb-5 flex gap-1 border-b px-1">{tabs.filter((t) => t[2]).map(([k, l]) => <button key={k} onClick={() => setParams({ tab: k })} className={cn("-mb-px border-b-2 border-transparent px-3 py-2 text-[13px] font-medium text-muted-foreground", tab === k && "border-primary text-foreground")}>{l}</button>)}</nav>
+      <nav className="-mx-1 mb-5 flex gap-1 border-b px-1">{tabs.filter((t) => t[2]).map(([k, l]) => <button key={k} onClick={() => setParams({ tab: k })} className={cn("-mb-px border-b-2 border-transparent px-3 py-2 text-table font-medium text-muted-foreground", tab === k && "border-primary text-foreground")}>{l}</button>)}</nav>
       {tab === "workflows" && (
         wfs.isLoading ? <LoadingRows /> : (
           <div className="grid gap-4 lg:grid-cols-2">{wfs.data?.map((w) => (
             <Card key={w.id} className={cn(!w.is_enabled && "opacity-70")}>
               <CardHeader className="pb-2">
-                <div><CardTitle className="flex items-center gap-2"><Workflow className="size-4 text-primary" />{w.name}</CardTitle><p className="mt-0.5 font-mono text-[11.5px] text-muted-foreground">on {w.trigger}</p></div>
+                <div><CardTitle className="flex items-center gap-2"><Workflow className="size-4 text-primary" />{w.name}</CardTitle><p className="mt-0.5 font-mono text-label text-muted-foreground">on {w.trigger}</p></div>
                 <Switch checked={w.is_enabled} aria-label={`Enable ${w.name}`} onCheckedChange={async (v) => { try { await patch(`/automation/workflows/${w.id}`, { is_enabled: v }); refresh(); } catch (e) { toastError(e); } }} />
               </CardHeader>
-              <CardContent className="space-y-3 text-[13px]">
+              <CardContent className="space-y-3 text-table">
                 <p className="text-muted-foreground">{w.description}</p>
                 <div><p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Allowed actions</p>
                   <ul className="space-y-0.5">{w.permissions.map((p) => <li key={p.action} className="flex items-center gap-1.5"><ShieldCheck className="size-3.5 text-success" />{p.label}{p.sensitive && <Badge variant="warning">patient-facing</Badge>}</li>)}</ul>
@@ -130,7 +130,7 @@ export function AutomationPage() {
         runs.isLoading ? <LoadingRows /> : !runs.data?.length ? <Card><EmptyState icon={tab === "approvals" ? CheckCircle2 : Workflow} title={tab === "approvals" ? "Nothing waiting for approval" : "No automation activity yet"} /></Card> : (
           <div className="space-y-3">{runs.data.map((r) => (
             <Card key={r.id}>
-              <CardContent className="space-y-2 pt-4 text-[13px]">
+              <CardContent className="space-y-2 pt-4 text-table">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold">{r.workflow}</span><Badge variant={RUN_VARIANT[r.status] ?? "neutral"}>{titleCase(r.status)}</Badge>
                   {r.patient_name && <Link to={`/patients/${r.patient_id}`} className="text-primary hover:underline">{r.patient_name}</Link>}
@@ -182,8 +182,8 @@ export function ReceptionistPage() {
   };
   const transcript = (c: Call) => (
     <ol className="space-y-2">{c.transcript.map((t, i) => (
-      <li key={i} className={cn("max-w-[85%] rounded-2xl px-3.5 py-2 text-[13.5px]", t.speaker === "caller" ? "ml-auto bg-primary text-primary-foreground" : "bg-muted")}>
-        <span className="mb-0.5 block text-[10.5px] font-semibold uppercase tracking-wide opacity-70">{t.speaker === "caller" ? "Caller" : "AI receptionist"}</span>{t.text}
+      <li key={i} className={cn("max-w-[85%] rounded-2xl px-3.5 py-2 text-body", t.speaker === "caller" ? "ml-auto bg-primary text-primary-foreground" : "bg-muted")}>
+        <span className="mb-0.5 block text-label font-semibold uppercase tracking-wide opacity-70">{t.speaker === "caller" ? "Caller" : "AI receptionist"}</span>{t.text}
       </li>
     ))}</ol>
   );
@@ -204,7 +204,7 @@ export function ReceptionistPage() {
           <div ref={pane} className="min-h-0 flex-1 overflow-y-auto p-4">
             {!call ? <EmptyState icon={Bot} title="Start a call to talk to the AI receptionist" description="Try booking as Elena Moreau, DOB 04/12/1986, or test the safeguards with a wrong date of birth or an emergency phrase." /> : <>
               {transcript(call)}
-              {call.status !== "active" && <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-[13px]"><p className="font-medium">Call {call.status}</p><p className="text-muted-foreground">{call.summary}</p></div>}
+              {call.status !== "active" && <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-table"><p className="font-medium">Call {call.status}</p><p className="text-muted-foreground">{call.summary}</p></div>}
             </>}
           </div>
           {call?.status === "active" && (
@@ -222,7 +222,7 @@ export function ReceptionistPage() {
           {logs.isLoading ? <LoadingRows /> : !logs.data?.length ? <EmptyState title="No calls yet" /> : (
             <ul className="max-h-[calc(100dvh-300px)] divide-y overflow-y-auto">{logs.data.map((c) => (
               <li key={c.id}><button onClick={() => setViewing(c)} className="block w-full px-4 py-3 text-left hover:bg-muted/40">
-                <span className="flex items-center gap-2 text-[13px] font-medium">{c.patient_name ?? "Unverified caller"}<Badge variant={c.status === "transferred" ? "warning" : c.status === "completed" ? "success" : "neutral"}>{titleCase(c.status)}</Badge><span className="ml-auto text-xs text-muted-foreground">{fmtDateTime(c.created_at)}</span></span>
+                <span className="flex items-center gap-2 text-table font-medium">{c.patient_name ?? "Unverified caller"}<Badge variant={c.status === "transferred" ? "warning" : c.status === "completed" ? "success" : "neutral"}>{titleCase(c.status)}</Badge><span className="ml-auto text-xs text-muted-foreground">{fmtDateTime(c.created_at)}</span></span>
                 <span className="block text-xs text-muted-foreground">{c.summary ?? `${c.transcript.length} turns`}</span>
               </button></li>
             ))}</ul>
@@ -230,7 +230,7 @@ export function ReceptionistPage() {
         </Card>
       </div>
       <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <DialogContent size="lg"><DialogHeader><DialogTitle>Call transcript</DialogTitle></DialogHeader>{viewing && <><p className="text-[13px] text-muted-foreground">{viewing.summary}</p><div className="max-h-[60vh] overflow-y-auto">{transcript(viewing)}</div></>}</DialogContent>
+        <DialogContent size="lg"><DialogHeader><DialogTitle>Call transcript</DialogTitle></DialogHeader>{viewing && <><p className="text-table text-muted-foreground">{viewing.summary}</p><div className="max-h-[60vh] overflow-y-auto">{transcript(viewing)}</div></>}</DialogContent>
       </Dialog>
     </>
   );
@@ -255,7 +255,7 @@ export function AIMonitoringPage() {
         <Stat label="PHI sent externally" value={d.phi_sent_externally_total} sub={d.phi_allowed ? "Allowed by configuration" : "Blocked by policy"} icon={ShieldCheck} tone={d.phi_sent_externally_total ? "warning" : "success"} />
       </div>
       <Card className="mb-5"><CardHeader><CardTitle>By feature</CardTitle></CardHeader><CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {Object.entries(d.summary).map(([k, s]) => <div key={k} className="rounded-lg border p-3 text-[13px]"><p className="font-medium">{titleCase(k)}</p><p className="text-muted-foreground">{s.total} runs · {s.failed ?? 0} failed{s.avg_latency_ms != null ? ` · ${s.avg_latency_ms} ms avg` : ""}</p></div>)}
+        {Object.entries(d.summary).map(([k, s]) => <div key={k} className="rounded-lg border p-3 text-table"><p className="font-medium">{titleCase(k)}</p><p className="text-muted-foreground">{s.total} runs · {s.failed ?? 0} failed{s.avg_latency_ms != null ? ` · ${s.avg_latency_ms} ms avg` : ""}</p></div>)}
       </CardContent></Card>
       <Card className="overflow-hidden">
         <Table><THead><TR><TH>When</TH><TH>Feature</TH><TH>Provider / model</TH><TH>Status</TH><TH className="hidden md:table-cell">Latency</TH><TH className="hidden lg:table-cell">PHI external</TH></TR></THead>

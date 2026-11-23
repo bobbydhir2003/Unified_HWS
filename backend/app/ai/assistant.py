@@ -157,7 +157,7 @@ class SimulatedAssistant:
             meds = by("medication")
             lines.append(f"Active medications ({len(meds)}): {', '.join(s.title.split(': ', 1)[1] for s in meds[:8]) or 'none'}. {_cite(meds[:8])}".strip())
             alg = by("allergy")
-            lines.append(f"Allergies: {', '.join(s.title.split(': ', 1)[1] for s in alg) or 'no known allergies recorded'}. {_cite(alg)}".strip())
+            lines.append(f"Allergies: {', '.join(s.title.split(': ', 1)[1] for s in alg) or 'none recorded (not a confirmed no-known-allergies)'}. {_cite(alg)}".strip())
             if by("encounter"):
                 e = by("encounter")[0]
                 lines.append(f"Most recent visit ({e.date}): {_clip(e.text, 320)} {_cite([e])}")

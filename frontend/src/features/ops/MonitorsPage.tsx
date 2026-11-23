@@ -28,7 +28,7 @@ export function EngineHealthCard() {
     <Card>
       <CardHeader className="flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><Activity className="size-4" />Automation engine</CardTitle>
         <Badge variant={d.status === "healthy" ? "success" : "warning"}>{d.status === "healthy" ? <CheckCircle2 /> : <AlertTriangle />}{titleCase(d.status)}</Badge></CardHeader>
-      <CardContent className="grid grid-cols-2 gap-3 text-[13px] sm:grid-cols-4">
+      <CardContent className="grid grid-cols-2 gap-3 text-table sm:grid-cols-4">
         <div><p className="text-xs text-muted-foreground">Events processed (24h)</p><p className="text-lg font-semibold tabular">{d.processed_24h}</p></div>
         <div><p className="text-xs text-muted-foreground">Queue</p><p className="text-lg font-semibold tabular">{d.pending_events}{d.retrying_events ? <span className="text-xs font-normal text-warning"> · {d.retrying_events} retrying</span> : null}</p></div>
         <div><p className="text-xs text-muted-foreground">Last monitor run</p><p className="font-medium">{d.last_monitor_run ? fromNow(d.last_monitor_run) : "Never"}</p></div>
@@ -81,7 +81,7 @@ function MonitorCard({ m }: { m: MonitorT }) {
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-3">
-        <div><CardTitle>{m.name}</CardTitle><p className="mt-1 text-[13px] text-muted-foreground">{m.description}</p></div>
+        <div><CardTitle>{m.name}</CardTitle><p className="mt-1 text-table text-muted-foreground">{m.description}</p></div>
         <Switch checked={m.is_enabled} disabled={!manage} onCheckedChange={(v) => save({ is_enabled: v })} aria-label={`Enable ${m.name}`} />
       </CardHeader>
       <CardContent className="space-y-3">

@@ -62,7 +62,7 @@ export function AuditPage() {
           </Table>
         )}
         {q.data && q.data.total > 50 && (
-          <div className="flex items-center justify-between border-t px-4 py-2.5 text-[13px] text-muted-foreground">
+          <div className="flex items-center justify-between border-t px-4 py-2.5 text-table text-muted-foreground">
             <span>Page {page} of {pages} · {q.data.total.toLocaleString()} events</span>
             <div className="flex gap-1">
               <Button variant="outline" size="icon-sm" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Previous page"><ChevronLeft /></Button>
@@ -90,10 +90,10 @@ export function OutboxPage() {
               <li key={m.id}>
                 <button onClick={() => setOpen(open === m.id ? null : m.id)} className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-muted/40">
                   <Mail className="size-4 text-muted-foreground" />
-                  <span className="min-w-0 flex-1"><span className="block text-[13.5px] font-medium">{m.subject}</span><span className="block text-xs text-muted-foreground">To {m.to_address} · {fmtDateTime(m.created_at)}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block text-body font-medium">{m.subject}</span><span className="block text-xs text-muted-foreground">To {m.to_address} · {fmtDateTime(m.created_at)}</span></span>
                   <Badge variant="warning"><FlaskConical />{m.status}</Badge>
                 </button>
-                {open === m.id && <pre className="mx-5 mb-4 whitespace-pre-wrap rounded-lg bg-muted p-3 font-sans text-[13px]">{m.body}</pre>}
+                {open === m.id && <pre className="mx-5 mb-4 whitespace-pre-wrap rounded-lg bg-muted p-3 font-sans text-table">{m.body}</pre>}
               </li>
             ))}
           </ul>
@@ -123,7 +123,7 @@ export function SystemPage() {
               {Object.entries(s.checks).map(([k, c]) => (
                 <div key={k} className="flex items-center gap-3 rounded-lg border px-3 py-2">
                   {c.ok ? <CheckCircle2 className="size-4 text-success" /> : <XCircle className="size-4 text-destructive" />}
-                  <span className="flex-1 text-[13.5px] font-medium">{titleCase(k)}</span>
+                  <span className="flex-1 text-body font-medium">{titleCase(k)}</span>
                   <span className="text-xs text-muted-foreground">{c.ok ? c.detail ?? `${c.latency_ms} ms` : c.error}</span>
                 </div>
               ))}
@@ -146,7 +146,7 @@ export function SystemPage() {
             <CardHeader><CardTitle>External integrations</CardTitle></CardHeader>
             <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {Object.entries(s.integrations).map(([k, v]) => (
-                <div key={k} className="flex items-center justify-between rounded-lg border px-3 py-2 text-[13px]">
+                <div key={k} className="flex items-center justify-between rounded-lg border px-3 py-2 text-table">
                   <span className="font-medium">{titleCase(k)}</span><Badge variant="warning"><FlaskConical />{v}</Badge>
                 </div>
               ))}

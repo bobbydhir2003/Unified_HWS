@@ -48,12 +48,12 @@ export function PortalInsurance() {
   const req = q.data.requests[0];
   return (
     <div className="space-y-4">
-      <div><h1 className="text-xl font-semibold">Insurance</h1><p className="text-[13.5px] text-muted-foreground">Keep your coverage up to date so your visits aren't delayed.</p></div>
+      <div><h1 className="text-xl font-semibold">Insurance</h1><p className="text-body text-muted-foreground">Keep your coverage up to date so your visits aren't delayed.</p></div>
       {req && (
         <Card className={req.status === "requested" ? "border-warning/50 bg-warning-soft/40" : "border-primary/30 bg-accent/40"}>
           <CardContent className="flex gap-3 p-4">
             {req.status === "requested" ? <CircleAlert className="mt-0.5 size-5 shrink-0 text-warning" /> : <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" />}
-            <div className="text-[13.5px]">
+            <div className="text-body">
               <p className="font-medium">{req.status === "requested" ? "Action needed: please confirm your insurance" : "Thanks — your care team is reviewing your card"}</p>
               <p className="text-muted-foreground">{req.reason}</p>
               {req.review_note && <p className="mt-1 text-destructive">Note from our team: {req.review_note}</p>}
@@ -63,9 +63,9 @@ export function PortalInsurance() {
       )}
       <Card>
         <CardHeader><CardTitle>Coverage on file</CardTitle></CardHeader>
-        <CardContent>{!q.data.insurances.length ? <p className="text-[13.5px] text-muted-foreground">No insurance on file.</p> : (
+        <CardContent>{!q.data.insurances.length ? <p className="text-body text-muted-foreground">No insurance on file.</p> : (
           <ul className="divide-y">{q.data.insurances.map((i) => (
-            <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-[13.5px]">
+            <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-body">
               <div><p className="font-medium">{i.payer_name}{i.plan_name ? ` · ${i.plan_name}` : ""}</p><p className="text-xs text-muted-foreground">Member ID {i.member_id}{i.termination_date ? ` · plan end date on file ${fmtDate(i.termination_date)}` : ""}</p></div>
               <Badge variant="outline">{i.priority}</Badge>
             </li>))}</ul>
@@ -77,7 +77,7 @@ export function PortalInsurance() {
           <CardContent className="space-y-4">
             <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 text-center hover:bg-muted/40">
               <Camera className="size-6 text-primary" />
-              <span className="text-[13.5px] font-medium">{file ? file.name : "Upload a photo or PDF of your insurance card"}</span>
+              <span className="text-body font-medium">{file ? file.name : "Upload a photo or PDF of your insurance card"}</span>
               <span className="text-xs text-muted-foreground">Front and back if possible · JPG, PNG or PDF</span>
               <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             </label>

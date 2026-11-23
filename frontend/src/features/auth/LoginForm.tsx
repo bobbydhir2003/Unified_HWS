@@ -55,8 +55,8 @@ function ServerDemoAccess({ accounts }: { accounts: DemoAccount[] }) {
   return (
     <div className="mt-5 rounded-xl border border-dashed p-3" data-testid="demo-access">
       <p className="text-xs font-medium">Demo Access</p>
-      <p className="mb-2 text-[11.5px] text-muted-foreground">Explore Undeclared HMS with a preconfigured role.</p>
-      {error && <p role="alert" className="mb-2 text-[11.5px] text-destructive">{error}</p>}
+      <p className="mb-2 text-label text-muted-foreground">Explore HMS Workflows with a preconfigured role.</p>
+      {error && <p role="alert" className="mb-2 text-label text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-1.5">
         {accounts.map((a) => (
           <button key={a.key} type="button" onClick={() => go(a.key)} disabled={!!busy} aria-label={`Sign in as demo ${a.label}`}
@@ -130,7 +130,7 @@ export function LoginForm({ autoFocus = false, emailId, heading }: { autoFocus?:
         <div>
           <div className="mb-4 inline-flex rounded-xl bg-accent p-2.5 text-accent-foreground"><ShieldCheck className="size-5" /></div>
           <h2 className="text-2xl font-semibold tracking-tight">Two-factor verification</h2>
-          <p className="mt-1 text-[13.5px] text-muted-foreground">Enter the 6-digit code from your authenticator app.</p>
+          <p className="mt-1 text-body text-muted-foreground">Enter the 6-digit code from your authenticator app.</p>
         </div>
         <Field label="Verification code" error={error ?? undefined}>
           <Input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric"
@@ -149,11 +149,11 @@ export function LoginForm({ autoFocus = false, emailId, heading }: { autoFocus?:
       <form onSubmit={onSubmit} className="space-y-4" noValidate aria-label="Sign in">
         {heading ?? (
           <div>
-            <h2 className="text-[26px] font-semibold leading-tight tracking-tight">Sign in to <span className="text-primary">Undeclared</span></h2>
-            <p className="mt-1 text-[14px] text-muted-foreground">Access your hospital workspace.</p>
+            <h2 className="text-display font-semibold leading-tight tracking-tight">Sign in to <span className="text-primary">HMS Workflows</span></h2>
+            <p className="mt-1 text-body text-muted-foreground">Access your hospital workspace.</p>
           </div>
         )}
-        {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">{error}</div>}
+        {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-table text-destructive">{error}</div>}
         <Field label="Email" error={form.formState.errors.email?.message}>
           <IconInput id={emailId} icon={Mail} type="email" autoComplete="username" placeholder="you@hospital.org" autoFocus={autoFocus} {...form.register("email")} />
         </Field>
@@ -167,9 +167,9 @@ export function LoginForm({ autoFocus = false, emailId, heading }: { autoFocus?:
             } />
         </Field>
         <div className="flex justify-end">
-          <Link to="/forgot-password" className="text-[13px] font-medium text-primary hover:underline">Forgot password?</Link>
+          <Link to="/forgot-password" className="text-table font-medium text-primary hover:underline">Forgot password?</Link>
         </div>
-        <Button type="submit" className="h-11 w-full text-[15px]" loading={busy}>Sign in<ArrowRight /></Button>
+        <Button type="submit" className="h-11 w-full text-section" loading={busy}>Sign in<ArrowRight /></Button>
       </form>
       {serverDemo && <ServerDemoAccess accounts={serverDemo} />}
       {!serverDemo && DEMO_LOGIN && (

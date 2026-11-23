@@ -42,7 +42,7 @@ with sync_playwright() as p:
         # Reachable from the sidebar for every staff role.
         pg.get_by_role("navigation", name="Main").get_by_role("link", name="Help & About").click()
         pg.wait_for_url("**/help**")
-        expect(pg.get_by_role("heading", name="Help & About Undeclared HMS")).to_be_visible()
+        expect(pg.get_by_role("heading", name="Help & About HMS Workflows")).to_be_visible()
         pg.get_by_role("tab", name="Role guides").click()
         expect(pg.get_by_test_id("help-role-guide")).to_contain_text(guide)
         pg.get_by_role("tab", name="Features").click()

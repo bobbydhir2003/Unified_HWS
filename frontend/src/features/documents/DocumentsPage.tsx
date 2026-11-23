@@ -43,7 +43,7 @@ export function UploadZone({ patientId, onDone, compact }: { patientId?: string;
     >
       <span className="rounded-lg bg-accent p-2 text-accent-foreground"><Upload className="size-4" /></span>
       <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] font-medium">Drop PDFs or images here</p>
+        <p className="text-body font-medium">Drop PDFs or images here</p>
         <p className="text-xs text-muted-foreground">PDF, PNG, JPEG, TIFF, WebP · up to 25 MB · every document is reviewed before it's filed</p>
       </div>
       <input ref={input} type="file" multiple hidden accept="application/pdf,image/png,image/jpeg,image/tiff,image/webp"
@@ -108,8 +108,8 @@ export function DocumentsPage() {
               const n = k ? counts.data?.[k] : undefined;
               return (
                 <button key={k || "all"} role="tab" aria-selected={status === k} onClick={() => set("status", k || "")}
-                  className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted", status === k && "bg-accent text-accent-foreground")}>
-                  {label}{!!n && <span className={cn("rounded-full px-1.5 text-[11px] tabular", k === "needs_review" ? "bg-warning text-white" : k === "failed" ? "bg-destructive text-white" : "bg-muted")}>{n}</span>}
+                  className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-table font-medium text-muted-foreground hover:bg-muted", status === k && "bg-accent text-accent-foreground")}>
+                  {label}{!!n && <span className={cn("rounded-full px-1.5 text-label tabular", k === "needs_review" ? "bg-warning text-white" : k === "failed" ? "bg-destructive text-white" : "bg-muted")}>{n}</span>}
                 </button>
               );
             })}
@@ -146,7 +146,7 @@ export function DocumentsPage() {
           </Table>
         )}
         {data && data.total > data.page_size && (
-          <div className="flex items-center justify-between border-t px-4 py-2.5 text-[13px] text-muted-foreground">
+          <div className="flex items-center justify-between border-t px-4 py-2.5 text-table text-muted-foreground">
             <span>{data.total} documents</span>
             <div className="flex gap-1">
               <Button variant="outline" size="icon-sm" disabled={page <= 1} onClick={() => set("page", String(page - 1))} aria-label="Previous page"><ChevronLeft /></Button>

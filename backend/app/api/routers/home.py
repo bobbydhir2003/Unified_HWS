@@ -1,7 +1,8 @@
 """Role-based Home (UX simplification): one call returning what needs the signed-in user's attention now.
 
 * `priorities` — at most 5 items merged from the existing worklist (cases + tasks + approvals) and unacknowledged
-  critical results, ranked overdue → severity → due time. Each item says what it is (rule alert, task, approval,
+  critical results, ranked by clinical severity first, then overdue before on-time within the same severity, then due
+  time — so a routine overdue task never outranks a critical clinical item. Each item says what it is (rule alert, task, approval,
   critical result), who owns it, its status and the next action.
 * `today` — a few role-relevant counts computed by the SAME functions the department screens use, so the numbers
   always match what the user sees when they click through.
@@ -95,7 +96,7 @@ def _priorities(ctx: TenantContext) -> tuple[list[dict], dict]:
 
     def rank(i: dict):
         due = i.get("due_at")
-        return (0 if i["overdue"] else 1, SEVERITY.get(i["severity"], 2), due.timestamp() if isinstance(due, datetime) else float("inf"))
+        return (SEVERITY.get(i["severity"], 2), 0 if i["overdue"] else 1, due.timestamp() if isinstance(due, datetime) else float("inf"))
 
     items.sort(key=rank)
     return items[:5], counts
@@ -221,10 +222,19 @@ def _today(ctx: TenantContext, profile: str) -> dict:
 
         eh = _safe(lambda: engine_health(ctx=ctx), {})
         lab = _safe(provider_label, {})
+        from datetime import timedelta
+
+        from app.models import AuditEvent
+
         staff = ctx.db.scalar(select(func.count()).select_from(Membership).where(Membership.organization_id == ctx.org_id, Membership.is_active.is_(True))) or 0
+        members = select(Membership.user_id).where(Membership.organization_id == ctx.org_id)
+        failed = ctx.db.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.action == "auth.login", AuditEvent.outcome == "failure", AuditEvent.actor_user_id.in_(members),
+            AuditEvent.created_at >= now() - timedelta(hours=24))) or 0
         m += [{"label": "Automation health", "value": (eh.get("status") or "unknown").title(), "link": "/automation/monitors"},
               {"label": "AI provider", "value": "Live" if lab.get("live") else "Simulated", "link": "/admin/ai-settings"},
-              {"label": "Active staff accounts", "value": staff, "link": "/admin/staff"}]
+              {"label": "Active staff accounts", "value": staff, "link": "/admin/staff"},
+              {"label": "Failed sign-ins (24 h)", "value": failed, "link": "/admin/audit"}]
     return {"metrics": m, "list": lst if lst and lst["items"] else None}
 
 

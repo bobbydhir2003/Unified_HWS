@@ -6,7 +6,8 @@
 export const COPYRIGHT_HOLDER = "Sidra Riaz Awan";
 export const COPYRIGHT_YEAR = 2026;
 export const COPYRIGHT_NOTICE = `© ${COPYRIGHT_YEAR} ${COPYRIGHT_HOLDER}. All rights reserved.`;
-export const PRODUCT_NAME = "Undeclared";
+export const PRODUCT_NAME = "HMS Workflows";
+export const PRODUCT_TAGLINE = "Your Entire Hospital. Working as One.";
 export const PRODUCT_DESCRIPTION = "Unified hospital management system";
 
 /** Open-source components keep their own licenses; this list is informational (see each package for full terms). */

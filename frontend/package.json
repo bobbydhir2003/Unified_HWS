@@ -2,7 +2,7 @@
   "name": "undeclared-web",
   "private": true,
   "version": "0.1.0",
-  "description": "Undeclared \u2014 unified hospital management system (web client)",
+  "description": "HMS Workflows \u2014 unified hospital management system (web client)",
   "author": "Sidra Riaz Awan",
   "license": "UNLICENSED",
   "type": "module",

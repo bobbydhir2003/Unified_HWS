@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LegalFooter } from "@/components/common/LegalFooter";
+import { LogoMark } from "@/components/common/Logo";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CalendarCheck2, FileCheck2, ShieldCheck, Sparkles } from "lucide-react";
 import * as React from "react";
@@ -24,17 +25,15 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
         <div className="pointer-events-none absolute -right-40 -top-40 size-[34rem] rounded-full bg-blue-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-48 -left-24 size-[30rem] rounded-full bg-indigo-400/10 blur-3xl" />
         <div className="relative flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg shadow-blue-950/40">
-            <svg viewBox="0 0 32 32" className="size-6" aria-hidden><path d="M10 9v8a6 6 0 0 0 12 0V9" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" /><circle cx="16" cy="24.5" r="1.8" fill="#bfdbfe" /></svg>
-          </span>
-          <span className="text-lg font-semibold tracking-tight">Undeclared</span>
+          <LogoMark size={40} />
+          <span className="text-lg font-semibold tracking-tight">HMS Workflows</span>
         </div>
         <div className="relative mt-auto max-w-md">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight">Clinical work, without the clutter.</h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-sidebar-foreground">
+          <p className="mt-3 text-section leading-relaxed text-sidebar-foreground">
             Scheduling, charting and AI-assisted documentation in one calm, fast workspace — with clinicians always in control.
           </p>
-          <ul className="mt-8 space-y-3 text-[14px] text-sidebar-foreground">
+          <ul className="mt-8 space-y-3 text-body text-sidebar-foreground">
             {[
               [CalendarCheck2, "Conflict-safe scheduling and a live waiting room"],
               [FileCheck2, "Versioned notes that can't be silently changed once signed"],
@@ -64,10 +63,10 @@ export function ForgotPasswordPage() {
       <div className="space-y-5">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Reset your password</h1>
-          <p className="mt-1 text-[13.5px] text-muted-foreground">We'll email you a link to choose a new password.</p>
+          <p className="mt-1 text-body text-muted-foreground">We'll email you a link to choose a new password.</p>
         </div>
         {sent ? (
-          <div className="rounded-lg border bg-success-soft px-3 py-3 text-[13px] text-success">
+          <div className="rounded-lg border bg-success-soft px-3 py-3 text-table text-success">
             {sent}
             {import.meta.env.DEV && <p className="mt-1 text-foreground/70">Dev: email delivery is simulated — an admin can see the link in Admin › Message outbox.</p>}
           </div>
@@ -83,7 +82,7 @@ export function ForgotPasswordPage() {
             <Button type="submit" className="w-full" size="lg" loading={busy}>Send reset link</Button>
           </form>
         )}
-        <Link to="/login" className="inline-flex items-center gap-1 text-[13px] font-medium text-primary hover:underline"><ArrowLeft className="size-3.5" />Back to sign in</Link>
+        <Link to="/login" className="inline-flex items-center gap-1 text-table font-medium text-primary hover:underline"><ArrowLeft className="size-3.5" />Back to sign in</Link>
       </div>
     </AuthLayout>
   );
@@ -111,9 +110,9 @@ export function ResetPasswordPage() {
       })}>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Choose a new password</h1>
-          <p className="mt-1 text-[13.5px] text-muted-foreground">Use 10+ characters with a mix of letters, numbers and symbols.</p>
+          <p className="mt-1 text-body text-muted-foreground">Use 10+ characters with a mix of letters, numbers and symbols.</p>
         </div>
-        {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">{error}</div>}
+        {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-table text-destructive">{error}</div>}
         <Field label="New password" error={form.formState.errors.password?.message}><Input type="password" autoComplete="new-password" {...form.register("password")} /></Field>
         <Field label="Confirm password" error={form.formState.errors.confirm?.message}><Input type="password" autoComplete="new-password" {...form.register("confirm")} /></Field>
         <Button type="submit" className="w-full" size="lg" loading={form.formState.isSubmitting}>Update password</Button>
@@ -150,14 +149,14 @@ export function AcceptInvitePage() {
         }}>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Join {inv.data.organization_name}</h1>
-            <p className="mt-1 text-[13.5px] text-muted-foreground">
+            <p className="mt-1 text-body text-muted-foreground">
               Hi {inv.data.first_name} — you've been invited as {inv.data.roles.map((r) => ROLE_LABELS[r]).join(", ")}.
             </p>
           </div>
-          {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">{error}</div>}
+          {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-table text-destructive">{error}</div>}
           <Field label="Email"><Input value={inv.data.email} disabled /></Field>
           <Field label={inv.data.existing_account ? "Your existing password" : "Create a password"}
-            hint={inv.data.existing_account ? "You already have an Undeclared account." : "10+ characters, mixing letters, numbers and symbols."}>
+            hint={inv.data.existing_account ? "You already have an HMS Workflows account." : "10+ characters, mixing letters, numbers and symbols."}>
             <Input type="password" autoComplete={inv.data.existing_account ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
           <Button type="submit" className="w-full" size="lg" loading={busy} disabled={!password}>Accept invitation</Button>

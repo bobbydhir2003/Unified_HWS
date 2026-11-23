@@ -32,7 +32,7 @@ function RolePicker({ value, onChange, allowSuper }: { value: Role[]; onChange: 
   return (
     <div className="grid grid-cols-2 gap-2">
       {roles.map((r) => (
-        <label key={r} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent/50">
+        <label key={r} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-table has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent/50">
           <Checkbox checked={value.includes(r)} onCheckedChange={(c) => onChange(c ? [...value, r] : value.filter((x) => x !== r))} />{ROLE_LABELS[r]}
         </label>
       ))}
@@ -57,8 +57,8 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
         <DialogHeader><DialogTitle>Invite staff member</DialogTitle><DialogDescription>They'll receive a link valid for 7 days to set a password and join.</DialogDescription></DialogHeader>
         {link ? (
           <div className="space-y-3">
-            <div className="rounded-lg border bg-success-soft p-3 text-[13px] text-success">Invitation created for {f.email}.</div>
-            <p className="text-[13px] text-muted-foreground">Email delivery is simulated in this environment. Share this link securely:</p>
+            <div className="rounded-lg border bg-success-soft p-3 text-table text-success">Invitation created for {f.email}.</div>
+            <p className="text-table text-muted-foreground">Email delivery is simulated in this environment. Share this link securely:</p>
             <div className="flex gap-2"><Input readOnly value={link} className="font-mono text-xs" /><Button variant="outline" size="icon" aria-label="Copy link" onClick={() => { navigator.clipboard.writeText(link); toast.success("Copied"); }}><Copy /></Button></div>
             <DialogFooter><Button onClick={() => onOpenChange(false)}>Done</Button></DialogFooter>
           </div>
@@ -77,11 +77,11 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
               <Field label="Last name" required><Input value={f.last_name} onChange={(e) => setF({ ...f, last_name: e.target.value })} required /></Field>
               <Field label="Work email" required className="sm:col-span-2"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required /></Field>
             </div>
-            <div><p className="mb-2 text-[13px] font-medium">Roles</p><RolePicker value={roles} onChange={setRoles} allowSuper={can("org:manage")} /></div>
+            <div><p className="mb-2 text-table font-medium">Roles</p><RolePicker value={roles} onChange={setRoles} allowSuper={can("org:manage")} /></div>
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[13px]"><Switch checked={allClinics} onCheckedChange={setAllClinics} />Access to all locations</label>
+              <label className="flex items-center gap-2 text-table"><Switch checked={allClinics} onCheckedChange={setAllClinics} />Access to all locations</label>
               {!allClinics && clinics.data?.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 pl-1 text-[13px]"><Checkbox checked={clinicIds.includes(c.id)} onCheckedChange={(v) => setClinicIds(v ? [...clinicIds, c.id] : clinicIds.filter((x) => x !== c.id))} />{c.name}</label>
+                <label key={c.id} className="flex items-center gap-2 pl-1 text-table"><Checkbox checked={clinicIds.includes(c.id)} onCheckedChange={(v) => setClinicIds(v ? [...clinicIds, c.id] : clinicIds.filter((x) => x !== c.id))} />{c.name}</label>
               ))}
             </div>
             <DialogFooter>
@@ -133,21 +133,21 @@ function EditStaffDialog({ s, onOpenChange }: { s: Staff | null; onOpenChange: (
             onOpenChange(false);
           } catch (err) { toastError(err); } finally { setBusy(false); }
         }}>
-          <div><p className="mb-2 text-[13px] font-medium">Roles</p><RolePicker value={roles} onChange={setRoles} allowSuper={can("org:manage")} /></div>
+          <div><p className="mb-2 text-table font-medium">Roles</p><RolePicker value={roles} onChange={setRoles} allowSuper={can("org:manage")} /></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Professional title" hint="Shown after their name, e.g. MD, RN"><Input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
             <div className="space-y-2 pt-6">
-              <label className="flex items-center gap-2 text-[13px]"><Switch checked={active} onCheckedChange={setActive} disabled={self} />Account active{self && <span className="text-xs text-muted-foreground">(you)</span>}</label>
-              <label className="flex items-center gap-2 text-[13px]"><Switch checked={allClinics} onCheckedChange={setAllClinics} />All locations</label>
+              <label className="flex items-center gap-2 text-table"><Switch checked={active} onCheckedChange={setActive} disabled={self} />Account active{self && <span className="text-xs text-muted-foreground">(you)</span>}</label>
+              <label className="flex items-center gap-2 text-table"><Switch checked={allClinics} onCheckedChange={setAllClinics} />All locations</label>
             </div>
           </div>
           {!allClinics && (
             <div className="flex flex-wrap gap-3">{clinics.data?.map((c) => (
-              <label key={c.id} className="flex items-center gap-2 text-[13px]"><Checkbox checked={clinicIds.includes(c.id)} onCheckedChange={(v) => setClinicIds(v ? [...clinicIds, c.id] : clinicIds.filter((x) => x !== c.id))} />{c.name}</label>
+              <label key={c.id} className="flex items-center gap-2 text-table"><Checkbox checked={clinicIds.includes(c.id)} onCheckedChange={(v) => setClinicIds(v ? [...clinicIds, c.id] : clinicIds.filter((x) => x !== c.id))} />{c.name}</label>
             ))}</div>
           )}
           <div className="rounded-lg border p-4">
-            <label className="flex items-center gap-2 text-[13px] font-medium"><Switch checked={isProvider} onCheckedChange={setIsProvider} /><Stethoscope className="size-4" />Schedulable provider</label>
+            <label className="flex items-center gap-2 text-table font-medium"><Switch checked={isProvider} onCheckedChange={setIsProvider} /><Stethoscope className="size-4" />Schedulable provider</label>
             {isProvider && (
               <div className="mt-3 grid gap-3 sm:grid-cols-4">
                 <Field label="NPI" hint="10 digits"><Input value={prov.npi} onChange={(e) => setProv({ ...prov, npi: e.target.value.replace(/\D/g, "").slice(0, 10) })} /></Field>
@@ -219,11 +219,11 @@ export function StaffPage() {
       <Card className="mt-5">
         <CardHeader><CardTitle>Pending invitations</CardTitle></CardHeader>
         <CardContent className="px-0 pb-2">
-          {!pending.length ? <p className="px-5 pb-3 text-[13px] text-muted-foreground">No pending invitations.</p> : (
+          {!pending.length ? <p className="px-5 pb-3 text-table text-muted-foreground">No pending invitations.</p> : (
             <ul className="divide-y">
               {pending.map((i) => (
                 <li key={i.id} className="flex items-center gap-3 px-5 py-2.5">
-                  <div className="min-w-0 flex-1"><p className="text-[13.5px] font-medium">{i.first_name} {i.last_name} <span className="font-normal text-muted-foreground">· {i.email}</span></p>
+                  <div className="min-w-0 flex-1"><p className="text-body font-medium">{i.first_name} {i.last_name} <span className="font-normal text-muted-foreground">· {i.email}</span></p>
                     <p className="text-xs text-muted-foreground">{i.roles.map((r) => ROLE_LABELS[r]).join(", ")} · expires {fmtDate(i.expires_at)}</p></div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label="Invitation actions"><MoreHorizontal /></Button></DropdownMenuTrigger>

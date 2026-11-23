@@ -23,7 +23,7 @@ function Preview({ doc }: { doc: DocumentDetail }) {
   const blob = useDocumentBlob(doc.id);
   return (
     <Card className="flex min-h-[60vh] flex-col overflow-hidden lg:sticky lg:top-[72px] lg:h-[calc(100dvh-96px)]">
-      <div className="flex items-center justify-between border-b px-4 py-2 text-[13px]">
+      <div className="flex items-center justify-between border-b px-4 py-2 text-table">
         <span className="truncate font-medium">{doc.filename}</span>
         <span className="text-xs text-muted-foreground">{doc.page_count ? `${doc.page_count} page${doc.page_count > 1 ? "s" : ""} · ` : ""}{Math.round(doc.size_bytes / 1024)} KB</span>
       </div>
@@ -31,7 +31,7 @@ function Preview({ doc }: { doc: DocumentDetail }) {
         {blob.isLoading ? <Skeleton className="m-4 h-[calc(100%-2rem)]" /> : blob.error ? <ErrorState error={blob.error} /> : doc.content_type === "application/pdf" ? (
           <iframe src={blob.data} title="Document preview" className="h-full min-h-[60vh] w-full" />
         ) : doc.content_type === "image/tiff" ? (
-          <div className="p-6 text-center text-[13px] text-muted-foreground">TIFF preview isn't supported by browsers. <a className="text-primary underline" href={blob.data} download>Download</a> to view.</div>
+          <div className="p-6 text-center text-table text-muted-foreground">TIFF preview isn't supported by browsers. <a className="text-primary underline" href={blob.data} download>Download</a> to view.</div>
         ) : (
           <img src={blob.data} alt="Uploaded document" className="mx-auto max-h-full object-contain p-4" />
         )}
@@ -57,8 +57,8 @@ function IdentityCompare({ doc, patient }: { doc: DocumentDetail; patient: Patie
     </tr>
   );
   return (
-    <table className="w-full text-[13px]">
-      <thead><tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground"><th className="pb-1 font-semibold">Field</th><th className="pb-1 font-semibold">On document</th><th className="pb-1 font-semibold">Selected patient</th><th /></tr></thead>
+    <table className="w-full text-table">
+      <thead><tr className="text-left text-label uppercase tracking-wide text-muted-foreground"><th className="pb-1 font-semibold">Field</th><th className="pb-1 font-semibold">On document</th><th className="pb-1 font-semibold">Selected patient</th><th /></tr></thead>
       <tbody>
         {row("Name", docName, patient.name, nameOk, !id?.last_name)}
         {row("DOB", id?.date_of_birth ? fmtDate(id.date_of_birth) : null, fmtDate(patient.date_of_birth), dobOk, !id?.date_of_birth)}
@@ -132,10 +132,10 @@ export function DocumentReview() {
         <h1 className="text-xl font-semibold tracking-tight">{doc.title ?? doc.filename}</h1>
         <DocStatusBadge status={doc.status} />
         <Badge variant="outline">{sourceLabel(doc.source)}</Badge>
-        <span className="text-[13px] text-muted-foreground">Received {fmtDateTime(doc.created_at)}{doc.uploaded_by_name ? ` · by ${doc.uploaded_by_name}` : ""}{doc.sender ? ` · from ${doc.sender}` : ""}</span>
+        <span className="text-table text-muted-foreground">Received {fmtDateTime(doc.created_at)}{doc.uploaded_by_name ? ` · by ${doc.uploaded_by_name}` : ""}{doc.sender ? ` · from ${doc.sender}` : ""}</span>
       </div>
       {doc.duplicate_of && (
-        <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-[13px]">
+        <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-table">
           <AlertTriangle className="size-4 text-warning" />An identical file was already received. <Link className="font-medium text-primary underline" to={`/documents/${doc.duplicate_of}`}>Open the other copy</Link>
         </div>
       )}
@@ -143,12 +143,12 @@ export function DocumentReview() {
         <Preview doc={doc} />
         <div className="space-y-4">
           {doc.status === "processing" ? (
-            <Card><CardContent className="flex items-center gap-3 py-10 text-[13.5px]"><Loader2 className="size-5 animate-spin text-ai" />Extracting text, classifying and matching to a patient…</CardContent></Card>
+            <Card><CardContent className="flex items-center gap-3 py-10 text-body"><Loader2 className="size-5 animate-spin text-ai" />Extracting text, classifying and matching to a patient…</CardContent></Card>
           ) : doc.status === "failed" ? (
             <Card className="border-destructive/30">
               <CardContent className="space-y-3 pt-5">
                 <p className="flex items-center gap-2 font-medium text-destructive"><XCircle className="size-4" />Processing failed</p>
-                <p className="text-[13px]">{doc.processing_error}</p>
+                <p className="text-table">{doc.processing_error}</p>
                 {can("documents:write") && <Button size="sm" variant="outline" loading={busy === "re"} onClick={async () => { setBusy("re"); try { await post(`/documents/${doc.id}/reprocess`); refresh(); } catch (e) { toastError(e); } finally { setBusy(null); } }}><RefreshCw />Reprocess</Button>}
               </CardContent>
             </Card>
@@ -162,14 +162,14 @@ export function DocumentReview() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {ai.uncertainties.length > 0 && (
-                      <ul className="space-y-1 rounded-lg bg-warning-soft px-3 py-2 text-[12.5px]">
+                      <ul className="space-y-1 rounded-lg bg-warning-soft px-3 py-2 text-table">
                         {ai.uncertainties.map((u, i) => <li key={i} className="flex gap-1.5"><AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" />{u}</li>)}
                       </ul>
                     )}
                     {ai.key_findings.length > 0 && (
                       <div>
                         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Results on document</p>
-                        <table className="w-full text-[13px]">
+                        <table className="w-full text-table">
                           <tbody>
                             {ai.key_findings.map((f, i) => (
                               <tr key={i} className="border-b last:border-0">
@@ -188,7 +188,7 @@ export function DocumentReview() {
                         {ai.diagnoses_stated.length > 0 && <KeyValue label="Diagnoses stated" value={<ul className="whitespace-normal">{ai.diagnoses_stated.map((m) => <li key={m}>{m}</li>)}</ul>} />}
                       </dl>
                     )}
-                    <p className="text-[11.5px] text-muted-foreground">Extracted values are not added to structured chart data automatically.</p>
+                    <p className="text-label text-muted-foreground">Extracted values are not added to structured chart data automatically.</p>
                   </CardContent>
                 </Card>
               )}
@@ -207,13 +207,13 @@ export function DocumentReview() {
 
               {doc.status === "filed" ? (
                 <Card className="border-success/30">
-                  <CardContent className="flex flex-wrap items-center gap-3 pt-5 text-[13.5px]">
+                  <CardContent className="flex flex-wrap items-center gap-3 pt-5 text-body">
                     <FileCheck2 className="size-5 text-success" />Filed to <Link to={`/patients/${doc.patient_id}/documents`} className="font-medium text-primary hover:underline">{doc.patient_name}</Link>
                     <span className="text-muted-foreground">· {fmtDateTime(doc.reviewed_at)}</span>
                   </CardContent>
                 </Card>
               ) : doc.status === "rejected" ? (
-                <Card><CardContent className="pt-5 text-[13.5px]">Rejected: {doc.reject_reason}</CardContent></Card>
+                <Card><CardContent className="pt-5 text-body">Rejected: {doc.reject_reason}</CardContent></Card>
               ) : (
                 <Card>
                   <CardHeader className="pb-2"><CardTitle>Patient</CardTitle>
@@ -221,7 +221,7 @@ export function DocumentReview() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {!doc.suggested_patient_id && !patient && (
-                      <p className="flex items-start gap-1.5 text-[13px] text-warning"><AlertTriangle className="mt-0.5 size-4 shrink-0" />No confident match. Choose a candidate or search — don't guess.</p>
+                      <p className="flex items-start gap-1.5 text-table text-warning"><AlertTriangle className="mt-0.5 size-4 shrink-0" />No confident match. Choose a candidate or search — don't guess.</p>
                     )}
                     {!!doc.match_candidates?.length && (
                       <ul className="space-y-1.5" aria-label="Match candidates">
@@ -231,9 +231,9 @@ export function DocumentReview() {
                               className={cn("flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left hover:bg-muted/50 disabled:cursor-default", patient?.id === c.patient_id && "border-primary bg-accent/40")}>
                               <span className={cn("size-3.5 shrink-0 rounded-full border-2", patient?.id === c.patient_id ? "border-primary bg-primary" : "border-input")} aria-hidden />
                               <span className="min-w-0 flex-1">
-                                <span className="block text-[13.5px] font-medium">{c.name}{doc.suggested_patient_id === c.patient_id && <Badge variant="info" className="ml-2">Suggested</Badge>}</span>
+                                <span className="block text-body font-medium">{c.name}{doc.suggested_patient_id === c.patient_id && <Badge variant="info" className="ml-2">Suggested</Badge>}</span>
                                 <span className="block text-xs text-muted-foreground tabular">DOB {fmtDob(c.date_of_birth)} · MRN {c.mrn}</span>
-                                <span className="block text-[11.5px] text-muted-foreground">{c.reasons.join(" · ")}</span>
+                                <span className="block text-label text-muted-foreground">{c.reasons.join(" · ")}</span>
                               </span>
                               <ConfidenceMeter value={c.score} label={false} />
                             </button>
@@ -248,7 +248,7 @@ export function DocumentReview() {
                       </div>
                     )}
                     {reviewable && patient && (
-                      <label className="flex items-start gap-2 rounded-lg border border-primary/30 bg-accent/30 p-3 text-[13px]">
+                      <label className="flex items-start gap-2 rounded-lg border border-primary/30 bg-accent/30 p-3 text-table">
                         <Checkbox checked={confirmed} onCheckedChange={(c) => setConfirmed(!!c)} className="mt-0.5" />
                         <span>I verified the name and date of birth on the document belong to <strong>{patient.name}</strong>.</span>
                       </label>
@@ -270,7 +270,7 @@ export function DocumentReview() {
               )}
               {doc.extracted_text && (
                 <details className="rounded-xl border bg-card p-3">
-                  <summary className="cursor-pointer text-[13px] font-medium">Extracted text ({doc.text_source === "pdf_text" ? "PDF text layer" : doc.text_source})</summary>
+                  <summary className="cursor-pointer text-table font-medium">Extracted text ({doc.text_source === "pdf_text" ? "PDF text layer" : doc.text_source})</summary>
                   <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap font-mono text-xs text-muted-foreground">{doc.extracted_text}</pre>
                 </details>
               )}
@@ -291,7 +291,7 @@ export function PatientDocumentsTab({ patientId }: { patientId: string }) {
       {can("documents:write") && <UploadZone patientId={patientId} compact />}
       <Card className="overflow-hidden">
         {q.isLoading ? <LoadingRows rows={3} /> : !q.data?.length ? (
-          <p className="p-6 text-center text-[13px] text-muted-foreground">No filed documents. Uploads from here still go through review before they appear.</p>
+          <p className="p-6 text-center text-table text-muted-foreground">No filed documents. Uploads from here still go through review before they appear.</p>
         ) : (
           <ul className="divide-y">
             {q.data.map((d) => (
@@ -299,9 +299,9 @@ export function PatientDocumentsTab({ patientId }: { patientId: string }) {
                 <button onClick={() => navigate(`/documents/${d.id}`)} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-muted/40">
                   <FileCheck2 className="mt-0.5 size-4 text-muted-foreground" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13.5px] font-medium">{d.title}</span>
+                    <span className="block text-body font-medium">{d.title}</span>
                     <span className="block text-xs text-muted-foreground">{docTypeLabel(d.doc_type)} · {fmtDate(d.document_date ?? d.created_at)} · {sourceLabel(d.source)}</span>
-                    {d.summary && <span className="mt-0.5 block text-[12.5px] text-muted-foreground">{d.summary}</span>}
+                    {d.summary && <span className="mt-0.5 block text-table text-muted-foreground">{d.summary}</span>}
                   </span>
                 </button>
               </li>

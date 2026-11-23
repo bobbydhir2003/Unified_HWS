@@ -185,7 +185,7 @@ def forgot_password(body: ForgotIn, request: Request, db: Session = Depends(get_
         db.add(PasswordResetToken(user_id=user.id, token_hash=hash_token(token), created_at=now(),
                                   expires_at=now() + timedelta(hours=1)))
         link = f"{settings.frontend_url}/reset-password?token={token}"
-        send_email(db, user.email, "Reset your Undeclared password",
+        send_email(db, user.email, "Reset your HMS Workflows password",
                    f"Use this link within 1 hour to reset your password:\n{link}\n\nIf you didn't request this, ignore it.")
         audit.record(db, "auth.password_reset_requested", actor_id=user.id, request=request)
         db.commit()
@@ -239,7 +239,7 @@ def mfa_setup(auth: AuthUser = Depends(get_auth_user), db: Session = Depends(get
     secret = pyotp.random_base32()
     user.mfa_secret = secret
     db.commit()
-    uri = pyotp.TOTP(secret).provisioning_uri(name=user.email, issuer_name="Undeclared")
+    uri = pyotp.TOTP(secret).provisioning_uri(name=user.email, issuer_name="HMS Workflows")
     return MfaSetupOut(secret=secret, otpauth_uri=uri)
 
 

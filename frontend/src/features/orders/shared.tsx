@@ -52,8 +52,8 @@ export const flagLabel = (f: string) => ({ high: "H", low: "L", critical_high: "
 
 export function ResultsTable({ results }: { results: LabResultT[] }) {
   return (
-    <table className="w-full text-[13px]">
-      <thead><tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground"><th className="py-1.5">Test</th><th>Result</th><th>Ref range</th><th /></tr></thead>
+    <table className="w-full text-table">
+      <thead><tr className="border-b text-left text-label uppercase tracking-wide text-muted-foreground"><th className="py-1.5">Test</th><th>Result</th><th>Ref range</th><th /></tr></thead>
       <tbody>
         {results.map((r) => (
           <tr key={r.id} className="border-b last:border-0">
@@ -81,7 +81,7 @@ function CatalogSearch<T>({ path, label, render, onPick, minChars = 1 }: { path:
       <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={label} aria-label={label} />
       {!!data?.length && (
         <ul className="mt-1.5 max-h-48 overflow-y-auto rounded-lg border">
-          {data.map((x, i) => <li key={i}><button type="button" className="w-full px-3 py-2 text-left text-[13px] hover:bg-muted" onClick={() => onPick(x)}>{render(x)}</button></li>)}
+          {data.map((x, i) => <li key={i}><button type="button" className="w-full px-3 py-2 text-left text-table hover:bg-muted" onClick={() => onPick(x)}>{render(x)}</button></li>)}
         </ul>
       )}
     </div>
@@ -161,7 +161,7 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
               <div className="space-y-2">
                 <div className="flex items-center justify-between rounded-lg border bg-accent/30 px-3 py-2"><span><strong>{lab.name}</strong> <span className="text-muted-foreground">{lab.specimen}</span></span><Button size="xs" variant="ghost" onClick={() => setLab(null)}>Change</Button></div>
                 <p className="text-xs text-muted-foreground">Includes: {lab.components.join(", ")}</p>
-                <label className="flex items-center gap-2 text-[13px]"><Checkbox checked={fasting} onCheckedChange={(c) => setFasting(!!c)} />Fasting specimen</label>
+                <label className="flex items-center gap-2 text-table"><Checkbox checked={fasting} onCheckedChange={(c) => setFasting(!!c)} />Fasting specimen</label>
               </div>
             )}
           </TabsContent>
@@ -172,7 +172,7 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="flex items-center justify-between rounded-lg border bg-accent/30 px-3 py-2 sm:col-span-2"><strong>{img.name}</strong><Button size="xs" variant="ghost" onClick={() => setImg(null)}>Change</Button></div>
                 <Field label="Laterality"><NativeSelect value={imgF.laterality} onChange={(e) => setImgF({ ...imgF, laterality: e.target.value })}>{["n/a", "left", "right", "bilateral"].map((x) => <option key={x}>{x}</option>)}</NativeSelect></Field>
-                <label className="flex items-end gap-2 pb-2 text-[13px]"><Checkbox checked={imgF.contrast} onCheckedChange={(c) => setImgF({ ...imgF, contrast: !!c })} />With contrast</label>
+                <label className="flex items-end gap-2 pb-2 text-table"><Checkbox checked={imgF.contrast} onCheckedChange={(c) => setImgF({ ...imgF, contrast: !!c })} />With contrast</label>
                 <Field label="Clinical question" required className="sm:col-span-2"><Textarea rows={2} value={imgF.clinical_question} onChange={(e) => setImgF({ ...imgF, clinical_question: e.target.value })} /></Field>
               </div>
             )}
@@ -233,7 +233,7 @@ export function SignOrderDialog({ order, onOpenChange, onSigned }: { order: Orde
         <OrderSummary o={order} />
         {needsReason && (
           <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive-soft p-3">
-            {warnings.map((w, i) => <p key={i} className="flex gap-2 text-[13px] text-destructive"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span><strong className="uppercase">{w.severity}</strong> · {w.message}</span></p>)}
+            {warnings.map((w, i) => <p key={i} className="flex gap-2 text-table text-destructive"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span><strong className="uppercase">{w.severity}</strong> · {w.message}</span></p>)}
             <p className="text-xs text-muted-foreground">Basic allergy and duplicate checks only — not comprehensive clinical decision support.</p>
             <Field label="Override reason" required><Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
           </div>
@@ -253,7 +253,7 @@ export function SignOrderDialog({ order, onOpenChange, onSigned }: { order: Orde
 function OrderSummary({ o }: { o: Order }) {
   const d = o.details as Record<string, string | number | boolean | null>;
   return (
-    <dl className="grid grid-cols-2 gap-3 rounded-lg border p-3 text-[13px]">
+    <dl className="grid grid-cols-2 gap-3 rounded-lg border p-3 text-table">
       {o.order_type === "medication" && <>
         <KeyValue label="Sig" value={String(d.sig)} className="col-span-2" />
         <KeyValue label="Quantity / refills" value={`${d.quantity} · ${d.refills} refill(s)`} />
@@ -291,11 +291,11 @@ export function OrderDrawer({ order, onOpenChange, showPatient = true }: { order
               <div className="border-b px-6 py-5">
                 <D.Title className="flex items-center gap-2 text-base font-semibold"><Icon className="size-4 text-muted-foreground" />{o.title}</D.Title>
                 <div className="mt-2 flex flex-wrap items-center gap-2"><OrderStatusBadge o={o} />{o.transmission?.simulated && <SimulatedBadge label="Simulated transmission" />}</div>
-                {showPatient && <p className="mt-2 text-[13px]"><Link to={`/patients/${o.patient_id}`} className="font-medium text-primary hover:underline">{o.patient.name}</Link> <span className="text-muted-foreground tabular">· MRN {o.patient.mrn}</span></p>}
+                {showPatient && <p className="mt-2 text-table"><Link to={`/patients/${o.patient_id}`} className="font-medium text-primary hover:underline">{o.patient.name}</Link> <span className="text-muted-foreground tabular">· MRN {o.patient.mrn}</span></p>}
               </div>
               <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
                 <OrderSummary o={o} />
-                <dl className="grid grid-cols-2 gap-3 text-[13px]">
+                <dl className="grid grid-cols-2 gap-3 text-table">
                   <KeyValue label="Ordered by" value={`${o.ordered_by} · ${fmtDateTime(o.created_at)}`} className="col-span-2" />
                   {o.signed_by && <KeyValue label="Signed by" value={`${o.signed_by} · ${fmtDateTime(o.signed_at)}`} className="col-span-2" />}
                   {o.transmission && <KeyValue label="Sent via" value={`${o.transmission.channel} → ${o.transmission.destination} (${o.transmission.reference})`} className="col-span-2" />}
@@ -308,8 +308,8 @@ export function OrderDrawer({ order, onOpenChange, showPatient = true }: { order
                     <ResultsTable results={o.results} />
                   </div>
                 )}
-                {o.result_text && <div><p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{o.order_type === "referral" ? "Referral updates" : "Report"}</p><p className="whitespace-pre-wrap text-[13px]">{o.result_text}</p></div>}
-                {o.results_reviewed_at && <p className="flex items-center gap-1.5 text-[13px] text-success"><CheckCircle2 className="size-4" />Reviewed {fmtDateTime(o.results_reviewed_at)}{o.released_to_patient_at ? " · released to patient portal" : ""}</p>}
+                {o.result_text && <div><p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{o.order_type === "referral" ? "Referral updates" : "Report"}</p><p className="whitespace-pre-wrap text-table">{o.result_text}</p></div>}
+                {o.results_reviewed_at && <p className="flex items-center gap-1.5 text-table text-success"><CheckCircle2 className="size-4" />Reviewed {fmtDateTime(o.results_reviewed_at)}{o.released_to_patient_at ? " · released to patient portal" : ""}</p>}
               </div>
               <div className="flex flex-wrap gap-2 border-t px-6 py-4">
                 {o.status === "draft" && can("orders:sign") && <Button size="sm" onClick={() => setSigning(o)}><FileSignature />Sign</Button>}

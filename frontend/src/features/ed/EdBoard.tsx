@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ambulance, BedDouble, Fingerprint, HeartPulse, LogOut, Radio, Siren, Stethoscope, UserPlus } from "lucide-react";
+import { Ambulance, BedDouble, Fingerprint, HeartPulse, LogOut, Radio, Siren, Stethoscope, UserPlus, Clock } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { EmptyState, ErrorState, LoadingRows, PageHeader, toastError } from "@/components/common";
+import { EmptyState, ErrorState, LoadingRows, Metric, MetricStrip, PageHeader, toastError } from "@/components/common";
+import { humanDuration } from "@/components/common/Status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,7 @@ type Board = { facility: { id: string; name: string }; visits: Visit[]; bays: { 
   metrics: { in_department: number; waiting: number; boarding: number; arrivals_24h: number; lwbs_24h: number; median_door_to_provider_min: number | null; median_los_min: number | null } };
 
 const ESI_STYLE: Record<number, string> = { 1: "bg-destructive text-white", 2: "bg-destructive/80 text-white", 3: "bg-warning text-foreground", 4: "bg-primary/70 text-white", 5: "bg-muted text-foreground" };
-const mins = (m: number | null) => (m == null ? "—" : m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`);
+const mins = (m: number | null) => (m == null ? "—" : humanDuration(m));
 
 export function EdBoard() {
   const { can } = useAuth();
@@ -46,37 +47,38 @@ export function EdBoard() {
         </div>} />
       {q.isError ? <ErrorState error={q.error} retry={q.refetch} /> : !d ? <LoadingRows rows={8} /> : (
         <>
-          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <MetricStrip className="mb-4" cols={6}>
             {[["In department", d.metrics.in_department], ["Waiting", d.metrics.waiting], ["Boarding", d.metrics.boarding], ["Arrivals 24 h", d.metrics.arrivals_24h],
               ["Median door→provider", mins(d.metrics.median_door_to_provider_min)], ["Left without being seen", d.metrics.lwbs_24h]].map(([l, v]) => (
-              <div key={l as string} className="rounded-xl border bg-card px-3 py-2.5"><p className="text-xs text-muted-foreground">{l}</p><p className="text-xl font-semibold tabular">{v}</p></div>))}
-          </div>
+              <Metric key={l as string} label={l} value={v} />))}
+          </MetricStrip>
           <Card className="overflow-hidden">
             {!d.visits.length ? <EmptyState icon={Siren} title="No patients in the department" /> : (
               <Table><THead><TR><TH>ESI</TH><TH>Patient</TH><TH>Complaint</TH><TH>Bay</TH><TH>Time in ED</TH><TH>Provider / nurse</TH><TH>Status</TH><TH /></TR></THead>
                 <TBody>{d.visits.map((v) => (
                   <TR key={v.id}>
-                    <TD>{v.esi_level ? <span className={cn("inline-grid size-7 place-items-center rounded-md text-[13px] font-bold", ESI_STYLE[v.esi_level])} aria-label={`ESI ${v.esi_level}`}>{v.esi_level}</span> : <Badge variant="outline">Not triaged</Badge>}</TD>
+                    <TD>{v.esi_level ? <span className={cn("inline-grid size-7 place-items-center rounded-md text-table font-bold", ESI_STYLE[v.esi_level])} aria-label={`ESI ${v.esi_level}`}>{v.esi_level}</span> : <Badge variant="outline">Not triaged</Badge>}</TD>
                     <TD><p className="font-medium">{v.patient.name}</p><p className="text-xs text-muted-foreground">{v.patient.mrn}{v.arrival_mode === "ambulance" && <><Ambulance className="ml-1 inline size-3" /> EMS</>}</p>
                       {v.patient.temporary && <Badge variant="warning" className="mt-1"><Fingerprint />Temporary identity</Badge>}</TD>
-                    <TD className="max-w-56 truncate">{v.chief_complaint}</TD>
+                    <TD className="max-w-72 truncate" title={v.chief_complaint ?? undefined}>{v.chief_complaint}</TD>
                     <TD className="whitespace-nowrap">{v.bay?.name ?? "—"}</TD>
-                    <TD className={cn("tabular", (v.minutes_in_department ?? 0) > 240 && "font-medium text-destructive")}>{mins(v.minutes_in_department)}
-                      {v.status === "boarding" && <p className="text-xs text-warning">boarding {mins(v.boarding_minutes)}</p>}</TD>
-                    <TD className="text-[13px]">{v.provider ?? <span className="text-muted-foreground">No provider</span>}{v.nurse && <p className="text-xs text-muted-foreground">RN {v.nurse}</p>}</TD>
+                    <TD className={cn("whitespace-nowrap tabular", (v.minutes_in_department ?? 0) > 240 && "font-medium text-warning-foreground")}>
+                      <span className="inline-flex items-center gap-1">{(v.minutes_in_department ?? 0) > 240 && <Clock className="size-3.5" aria-label="Over 4-hour target" />}{mins(v.minutes_in_department)}</span>
+                      {v.status === "boarding" && <p className="text-label text-warning-foreground">boarding {mins(v.boarding_minutes)}</p>}</TD>
+                    <TD className="text-table">{v.provider ?? <span className="text-muted-foreground">No provider</span>}{v.nurse && <p className="text-xs text-muted-foreground">RN {v.nurse}</p>}</TD>
                     <TD><Badge variant={v.status === "boarding" ? "warning" : v.status === "roomed" ? "primary" : "neutral"}>{titleCase(v.status)}</Badge></TD>
-                    <TD><div className="flex flex-wrap justify-end gap-1">
+                    <TD className="whitespace-nowrap"><div className="flex flex-nowrap justify-end gap-1">
                       {can("ed:write") && (can("nursing:write") || can("clinical:sign")) && v.status !== "boarding" && <Button size="xs" variant="outline" onClick={() => setAct({ v, kind: "triage" })}><HeartPulse />{v.esi_level ? "Re-triage" : "Triage"}</Button>}
                       {can("ed:write") && ["waiting", "triaged"].includes(v.status) && <Button size="xs" variant="outline" onClick={() => setAct({ v, kind: "room" })}><BedDouble />Room</Button>}
                       {can("ed:write") && !v.provider && can("clinical:sign") && <AssignMe v={v} />}
-                      {can("orders:sign") && ["triaged", "roomed"].includes(v.status) && <Button size="xs" onClick={() => setAct({ v, kind: "dispo" })}><LogOut />Disposition</Button>}
+                      {can("orders:sign") && ["triaged", "roomed"].includes(v.status) && <Button size="xs" variant="outline" onClick={() => setAct({ v, kind: "dispo" })}><LogOut />Disposition</Button>}
                       {v.patient.temporary && can("patients:write") && <Button size="xs" variant="outline" onClick={() => setAct({ v, kind: "reconcile" })}><Fingerprint />Identify</Button>}
                       {v.encounter_id && <Button size="xs" variant="ghost" asChild><Link to={`/encounters/${v.encounter_id}`}><Stethoscope />Chart</Link></Button>}
                     </div></TD>
                   </TR>))}</TBody></Table>
             )}
           </Card>
-          <Card className="mt-4"><CardHeader><CardTitle className="flex items-center gap-2 text-[15px]"><BedDouble className="size-4" />Bays</CardTitle></CardHeader>
+          <Card className="mt-4"><CardHeader><CardTitle className="flex items-center gap-2 text-section"><BedDouble className="size-4" />Bays</CardTitle></CardHeader>
             <CardContent className="flex flex-wrap gap-2">{d.bays.map((b) => <span key={b.id} className={cn("rounded-md border px-2.5 py-1 text-xs", b.status === "available" ? "border-success/40 bg-success-soft/40" : b.status === "cleaning" ? "border-warning/50 bg-warning-soft/50" : "bg-muted/60")}>{b.name} · {b.status}</span>)}</CardContent></Card>
         </>
       )}
@@ -111,7 +113,7 @@ function ArrivalDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="md"><DialogHeader><DialogTitle>New ED arrival</DialogTitle><DialogDescription>Quick registration. Unidentified patients get a temporary record that is merged into the real chart once identity is verified.</DialogDescription></DialogHeader>
-        <label className="flex items-center gap-2 text-[13.5px]"><Checkbox checked={unknown} onCheckedChange={(x) => setUnknown(!!x)} />Patient can't be identified yet</label>
+        <label className="flex items-center gap-2 text-body"><Checkbox checked={unknown} onCheckedChange={(x) => setUnknown(!!x)} />Patient can't be identified yet</label>
         {unknown ? (
           <div className="grid grid-cols-2 gap-3">
             <Field label="Sex"><NativeSelect value={f.sex} onChange={(e) => setF({ ...f, sex: e.target.value })}><option value="unknown">Unknown</option><option value="female">Female</option><option value="male">Male</option></NativeSelect></Field>
@@ -143,7 +145,7 @@ function ActionDialog({ act, board, onClose }: { act: { v: Visit; kind: "triage"
       <DialogContent size="md">
         <DialogHeader><DialogTitle>{{ triage: "Triage", room: "Room patient", dispo: "Disposition", reconcile: "Identify patient" }[kind]} — {v.patient.name}</DialogTitle><DialogDescription>{v.chief_complaint}</DialogDescription></DialogHeader>
         {kind === "triage" && <>
-          <Field label="ESI level (your clinical assessment)" required><div className="flex gap-2">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" onClick={() => setEsi(String(n))} className={cn("size-10 rounded-lg border text-[15px] font-bold", esi === String(n) ? ESI_STYLE[n] : "hover:bg-muted")} aria-pressed={esi === String(n)}>{n}</button>)}</div></Field>
+          <Field label="ESI level (your clinical assessment)" required><div className="flex gap-2">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" onClick={() => setEsi(String(n))} className={cn("size-10 rounded-lg border text-section font-bold", esi === String(n) ? ESI_STYLE[n] : "hover:bg-muted")} aria-pressed={esi === String(n)}>{n}</button>)}</div></Field>
           <div className="grid grid-cols-3 gap-3">{[["heart_rate", "HR"], ["respiratory_rate", "RR"], ["spo2", "SpO₂"], ["systolic", "Systolic"], ["diastolic", "Diastolic"], ["pain_score", "Pain"]].map(([k, l]) => <Field key={k} label={l}><Input inputMode="numeric" value={vit[k] ?? ""} onChange={(e) => setVit({ ...vit, [k]: e.target.value })} /></Field>)}</div>
           <Field label="Triage notes"><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
         </>}
@@ -159,7 +161,7 @@ function ActionDialog({ act, board, onClose }: { act: { v: Visit; kind: "triage"
         {kind === "reconcile" && <>
           <Field label="Verified patient record" required><PatientPicker value={real} onChange={setReal} /></Field>
           <Field label="How was identity verified?" required><Input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="e.g. Driver's license checked at bedside" /></Field>
-          <label className="flex items-start gap-2 text-[13px]"><Checkbox className="mt-0.5" checked={attest} onCheckedChange={(x) => setAttest(!!x)} />I verified this patient's identity. All records from the temporary identity will move to the selected chart (audited).</label>
+          <label className="flex items-start gap-2 text-table"><Checkbox className="mt-0.5" checked={attest} onCheckedChange={(x) => setAttest(!!x)} />I verified this patient's identity. All records from the temporary identity will move to the selected chart (audited).</label>
         </>}
         <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button>
           {kind === "triage" && <Button disabled={!esi} onClick={() => { const vitals = Object.fromEntries(Object.entries(vit).filter(([, x]) => x.trim()).map(([k, x]) => [k, Number(x)])); run(`/ed/visits/${v.id}/triage`, { esi_level: Number(esi), notes: notes || null, vitals: Object.keys(vitals).length ? vitals : null }, `Triage recorded (ESI ${esi})`); }}>Save triage</Button>}

@@ -141,7 +141,7 @@ export function ProblemsTab({ patientId }: { patientId: string }) {
 export function MedicationsTab({ patientId }: { patientId: string }) {
   return (
     <>
-      <p className="mb-3 text-[13px] text-muted-foreground">Medication list (what the patient reports taking). Prescribing arrives with clinical orders.</p>
+      <p className="mb-3 text-table text-muted-foreground">Medication list (what the patient reports taking). Prescribing arrives with clinical orders.</p>
       <ClinicalList<Medication & Row> patientId={patientId} cfg={{
         path: "medications", noun: "medication", emptyText: "No medications recorded",
         fields: [
@@ -167,7 +167,7 @@ export function MedicationsTab({ patientId }: { patientId: string }) {
 
 export function AllergiesTab({ patientId }: { patientId: string }) {
   return <ClinicalList<Allergy & Row> patientId={patientId} cfg={{
-    path: "allergies", noun: "allergy", emptyText: "No known allergies recorded",
+    path: "allergies", noun: "allergy", emptyText: "Allergies: none recorded — this is not a confirmed “no known allergies”",
     fields: [
       { name: "substance", label: "Substance", required: true },
       { name: "category", label: "Category", type: "select", options: statusOpts("medication", "food", "environmental", "other"), span: 1 },

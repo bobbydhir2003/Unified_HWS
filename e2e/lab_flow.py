@@ -46,7 +46,7 @@ with sync_playwright() as p:
     lab.get_by_role("dialog").get_by_role("button", name="Collect & label").click()
     expect(lab.get_by_text(re.compile("Collected — accession"))).to_be_visible(timeout=10000)
     lab.get_by_role("tab", name=re.compile("Bench")).click()
-    card = lab.locator("div.rounded-xl", has_text=NAME).first
+    card = lab.get_by_test_id("specimen-card").filter(has_text=NAME).first
     card.get_by_role("button", name="Receive").click()
     expect(lab.get_by_text("Accessioned")).to_be_visible(timeout=10000)
     card.get_by_role("button", name="Enter results").click()
@@ -58,7 +58,7 @@ with sync_playwright() as p:
     expect(card.get_by_role("button", name="Verify")).to_be_disabled()  # same person can't verify
     lab2 = login("lab2@harborview.dev")
     lab2.goto(f"{BASE}/lab?tab=bench")
-    lab2.locator("div.rounded-xl", has_text=NAME).first.get_by_role("button", name="Verify").click()
+    lab2.get_by_test_id("specimen-card").filter(has_text=NAME).first.get_by_role("button", name="Verify").click()
     expect(lab2.get_by_text("Verified and sent to the clinician")).to_be_visible(timeout=10000)
     lab2.screenshot(path=f"{SHOTS}/lab-01-verified.png")
     b.close()

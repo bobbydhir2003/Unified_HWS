@@ -113,13 +113,13 @@ function Recorder({ onDone }: { onDone: (blob: Blob, seconds: number) => void })
 
   return (
     <div className="space-y-3">
-      {error && <p role="alert" className="flex items-start gap-1.5 text-[13px] text-destructive"><MicOff className="mt-0.5 size-4 shrink-0" />{error}</p>}
+      {error && <p role="alert" className="flex items-start gap-1.5 text-table text-destructive"><MicOff className="mt-0.5 size-4 shrink-0" />{error}</p>}
       <div className="flex items-center gap-3">
         {state === "idle" ? (
           <Button onClick={start}><Mic />Start recording</Button>
         ) : (
           <>
-            <span className={cn("flex items-center gap-2 rounded-full px-3 py-1 text-[13px] font-medium tabular", state === "recording" ? "bg-destructive-soft text-destructive" : "bg-muted text-muted-foreground")}>
+            <span className={cn("flex items-center gap-2 rounded-full px-3 py-1 text-table font-medium tabular", state === "recording" ? "bg-destructive-soft text-destructive" : "bg-muted text-muted-foreground")}>
               <span className={cn("size-2 rounded-full", state === "recording" ? "animate-pulse bg-destructive" : "bg-muted-foreground")} />
               {state === "recording" ? "Recording" : "Paused"} {mmss(seconds)}
             </span>
@@ -178,15 +178,15 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
       <Card className="border-ai/30">
         {header}
         <CardContent className="space-y-4 pt-4">
-          {s?.status === "applied" && <p className="text-[13px] text-success">Last draft was inserted into the note (v{s.applied_note_version}).</p>}
-          <p className="text-[13px] text-muted-foreground">Capture the visit conversation and get a draft SOAP note to review. Nothing is added to the chart until you insert it, and AI-drafted notes need your attestation to sign.</p>
+          {s?.status === "applied" && <p className="text-table text-success">Last draft was inserted into the note (v{s.applied_note_version}).</p>}
+          <p className="text-table text-muted-foreground">Capture the visit conversation and get a draft SOAP note to review. Nothing is added to the chart until you insert it, and AI-drafted notes need your attestation to sign.</p>
           <div className="flex gap-2" role="radiogroup" aria-label="Consent method">
             {(["verbal", "written"] as const).map((m) => (
               <button key={m} role="radio" aria-checked={method === m} onClick={() => setMethod(m)}
-                className={cn("rounded-lg border px-3 py-1.5 text-[13px] capitalize", method === m && "border-primary bg-accent/50 font-medium")}>{m} consent</button>
+                className={cn("rounded-lg border px-3 py-1.5 text-table capitalize", method === m && "border-primary bg-accent/50 font-medium")}>{m} consent</button>
             ))}
           </div>
-          <label className="flex items-start gap-2 rounded-lg border p-3 text-[13px]">
+          <label className="flex items-start gap-2 rounded-lg border p-3 text-table">
             <Checkbox checked={consent} onCheckedChange={(c) => setConsent(!!c)} className="mt-0.5" />
             <span>The patient (or their representative) was informed and agreed to this visit being recorded and documented with AI assistance.</span>
           </label>
@@ -207,12 +207,12 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
       {header}
       <CardContent className="space-y-4 pt-4">
         {active.status === "failed" && active.error && (
-          <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">
+          <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-table text-destructive">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />{active.error}
           </div>
         )}
         {processing && (
-          <p className="flex items-center gap-2 text-[13.5px]"><Loader2 className="size-4 animate-spin text-ai" />{active.status === "transcribing" ? "Transcribing recording…" : "Drafting SOAP note…"}</p>
+          <p className="flex items-center gap-2 text-body"><Loader2 className="size-4 animate-spin text-ai" />{active.status === "transcribing" ? "Transcribing recording…" : "Drafting SOAP note…"}</p>
         )}
         {capture && (
           <Tabs defaultValue="record">
@@ -240,7 +240,7 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
             </TabsContent>
             {synthetic && (
               <TabsContent value="demo" className="space-y-2">
-                <p className="text-[13px] text-muted-foreground">Loads a scripted, fictional conversation matched to the chief complaint so you can try the workflow. It is not this patient's visit.</p>
+                <p className="text-table text-muted-foreground">Loads a scripted, fictional conversation matched to the chief complaint so you can try the workflow. It is not this patient's visit.</p>
                 <Button variant="outline" loading={busy === "demo"} onClick={() => run("demo", () => post(`/scribe/${active.id}/demo`))}><FlaskConical />Use synthetic conversation</Button>
               </TabsContent>
             )}
@@ -251,7 +251,7 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
           <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <section aria-label="Transcript" className="min-w-0">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-[13px] font-semibold">Transcript {active.transcript_edited && <span className="font-normal text-muted-foreground">(edited)</span>}</h3>
+                <h3 className="text-table font-semibold">Transcript {active.transcript_edited && <span className="font-normal text-muted-foreground">(edited)</span>}</h3>
                 <Button size="xs" variant="ghost" onClick={() => { setTyped(toText(active.transcript ?? [])); setEditingTranscript((v) => !v); }}>{editingTranscript ? "Cancel" : "Edit"}</Button>
               </div>
               {editingTranscript ? (
@@ -263,10 +263,10 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
                   </Button>
                 </div>
               ) : (
-                <ol className="max-h-[420px] space-y-2 overflow-y-auto rounded-lg border bg-muted/30 p-3 text-[13px]">
+                <ol className="max-h-[420px] space-y-2 overflow-y-auto rounded-lg border bg-muted/30 p-3 text-table">
                   {active.transcript?.map((t, i) => (
                     <li key={i} className="flex gap-2">
-                      <span className={cn("mt-0.5 shrink-0 rounded px-1.5 text-[10.5px] font-semibold uppercase", t.speaker === "clinician" ? "bg-accent text-accent-foreground" : t.speaker === "patient" ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>
+                      <span className={cn("mt-0.5 shrink-0 rounded px-1.5 text-label font-semibold uppercase", t.speaker === "clinician" ? "bg-accent text-accent-foreground" : t.speaker === "patient" ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>
                         {t.speaker === "clinician" ? "Clin" : t.speaker === "patient" ? "Pt" : "Oth"}
                       </span>
                       <span>{t.text}</span>
@@ -277,18 +277,18 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
             </section>
             <section aria-label="Draft note" className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-[13px] font-semibold">Draft note</h3>
+                <h3 className="text-table font-semibold">Draft note</h3>
                 <AIBadge label="AI draft — review every line" />
                 {active.draft.provider === "simulated" && <SimulatedBadge label="Rule-based simulation" />}
               </div>
               {active.draft.uncertainties.length > 0 && (
-                <ul className="space-y-1 rounded-lg bg-warning-soft px-3 py-2 text-[12.5px]">
+                <ul className="space-y-1 rounded-lg bg-warning-soft px-3 py-2 text-table">
                   {active.draft.uncertainties.map((u, i) => <li key={i} className="flex gap-1.5"><AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" />{u}</li>)}
                 </ul>
               )}
               {SECTIONS.map((k) => (
                 <div key={k}>
-                  <label htmlFor={`scribe-${k}`} className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</label>
+                  <label htmlFor={`scribe-${k}`} className="text-label font-semibold uppercase tracking-wide text-muted-foreground">{k}</label>
                   <Textarea id={`scribe-${k}`} rows={k === "plan" || k === "subjective" ? 4 : 3} value={sections[k]} onChange={(e) => setSections({ ...sections, [k]: e.target.value })} className="mt-1" />
                 </div>
               ))}
@@ -296,7 +296,7 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
                 const known = (chartAllergies ?? []).map((a) => a.toLowerCase());
                 const missing = chartAllergies ? active.draft.allergies_mentioned.filter((a) => !known.some((k) => k.includes(a.toLowerCase()) || a.toLowerCase().includes(k))) : [];
                 return missing.length > 0 && (
-                  <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">
+                  <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive-soft px-3 py-2 text-table text-destructive">
                     <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                     <span><strong>Allergy discrepancy:</strong> {missing.join(", ")} mentioned in the conversation but not on the chart's allergy list.{" "}
                       <Link to={`/patients/${patientId}/allergies`} className="font-medium underline">Review allergies</Link></span>
@@ -309,9 +309,9 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
                   {active.draft.medications_mentioned.map((m) => <Badge key={m} variant="outline"><Pill />{m}</Badge>)}
                 </div>
               )}
-              {active.draft.follow_up && <p className="text-[12.5px]"><span className="text-muted-foreground">Follow-up mentioned:</span> {active.draft.follow_up}</p>}
-              <p className="text-[11.5px] text-muted-foreground">Mentioned medications and allergies are not added to the chart lists automatically — update them in the chart if appropriate.</p>
-              {noteDirty && <p className="text-[13px] text-warning">Save or discard your unsaved note edits before inserting the draft.</p>}
+              {active.draft.follow_up && <p className="text-table"><span className="text-muted-foreground">Follow-up mentioned:</span> {active.draft.follow_up}</p>}
+              <p className="text-label text-muted-foreground">Mentioned medications and allergies are not added to the chart lists automatically — update them in the chart if appropriate.</p>
+              {noteDirty && <p className="text-table text-warning">Save or discard your unsaved note edits before inserting the draft.</p>}
               <div className="flex flex-wrap gap-2">
                 <Button disabled={noteDirty} loading={busy === "apply"} onClick={async () => {
                   let mode: "replace" | "append" = "replace";

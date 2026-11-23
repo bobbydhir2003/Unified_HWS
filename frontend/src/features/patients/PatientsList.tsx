@@ -95,7 +95,7 @@ export function PatientsList() {
                       </div>
                     </TD>
                     <TD className="tabular">{fmtDob(p.date_of_birth)} · {sexShort(p.sex_at_birth)}</TD>
-                    <TD className="font-mono text-[12.5px] text-muted-foreground">{p.mrn}</TD>
+                    <TD className="font-mono text-table text-muted-foreground">{p.mrn}</TD>
                     <TD className="hidden tabular md:table-cell">{p.phone ?? "—"}</TD>
                     <TD className="hidden lg:table-cell">{p.primary_provider_name ?? "—"}</TD>
                     <TD className="hidden text-muted-foreground lg:table-cell">{fmtDate(p.last_visit_at)}</TD>
@@ -106,7 +106,7 @@ export function PatientsList() {
           </Table>
         )}
         {data && data.total > data.page_size && (
-          <div className="flex items-center justify-between border-t px-4 py-2.5 text-[13px] text-muted-foreground">
+          <div className="flex items-center justify-between border-t px-4 py-2.5 text-table text-muted-foreground">
             <span>{(page - 1) * data.page_size + 1}–{Math.min(page * data.page_size, data.total)} of {data.total}</span>
             <div className="flex gap-1">
               <Button variant="outline" size="icon-sm" disabled={page <= 1} onClick={() => setParam("page", String(page - 1))} aria-label="Previous page"><ChevronLeft /></Button>

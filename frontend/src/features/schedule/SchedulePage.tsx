@@ -62,7 +62,7 @@ function EventBlock({ a, tz, lane, lanes, onClick, showProvider }: { a: Appointm
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className={cn("absolute overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-[11.5px] leading-tight shadow-sm transition hover:z-10 hover:shadow-md focus-visible:z-10", dim && "line-through opacity-50", done && "opacity-70")}
+      className={cn("absolute overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-label leading-tight shadow-sm transition hover:z-10 hover:shadow-md focus-visible:z-10", dim && "line-through opacity-50", done && "opacity-70")}
       style={{ top, height: h, left: `calc(${(lane / lanes) * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)`, borderLeftColor: c, background: `color-mix(in oklch, ${c} 14%, var(--card))` }}
       aria-label={`${a.patient.name}, ${hhmm(s)}, ${a.appointment_type?.name ?? ""}, ${a.status.replace("_", " ")}`}
     >
@@ -84,7 +84,7 @@ function TimeGutter() {
   return (
     <div className="relative w-14 shrink-0 border-r" style={{ height: (DAY_END - DAY_START) * PX }}>
       {hours.map((m) => (
-        <span key={m} className="absolute right-2 -translate-y-1/2 text-[10.5px] text-muted-foreground tabular" style={{ top: (m - DAY_START) * PX }}>
+        <span key={m} className="absolute right-2 -translate-y-1/2 text-label text-muted-foreground tabular" style={{ top: (m - DAY_START) * PX }}>
           {m === DAY_START ? "" : hhmm(m).replace(":00", "")}
         </span>
       ))}
@@ -198,14 +198,14 @@ export function SchedulePage() {
             <Button variant="outline" size="sm" onClick={() => setP("date", today)} disabled={date === today && view === "day"}>Today</Button>
             <Button variant="outline" size="icon-sm" onClick={() => step(1)} aria-label="Next"><ChevronRight /></Button>
           </div>
-          <h2 className="ml-1 text-[15px] font-semibold">{title}</h2>
+          <h2 className="ml-1 text-section font-semibold">{title}</h2>
           {q.isFetching && <span className="size-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Refreshing" />}
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <Popover>
               <PopoverTrigger asChild><Button variant="outline" size="sm">Providers ({activeIds.length}/{provList.length})</Button></PopoverTrigger>
               <PopoverContent align="end" className="w-64 space-y-1">
                 {provList.map((p) => (
-                  <label key={p.id} className="flex items-center gap-2 rounded-md px-1.5 py-1 text-[13px] hover:bg-muted">
+                  <label key={p.id} className="flex items-center gap-2 rounded-md px-1.5 py-1 text-table hover:bg-muted">
                     <Checkbox checked={activeIds.includes(p.id)} onCheckedChange={(c) => setSelectedProviders(c ? [...activeIds, p.id] : activeIds.filter((x) => x !== p.id))} />
                     <span className="size-2.5 rounded-full" style={{ background: color(p.color) }} />{p.name}
                   </label>
@@ -219,7 +219,7 @@ export function SchedulePage() {
             <div className="inline-flex rounded-lg bg-muted p-0.5" role="tablist" aria-label="Calendar view">
               {(["day", "week", "month"] as View[]).map((v) => (
                 <button key={v} role="tab" aria-selected={view === v} onClick={() => setP("view", v)}
-                  className={cn("rounded-md px-3 py-1 text-[13px] font-medium capitalize text-muted-foreground", view === v && "bg-card text-foreground shadow-sm")}>{v}</button>
+                  className={cn("rounded-md px-3 py-1 text-table font-medium capitalize text-muted-foreground", view === v && "bg-card text-foreground shadow-sm")}>{v}</button>
               ))}
             </div>
           </div>
@@ -227,7 +227,7 @@ export function SchedulePage() {
 
         {q.error ? <ErrorState error={q.error} retry={q.refetch} /> : view === "month" ? (
           <div className="grid grid-cols-7">
-            {WEEKDAYS.map((w) => <div key={w} className="border-b border-r px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground last:border-r-0">{w}</div>)}
+            {WEEKDAYS.map((w) => <div key={w} className="border-b border-r px-2 py-1.5 text-label font-semibold uppercase tracking-wide text-muted-foreground last:border-r-0">{w}</div>)}
             {Array.from({ length: 42 }).map((_, i) => {
               const d = addDays(range[0], i);
               const list = byDate[d] ?? [];
@@ -239,11 +239,11 @@ export function SchedulePage() {
                   <span className={cn("inline-grid size-6 place-items-center rounded-full text-xs font-medium", d === today && "bg-primary text-primary-foreground")}>{+d.slice(8)}</span>
                   <div className="mt-1 space-y-0.5">
                     {active.slice(0, 3).map((a) => (
-                      <div key={a.id} className="truncate rounded px-1 text-[11px]" style={{ background: `color-mix(in oklch, ${color(a.appointment_type?.color)} 14%, transparent)` }}>
+                      <div key={a.id} className="truncate rounded px-1 text-label" style={{ background: `color-mix(in oklch, ${color(a.appointment_type?.color)} 14%, transparent)` }}>
                         {hhmm(minutesOfDay(a.start_at, tz)).replace(" ", "").toLowerCase()} {a.patient.name.split(" ").slice(-1)[0]}
                       </div>
                     ))}
-                    {active.length > 3 && <div className="px-1 text-[11px] font-medium text-muted-foreground">+{active.length - 3} more</div>}
+                    {active.length > 3 && <div className="px-1 text-label font-medium text-muted-foreground">+{active.length - 3} more</div>}
                   </div>
                 </button>
               );
@@ -256,7 +256,7 @@ export function SchedulePage() {
               {view === "day" ? visibleProviders.map((p) => (
                 <div key={p.id} className="flex min-w-[140px] flex-1 items-center gap-2 border-r px-2 py-2 last:border-r-0">
                   <span className="size-2.5 rounded-full" style={{ background: color(p.color) }} />
-                  <span className="truncate text-[13px] font-medium">{p.name}</span>
+                  <span className="truncate text-table font-medium">{p.name}</span>
                   <span className="ml-auto text-xs text-muted-foreground tabular">{(byDate[date] ?? []).filter((a) => a.provider.id === p.id && a.status !== "cancelled").length}</span>
                 </div>
               )) : Array.from({ length: 7 }).map((_, i) => {
@@ -264,8 +264,8 @@ export function SchedulePage() {
                 return (
                   <button key={d} onClick={() => { const n = new URLSearchParams(params); n.set("view", "day"); n.set("date", d); setParams(n); }}
                     className="min-w-[140px] flex-1 border-r px-2 py-1.5 text-left last:border-r-0 hover:bg-muted/40">
-                    <span className="block text-[11px] font-semibold uppercase text-muted-foreground">{WEEKDAYS[i]}</span>
-                    <span className={cn("inline-grid size-7 place-items-center rounded-full text-[15px] font-semibold", d === today && "bg-primary text-primary-foreground")}>{+d.slice(8)}</span>
+                    <span className="block text-label font-semibold uppercase text-muted-foreground">{WEEKDAYS[i]}</span>
+                    <span className={cn("inline-grid size-7 place-items-center rounded-full text-section font-semibold", d === today && "bg-primary text-primary-foreground")}>{+d.slice(8)}</span>
                   </button>
                 );
               })}
@@ -278,7 +278,7 @@ export function SchedulePage() {
                     events={(byDate[date] ?? []).filter((a) => a.provider.id === p.id)}
                     unavailable={clinic ? unavailableBlocks(p, clinic.id, date) : []}
                     onSlot={(s) => slot(s, p.id)} onOpen={(a) => setOpenId(a.id)} />
-                )) : <p className="p-6 text-[13px] text-muted-foreground">Select at least one provider.</p>
+                )) : <p className="p-6 text-table text-muted-foreground">Select at least one provider.</p>
               ) : Array.from({ length: 7 }).map((_, i) => {
                 const d = addDays(range[0], i);
                 return (

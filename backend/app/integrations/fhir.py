@@ -165,8 +165,8 @@ def capability(request: Request):
     types = ["Patient", "Encounter", "Condition", "AllergyIntolerance", "MedicationStatement", "Observation"]
     return _resp({
         "resourceType": "CapabilityStatement", "status": "active", "date": _iso(now()), "kind": "instance", "fhirVersion": "4.0.1",
-        "format": ["json"], "software": {"name": "Undeclared", "version": "0.1.0"},
-        "implementation": {"description": "Undeclared FHIR R4 read API (development; not certified)", "url": str(request.base_url) + "api/fhir/R4"},
+        "format": ["json"], "software": {"name": "HMS Workflows", "version": "0.1.0"},
+        "implementation": {"description": "HMS Workflows FHIR R4 read API (development; not certified)", "url": str(request.base_url) + "api/fhir/R4"},
         "rest": [{"mode": "server", "security": {"description": "Bearer token + X-Organization-Id; SMART on FHIR not yet supported."},
                   "resource": [{"type": t, "interaction": [{"code": "read"}, {"code": "search-type"}],
                                 "searchParam": [] if t == "Patient" else [{"name": "patient", "type": "reference"}]} for t in types]}],

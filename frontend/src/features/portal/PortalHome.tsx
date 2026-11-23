@@ -1,7 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellRing, CalendarDays, CalendarPlus, CircleAlert, ClipboardCheck, CreditCard, FileHeart, FileUp, FlaskConical, HeartPulse, Home, Hospital, LifeBuoy, LogOut, Mail, MessageSquare, Pill, Send, ShieldCheck, UserRound, Video } from "lucide-react";
+import { CalendarDays, CalendarPlus, CircleAlert, ClipboardCheck, CreditCard, FileHeart, FlaskConical, HeartPulse, Home, LifeBuoy, LogOut, Mail, MessageSquare, Pill, Send, ShieldCheck, UserRound, Video } from "lucide-react";
 import * as React from "react";
-import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { LogoMark } from "@/components/common/Logo";
+import { PRODUCT_NAME } from "@/lib/legal";
 import { PortalDocuments, PortalNotifications, PortalStays, ReadinessCard } from "./PortalExt";
 import { PortalInsurance, usePortalInsurance } from "./PortalInsurance";
 import { LegalFooter } from "@/components/common/LegalFooter";
@@ -34,56 +36,69 @@ type Thread = { id: string; subject: string; category: string; status: string; l
 const canJoinVideo = (a: Appointment) => a.mode === "telehealth" && !["cancelled", "no_show", "checked_out"].includes(a.status)
   && Date.now() >= new Date(a.start_at).getTime() - 30 * 60_000 && Date.now() <= new Date(a.end_at).getTime() + 60 * 60_000;
 
-function Brand() {
-  return (
-    <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700">
-      <svg viewBox="0 0 32 32" className="size-5" aria-hidden><path d="M10 9v8a6 6 0 0 0 12 0V9" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" /><circle cx="16" cy="24.5" r="1.8" fill="#bfdbfe" /></svg>
-    </span>
-  );
-}
-
-const NAV = [
-  { to: "/portal", label: "Home", icon: Home, end: true },
-  { to: "/portal/appointments", label: "Appointments", icon: CalendarDays },
-  { to: "/portal/messages", label: "Messages", icon: MessageSquare },
-  { to: "/portal/visits", label: "Visit summaries", icon: FileHeart },
-  { to: "/portal/results", label: "Test results", icon: FlaskConical },
-  { to: "/portal/health", label: "Health record", icon: HeartPulse },
-  { to: "/portal/insurance", label: "Insurance", icon: ShieldCheck },
-  { to: "/portal/stays", label: "Hospital stays", icon: Hospital },
-  { to: "/portal/documents", label: "Documents", icon: FileUp },
-  { to: "/portal/notifications", label: "Notifications", icon: BellRing },
-  { to: "/portal/billing", label: "Billing", icon: CreditCard },
-  { to: "/portal/account", label: "Account", icon: UserRound },
-  { to: "/portal/help", label: "Help & About", icon: LifeBuoy },
+/** Five patient sections. Every existing /portal/* URL still works; it simply highlights its section. */
+const SECTIONS: { to: string; label: string; icon: React.ElementType; match: string[]; sub?: { to: string; label: string }[] }[] = [
+  { to: "/portal", label: "Home", icon: Home, match: [] },
+  { to: "/portal/appointments", label: "Appointments", icon: CalendarDays, match: ["/portal/appointments", "/portal/book", "/portal/visit"] },
+  { to: "/portal/messages", label: "Messages", icon: MessageSquare, match: ["/portal/messages"] },
+  { to: "/portal/health", label: "My health", icon: HeartPulse, match: ["/portal/health", "/portal/results", "/portal/visits", "/portal/stays", "/portal/documents"],
+    sub: [{ to: "/portal/health", label: "Health record" }, { to: "/portal/results", label: "Test results" }, { to: "/portal/visits", label: "Visit summaries" },
+      { to: "/portal/stays", label: "Hospital stays" }, { to: "/portal/documents", label: "Documents" }] },
+  { to: "/portal/billing", label: "Billing & insurance", icon: CreditCard, match: ["/portal/billing", "/portal/insurance"],
+    sub: [{ to: "/portal/billing", label: "Billing" }, { to: "/portal/insurance", label: "Insurance" }] },
 ];
+const UTIL = [{ to: "/portal/account", label: "Account", icon: UserRound }, { to: "/portal/help", label: "Help & About", icon: LifeBuoy }];
+
+function sectionFor(pathname: string) {
+  return SECTIONS.find((x) => x.match.some((m) => pathname === m || pathname.startsWith(m + "/"))) ?? (pathname === "/portal" || pathname === "/portal/" ? SECTIONS[0] : undefined);
+}
 
 export function PortalHome() {
   const { membership, logout, me } = useAuth();
+  const { pathname } = useLocation();
+  const section = sectionFor(pathname.replace(/\/$/, "") || "/portal");
   if (membership && !membership.roles.includes("patient")) return <EmptyState title="The portal is for patients" description="Staff use the main workspace." action={<Button asChild><Link to="/">Go to workspace</Link></Button>} className="min-h-dvh" />;
   if (!membership?.patient_id) return <EmptyState title="Your account isn't linked to a patient record yet" description="Please contact the clinic." className="min-h-dvh" />;
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          <Brand />
-          <span className="truncate font-semibold">{membership.organization_name}</span>
-          <span className="hidden text-[13px] text-muted-foreground sm:inline">Patient portal</span>
+    <div className="portal-scale min-h-dvh bg-background">
+      <header className="sticky top-0 z-30 border-b bg-card">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
+          <LogoMark size={32} />
+          <span className="min-w-0 leading-tight"><span className="block truncate font-semibold text-heading">{membership.organization_name}</span>
+            <span className="block text-label text-muted-foreground">Patient portal · {PRODUCT_NAME}</span></span>
           <div className="ml-auto flex items-center gap-1">
             <Notifications />
-            <span className="hidden text-[13px] sm:inline">{me?.user.first_name}</span>
+            <span className="hidden text-body sm:inline">{me?.user.first_name}</span>
             <Button variant="ghost" size="sm" onClick={() => logout()}><LogOut />Sign out</Button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-3 scrollbar-thin" aria-label="Portal">
-          {NAV.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => cn("-mb-px flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground", isActive && "border-primary text-foreground")}>
-              <n.icon className="size-4" />{n.label}
-            </NavLink>
-          ))}
+        <nav className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-3 scrollbar-thin" aria-label="Portal">
+          {SECTIONS.map((n) => {
+            const active = section === n;
+            return (
+              <Link key={n.to} to={n.to} aria-current={active ? "page" : undefined}
+                className={cn("flex h-11 shrink-0 items-center gap-2 rounded-md px-3 text-body font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50", active && "bg-accent font-semibold text-accent-foreground hover:bg-accent hover:text-accent-foreground")}>
+                <n.icon className="size-[18px]" />{n.label}
+              </Link>
+            );
+          })}
+          <span className="ml-auto flex shrink-0 items-center gap-1 pl-2">
+            {UTIL.map((n) => (
+              <NavLink key={n.to} to={n.to} className={({ isActive }) => cn("flex h-11 items-center gap-1.5 rounded-md px-2.5 text-table font-medium text-muted-foreground hover:bg-muted hover:text-foreground", isActive && "text-accent-foreground")}>
+                <n.icon className="size-4" />{n.label}
+              </NavLink>
+            ))}
+          </span>
         </nav>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
+        {section?.sub && (
+          <nav aria-label={`${section.label} sections`} className="mb-5 inline-flex max-w-full flex-wrap overflow-hidden rounded-md border border-control bg-card">
+            {section.sub.map((x) => (
+              <NavLink key={x.to} to={x.to} end className={({ isActive }) => cn("inline-flex h-10 items-center border-r border-control px-4 text-body font-medium text-muted-foreground last:border-r-0 hover:bg-muted hover:text-foreground", isActive && "bg-accent font-semibold text-accent-foreground")}>{x.label}</NavLink>
+            ))}
+          </nav>
+        )}
         <Routes>
           <Route index element={<PortalDashboard />} />
           <Route path="appointments" element={<PortalAppointments />} />
@@ -116,13 +131,13 @@ function ApptCard({ a, onCancelled }: { a: PortalAppt; onCancelled?: () => void 
   const upcoming = new Date(a.start_at) > new Date(Date.now() - 2 * 3600_000) && ["scheduled", "confirmed", "checked_in"].includes(a.status);
   const cancellable = ["scheduled", "confirmed"].includes(a.status) && new Date(a.start_at).getTime() - Date.now() > 24 * 3600_000;
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-lg border bg-card p-4">
       {dialog}
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="font-semibold">{fmtDateTime(a.start_at)}</p>
-          <p className="text-[13px] text-muted-foreground">{a.appointment_type?.name ?? "Appointment"} with {a.provider.name}</p>
-          <p className="text-[13px] text-muted-foreground">{a.mode === "telehealth" ? "Video visit" : a.clinic.name}</p>
+          <p className="text-table text-muted-foreground">{a.appointment_type?.name ?? "Appointment"} with {a.provider.name}</p>
+          <p className="text-table text-muted-foreground">{a.mode === "telehealth" ? "Video visit" : a.clinic.name}</p>
         </div>
         <AppointmentStatusBadge status={a.status} />
       </div>
@@ -154,18 +169,18 @@ function PortalDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><h1 className="text-2xl font-semibold tracking-tight">Hello, {q.data.patient.first_name}</h1><p className="text-[13.5px] text-muted-foreground">Here's what's coming up.</p></div>
+        <div><h1 className="text-display font-semibold tracking-tight text-heading">Hello, {q.data.patient.first_name}</h1><p className="text-body text-muted-foreground">Here's what's coming up.</p></div>
         <Button asChild><Link to="/portal/book"><CalendarPlus />Book an appointment</Link></Button>
       </div>
       <InsurancePrompt />
       <ReadinessCard />
       <div className="grid gap-3 sm:grid-cols-3">
-        <Link to="/portal/messages" className="rounded-xl border bg-card p-4 hover:bg-muted/40"><Mail className="mb-2 size-5 text-primary" /><p className="font-medium">Messages</p><p className="text-[13px] text-muted-foreground">{unread ? `${unread} unread` : "Message your care team"}</p></Link>
-        <Link to="/portal/results" className="rounded-xl border bg-card p-4 hover:bg-muted/40"><FlaskConical className="mb-2 size-5 text-primary" /><p className="font-medium">Test results</p><p className="text-[13px] text-muted-foreground">{q.data.has_recent_results ? "New results available" : "View released results"}</p></Link>
-        <Link to="/portal/visits" className="rounded-xl border bg-card p-4 hover:bg-muted/40"><FileHeart className="mb-2 size-5 text-primary" /><p className="font-medium">Visit summaries</p><p className="text-[13px] text-muted-foreground">Plans and follow-up from past visits</p></Link>
+        <Link to="/portal/messages" className="rounded-lg border bg-card p-4 hover:bg-muted/50"><Mail className="mb-2 size-5 text-primary" /><p className="font-medium">Messages</p><p className="text-table text-muted-foreground">{unread ? `${unread} unread` : "Message your care team"}</p></Link>
+        <Link to="/portal/results" className="rounded-lg border bg-card p-4 hover:bg-muted/50"><FlaskConical className="mb-2 size-5 text-primary" /><p className="font-medium">Test results</p><p className="text-table text-muted-foreground">{q.data.has_recent_results ? "New results available" : "View released results"}</p></Link>
+        <Link to="/portal/visits" className="rounded-lg border bg-card p-4 hover:bg-muted/50"><FileHeart className="mb-2 size-5 text-primary" /><p className="font-medium">Visit summaries</p><p className="text-table text-muted-foreground">Plans and follow-up from past visits</p></Link>
       </div>
       <section>
-        <h2 className="mb-3 text-[15px] font-semibold">Upcoming appointments</h2>
+        <h2 className="mb-3 text-section font-semibold">Upcoming appointments</h2>
         {!q.data.upcoming.length ? <Card><EmptyState icon={CalendarDays} title="No upcoming appointments" action={<Button variant="outline" asChild><Link to="/portal/book">Book one</Link></Button>} /></Card>
           : <div className="grid gap-3 md:grid-cols-2">{q.data.upcoming.map((a) => <ApptCard key={a.id} a={a} onCancelled={() => qc.invalidateQueries({ queryKey: ["portal-home"] })} />)}</div>}
       </section>
@@ -184,14 +199,14 @@ function PortalAppointments() {
       <div className="flex items-end justify-between"><h1 className="text-xl font-semibold">Appointments</h1><Button asChild><Link to="/portal/book"><CalendarPlus />Book</Link></Button></div>
       {q.isLoading ? <LoadingRows /> : <>
         <div className="grid gap-3 md:grid-cols-2">{upcoming.map((a) => <ApptCard key={a.id} a={a} onCancelled={() => qc.invalidateQueries({ queryKey: ["portal-appts"] })} />)}</div>
-        {!upcoming.length && <p className="text-[13.5px] text-muted-foreground">No upcoming appointments.</p>}
+        {!upcoming.length && <p className="text-body text-muted-foreground">No upcoming appointments.</p>}
         <section>
-          <h2 className="mb-2 text-[15px] font-semibold">Past</h2>
+          <h2 className="mb-2 text-section font-semibold">Past</h2>
           <Card><ul className="divide-y">{past.map((a) => (
-            <li key={a.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-[13.5px]">
+            <li key={a.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-body">
               <span>{fmtDateTime(a.start_at)} · {a.appointment_type?.name ?? "Visit"} with {a.provider.name}</span><AppointmentStatusBadge status={a.status} />
             </li>))}
-            {!past.length && <li className="px-4 py-3 text-[13px] text-muted-foreground">None yet.</li>}
+            {!past.length && <li className="px-4 py-3 text-table text-muted-foreground">None yet.</li>}
           </ul></Card>
         </section>
       </>}
@@ -250,10 +265,10 @@ function BookingWizard() {
               );
             })}
           </div>
-          {slots.isLoading ? <LoadingRows rows={2} /> : !slots.data?.slots.length ? <p className="text-[13px] text-muted-foreground">No online openings this day. Try another day or clinician, or call the clinic.</p> : (
+          {slots.isLoading ? <LoadingRows rows={2} /> : !slots.data?.slots.length ? <p className="text-table text-muted-foreground">No online openings this day. Try another day or clinician, or call the clinic.</p> : (
             <div className="flex flex-wrap gap-1.5">
               {slots.data.slots.map((s) => (
-                <button key={s} onClick={() => setSlot(s)} className={cn("rounded-md border px-2.5 py-1.5 text-[13px] tabular hover:border-primary", slot === s && "border-primary bg-primary text-primary-foreground")}>{hhmm(minutesOfDay(s, tz))}</button>
+                <button key={s} onClick={() => setSlot(s)} className={cn("rounded-md border px-2.5 py-1.5 text-table tabular hover:border-primary", slot === s && "border-primary bg-primary text-primary-foreground")}>{hhmm(minutesOfDay(s, tz))}</button>
               ))}
             </div>
           )}
@@ -262,7 +277,7 @@ function BookingWizard() {
       {slot && (
         <Card>
           <CardContent className="space-y-3 pt-5">
-            <p className="text-[13.5px]"><strong>{type?.name}</strong> with {opts.data.providers.find((p) => p.id === provId)?.name} on <strong>{fmtDateTime(slot)}</strong>{type?.is_telehealth ? " (video visit)" : ` at ${opts.data.clinics.find((c) => c.id === clinicId)?.name}`}</p>
+            <p className="text-body"><strong>{type?.name}</strong> with {opts.data.providers.find((p) => p.id === provId)?.name} on <strong>{fmtDateTime(slot)}</strong>{type?.is_telehealth ? " (video visit)" : ` at ${opts.data.clinics.find((c) => c.id === clinicId)?.name}`}</p>
             <Field label="Reason for visit" required><Input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} placeholder="e.g. Follow-up on blood pressure" /></Field>
             <p className="text-xs text-muted-foreground">For urgent problems call the clinic. For emergencies call 911.</p>
             <Button loading={busy} disabled={reason.trim().length < 3} onClick={async () => {
@@ -312,9 +327,9 @@ function IntakeForm() {
       <h1 className="text-xl font-semibold">Pre-visit form</h1>
       <Card><CardContent className="space-y-4 pt-5">
         <Field label="What would you like to discuss?" required><Textarea rows={3} value={f.reason_details} onChange={(e) => set("reason_details", e.target.value)} /></Field>
-        <fieldset><legend className="mb-2 text-[13px] font-medium">Current symptoms</legend>
+        <fieldset><legend className="mb-2 text-table font-medium">Current symptoms</legend>
           <div className="flex flex-wrap gap-2">{SYMPTOMS.map((s) => (
-            <label key={s} className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[13px]"><Checkbox checked={f.symptoms.includes(s)} onCheckedChange={(c) => set("symptoms", c ? [...f.symptoms, s] : f.symptoms.filter((x) => x !== s))} />{s}</label>
+            <label key={s} className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-table"><Checkbox checked={f.symptoms.includes(s)} onCheckedChange={(c) => set("symptoms", c ? [...f.symptoms, s] : f.symptoms.filter((x) => x !== s))} />{s}</label>
           ))}</div>
         </fieldset>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -323,11 +338,11 @@ function IntakeForm() {
         </div>
       </CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle>Medications & allergies</CardTitle></CardHeader><CardContent className="space-y-3">
-        <div className="rounded-lg bg-muted/50 p-3 text-[13px]"><p className="mb-1 font-medium">Medications on file</p>{summary.data?.medications?.length ? summary.data.medications.map((m) => <p key={m.id}>{m.name} {m.dose}</p>) : <p className="text-muted-foreground">None</p>}</div>
-        <label className="flex items-center gap-2 text-[13px]"><Checkbox checked={f.medications_confirmed} onCheckedChange={(c) => set("medications_confirmed", !!c)} />This list is correct</label>
+        <div className="rounded-lg bg-muted/50 p-3 text-table"><p className="mb-1 font-medium">Medications on file</p>{summary.data?.medications?.length ? summary.data.medications.map((m) => <p key={m.id}>{m.name} {m.dose}</p>) : <p className="text-muted-foreground">None</p>}</div>
+        <label className="flex items-center gap-2 text-table"><Checkbox checked={f.medications_confirmed} onCheckedChange={(c) => set("medications_confirmed", !!c)} />This list is correct</label>
         {!f.medications_confirmed && <Field label="What's changed?"><Textarea rows={2} value={f.medication_changes} onChange={(e) => set("medication_changes", e.target.value)} /></Field>}
-        <div className="rounded-lg bg-muted/50 p-3 text-[13px]"><p className="mb-1 font-medium">Allergies on file</p>{summary.data?.allergies?.length ? summary.data.allergies.map((a) => <p key={a.id}>{a.substance} — {a.reaction}</p>) : <p className="text-muted-foreground">No known allergies</p>}</div>
-        <label className="flex items-center gap-2 text-[13px]"><Checkbox checked={f.allergies_confirmed} onCheckedChange={(c) => set("allergies_confirmed", !!c)} />This list is correct</label>
+        <div className="rounded-lg bg-muted/50 p-3 text-table"><p className="mb-1 font-medium">Allergies on file</p>{summary.data?.allergies?.length ? summary.data.allergies.map((a) => <p key={a.id}>{a.substance} — {a.reaction}</p>) : <p className="text-muted-foreground">None recorded</p>}</div>
+        <label className="flex items-center gap-2 text-table"><Checkbox checked={f.allergies_confirmed} onCheckedChange={(c) => set("allergies_confirmed", !!c)} />This list is correct</label>
         {!f.allergies_confirmed && <Field label="What's changed?"><Textarea rows={2} value={f.allergy_changes} onChange={(e) => set("allergy_changes", e.target.value)} /></Field>}
       </CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle>Over the last 2 weeks, how often have you been bothered by…</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2">
@@ -359,12 +374,12 @@ function PortalMessages() {
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between border-b px-4 py-3"><span className="font-semibold">Messages</span><Button size="xs" onClick={() => navigate("/portal/messages/new")}><Send />New</Button></div>
-        {threads.isLoading ? <LoadingRows rows={3} /> : !threads.data?.length ? <p className="p-4 text-[13px] text-muted-foreground">No messages yet.</p> : (
+        {threads.isLoading ? <LoadingRows rows={3} /> : !threads.data?.length ? <p className="p-4 text-table text-muted-foreground">No messages yet.</p> : (
           <ul className="divide-y">{threads.data.map((t) => (
             <li key={t.id}><Link to={`/portal/messages/${t.id}`} className={cn("block px-4 py-3 hover:bg-muted/40", t.id === threadId && "bg-accent/50")}>
-              <span className="flex items-center gap-2 text-[13.5px] font-medium">{t.subject}{t.unread > 0 && <span className="size-2 rounded-full bg-primary" />}</span>
+              <span className="flex items-center gap-2 text-body font-medium">{t.subject}{t.unread > 0 && <span className="size-2 rounded-full bg-primary" />}</span>
               <span className="block truncate text-xs text-muted-foreground">{t.messages[t.messages.length - 1]?.body}</span>
-              <span className="text-[11px] text-muted-foreground">{fmtDateTime(t.last_message_at)}</span>
+              <span className="text-label text-muted-foreground">{fmtDateTime(t.last_message_at)}</span>
             </Link></li>
           ))}</ul>
         )}
@@ -391,9 +406,9 @@ function PortalMessages() {
             <div className="flex h-full flex-col">
               <div className="border-b px-5 py-3"><p className="font-semibold">{thread.data.subject}</p>{thread.data.status === "closed" && <Badge>Closed</Badge>}</div>
               <ol className="flex-1 space-y-3 p-5">{thread.data.messages.map((m) => (
-                <li key={m.id} className={cn("max-w-[80%] rounded-2xl px-4 py-2.5 text-[13.5px]", m.from_patient ? "ml-auto bg-primary text-primary-foreground" : "bg-muted")}>
+                <li key={m.id} className={cn("max-w-[80%] rounded-2xl px-4 py-2.5 text-body", m.from_patient ? "ml-auto bg-primary text-primary-foreground" : "bg-muted")}>
                   <p className="whitespace-pre-wrap">{m.body}</p>
-                  <p className={cn("mt-1 text-[11px]", m.from_patient ? "text-primary-foreground/70" : "text-muted-foreground")}>{m.from_patient ? "You" : m.sender} · {fmtDateTime(m.created_at)}</p>
+                  <p className={cn("mt-1 text-label", m.from_patient ? "text-primary-foreground/70" : "text-muted-foreground")}>{m.from_patient ? "You" : m.sender} · {fmtDateTime(m.created_at)}</p>
                 </li>
               ))}</ol>
               {thread.data.status === "open" && (
@@ -424,14 +439,14 @@ function VisitSummaries() {
       {!q.data?.length && <Card><EmptyState icon={FileHeart} title="No visit summaries yet" description="Summaries appear after your clinician signs the visit note." /></Card>}
       {q.data?.map((v) => (
         <Card key={v.encounter_id}>
-          <CardHeader className="pb-2"><div><CardTitle>{fmtDate(v.date)} · {v.reason ?? "Office visit"}</CardTitle><p className="text-[13px] text-muted-foreground">{v.provider}</p></div></CardHeader>
-          <CardContent className="space-y-3 text-[13.5px]">
+          <CardHeader className="pb-2"><div><CardTitle>{fmtDate(v.date)} · {v.reason ?? "Office visit"}</CardTitle><p className="text-table text-muted-foreground">{v.provider}</p></div></CardHeader>
+          <CardContent className="space-y-3 text-body">
             {!!v.diagnoses.length && <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Diagnoses</p>{v.diagnoses.map((d) => <p key={d.code}>{d.description}</p>)}</div>}
             {v.plan && <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your plan</p><p className="whitespace-pre-wrap">{v.plan}</p></div>}
             {!!v.prescriptions.length && <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prescriptions</p>{v.prescriptions.map((p) => <p key={p.title} className="flex items-center gap-1.5"><Pill className="size-3.5" />{p.title} — {p.sig}</p>)}</div>}
             {v.follow_up && <p><strong>Follow-up:</strong> {v.follow_up}</p>}
             {(v.vitals.bp || v.vitals.heart_rate) && <p className="text-muted-foreground">Vitals: {[v.vitals.bp && `BP ${v.vitals.bp}`, v.vitals.heart_rate && `HR ${v.vitals.heart_rate}`, v.vitals.weight_lb && `${v.vitals.weight_lb} lb`].filter(Boolean).join(" · ")}</p>}
-            {v.addenda.map((a, i) => <p key={i} className="rounded-lg border-l-4 border-primary bg-muted/40 px-3 py-1.5 text-[13px]">Update: {a}</p>)}
+            {v.addenda.map((a, i) => <p key={i} className="rounded-lg border-l-4 border-primary bg-muted/40 px-3 py-1.5 text-table">Update: {a}</p>)}
           </CardContent>
         </Card>
       ))}
@@ -450,13 +465,13 @@ function PortalResults() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Test results</h1>
-      <p className="text-[13px] text-muted-foreground">Results appear here after your clinician reviews them. Questions? <Link to="/portal/messages/new" className="text-primary underline">Send a message</Link>.</p>
+      <p className="text-table text-muted-foreground">Results appear here after your clinician reviews them. Questions? <Link to="/portal/messages/new" className="text-primary underline">Send a message</Link>.</p>
       {!byOrder.size && <Card><EmptyState icon={FlaskConical} title="No released results" /></Card>}
       {[...byOrder.values()].map((rs) => (
         <Card key={rs[0].order_id}>
           <CardHeader className="pb-2"><CardTitle>{rs[0].panel}</CardTitle><span className="text-xs text-muted-foreground">{fmtDateTime(rs[0].resulted_at)}</span></CardHeader>
           <CardContent>
-            <table className="w-full text-[13.5px]"><tbody>{rs.map((r) => (
+            <table className="w-full text-body"><tbody>{rs.map((r) => (
               <tr key={r.id} className="border-b last:border-0">
                 <td className="py-1.5">{r.name}</td>
                 <td className={cn("tabular", flagClass(r.flag))}>{r.value} {r.unit} {flagLabel(r.flag) && <span className="text-xs">({r.flag.replace("_", " ")})</span>}</td>
@@ -480,13 +495,13 @@ function HealthRecord() {
       <h1 className="text-xl font-semibold">Health record</h1>
       <div className="grid gap-4 md:grid-cols-2">
         <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2"><ShieldCheck className="size-4 text-destructive" />Allergies</CardTitle></CardHeader>
-          <CardContent>{d.allergies?.length ? <ul className="space-y-1 text-[13.5px]">{d.allergies.map((a) => <li key={a.id}>{a.substance} <span className="text-muted-foreground">— {a.reaction}</span></li>)}</ul> : <p className="text-[13px] text-muted-foreground">No known allergies on file.</p>}</CardContent></Card>
+          <CardContent>{d.allergies?.length ? <ul className="space-y-1 text-body">{d.allergies.map((a) => <li key={a.id}>{a.substance} <span className="text-muted-foreground">— {a.reaction}</span></li>)}</ul> : <p className="text-table text-muted-foreground">No allergies recorded. If you have allergies, tell your care team.</p>}</CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2"><Pill className="size-4 text-success" />Medications</CardTitle></CardHeader>
-          <CardContent>{d.medications?.length ? <ul className="space-y-1 text-[13.5px]">{d.medications.map((m) => <li key={m.id}>{m.name} <span className="text-muted-foreground">{[m.dose, m.frequency].filter(Boolean).join(", ")}</span></li>)}</ul> : <p className="text-[13px] text-muted-foreground">No medications on file.</p>}</CardContent></Card>
+          <CardContent>{d.medications?.length ? <ul className="space-y-1 text-body">{d.medications.map((m) => <li key={m.id}>{m.name} <span className="text-muted-foreground">{[m.dose, m.frequency].filter(Boolean).join(", ")}</span></li>)}</ul> : <p className="text-table text-muted-foreground">No medications on file.</p>}</CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle>Health conditions</CardTitle></CardHeader>
-          <CardContent>{d.problems?.length ? <ul className="space-y-1 text-[13.5px]">{d.problems.map((p) => <li key={p.id}>{p.description}</li>)}</ul> : <p className="text-[13px] text-muted-foreground">None on file.</p>}</CardContent></Card>
+          <CardContent>{d.problems?.length ? <ul className="space-y-1 text-body">{d.problems.map((p) => <li key={p.id}>{p.description}</li>)}</ul> : <p className="text-table text-muted-foreground">None on file.</p>}</CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2"><HeartPulse className="size-4 text-primary" />Latest vitals</CardTitle></CardHeader>
-          <CardContent className="text-[13.5px]">{d.last_vitals ? <>{d.last_vitals.systolic && <p>Blood pressure {d.last_vitals.systolic}/{d.last_vitals.diastolic}</p>}{d.last_vitals.heart_rate && <p>Heart rate {d.last_vitals.heart_rate}</p>}<p className="text-xs text-muted-foreground">{fmtDateTime(d.last_vitals.measured_at)} · {fmtTime(d.last_vitals.measured_at)}</p></> : <p className="text-muted-foreground">None recorded.</p>}</CardContent></Card>
+          <CardContent className="text-body">{d.last_vitals ? <>{d.last_vitals.systolic && <p>Blood pressure {d.last_vitals.systolic}/{d.last_vitals.diastolic}</p>}{d.last_vitals.heart_rate && <p>Heart rate {d.last_vitals.heart_rate}</p>}<p className="text-xs text-muted-foreground">{fmtDateTime(d.last_vitals.measured_at)} · {fmtTime(d.last_vitals.measured_at)}</p></> : <p className="text-muted-foreground">None recorded.</p>}</CardContent></Card>
       </div>
       <p className="text-xs text-muted-foreground">Something incorrect? <Link to="/portal/messages/new" className="text-primary underline">Let your care team know</Link>.</p>
     </div>
@@ -513,9 +528,9 @@ function PortalBilling() {
         <Badge variant="warning" className="ml-auto"><FlaskConical />Payments are simulated — no card is charged</Badge>
       </CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle>Statements</CardTitle></CardHeader><CardContent>
-        {!q.data.invoices.length ? <p className="text-[13px] text-muted-foreground">No statements.</p> : (
+        {!q.data.invoices.length ? <p className="text-table text-muted-foreground">No statements.</p> : (
           <ul className="divide-y">{q.data.invoices.map((i) => (
-            <li key={i.id} className="flex flex-wrap items-center gap-3 py-3 text-[13.5px]">
+            <li key={i.id} className="flex flex-wrap items-center gap-3 py-3 text-body">
               <span className="min-w-0 flex-1"><span className="font-medium">{i.description}</span><span className="block text-xs text-muted-foreground">{i.number} · issued {fmtDate(i.issued_at)} · due {fmtDate(i.due_date)}</span></span>
               <span className="tabular">{fmtMoney(i.balance_cents)}{i.balance_cents !== i.total_cents && <span className="text-xs text-muted-foreground"> of {fmtMoney(i.total_cents)}</span>}</span>
               {i.status === "open" ? <Button size="sm" onClick={() => { setPaying(i); setAmount((i.balance_cents / 100).toFixed(2)); key.current = null; }}>Pay now</Button> : <Badge variant="success">Paid</Badge>}
@@ -524,7 +539,7 @@ function PortalBilling() {
         )}
       </CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle>Payment history</CardTitle></CardHeader><CardContent>
-        {!q.data.payments.length ? <p className="text-[13px] text-muted-foreground">No payments yet.</p> : <ul className="divide-y text-[13.5px]">{q.data.payments.map((p) => <li key={p.id} className="flex justify-between py-2"><span>{fmtDateTime(p.created_at)} · {p.reference}</span><span className="tabular">{fmtMoney(p.amount_cents)}</span></li>)}</ul>}
+        {!q.data.payments.length ? <p className="text-table text-muted-foreground">No payments yet.</p> : <ul className="divide-y text-body">{q.data.payments.map((p) => <li key={p.id} className="flex justify-between py-2"><span>{fmtDateTime(p.created_at)} · {p.reference}</span><span className="tabular">{fmtMoney(p.amount_cents)}</span></li>)}</ul>}
       </CardContent></Card>
       {paying && (
         <Card className="border-primary/30"><CardContent className="space-y-3 pt-5">
@@ -553,7 +568,7 @@ function InsurancePrompt() {
   return (
     <Link to="/portal/insurance" className="flex items-start gap-3 rounded-xl border border-warning/50 bg-warning-soft/40 p-4 hover:bg-warning-soft/60">
       <CircleAlert className="mt-0.5 size-5 shrink-0 text-warning" />
-      <div className="text-[13.5px]"><p className="font-medium">Please confirm your insurance</p><p className="text-muted-foreground">{req.reason} It takes about a minute.</p></div>
+      <div className="text-body"><p className="font-medium">Please confirm your insurance</p><p className="text-muted-foreground">{req.reason} It takes about a minute.</p></div>
     </Link>
   );
 }

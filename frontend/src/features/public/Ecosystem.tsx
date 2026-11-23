@@ -14,10 +14,10 @@ function NodeCard({ n, className }: { n: (typeof ECOSYSTEM)[number]; className?:
         "hover:border-sky-300/60 hover:bg-white/[0.11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 motion-safe:hover:-translate-y-0.5", className)}>
       <span className="flex items-center gap-2.5">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 shadow-md shadow-blue-900/40"><n.icon className="size-[18px]" /></span>
-        <span className="text-[14.5px] font-semibold leading-tight">{n.title}</span>
+        <span className="text-body font-semibold leading-tight">{n.title}</span>
         <ArrowUpRight className="ml-auto size-4 shrink-0 text-sky-200/60 transition-colors group-hover:text-sky-200" aria-hidden />
       </span>
-      <span className="mt-2 block text-[12.5px] leading-relaxed text-blue-100/75">{n.text}</span>
+      <span className="mt-2 block text-table leading-relaxed text-blue-100/75">{n.text}</span>
     </Link>
   );
 }
@@ -30,8 +30,8 @@ function Hub({ className }: { className?: string }) {
       <div className="relative grid size-full place-items-center rounded-full bg-[radial-gradient(circle_at_30%_25%,#3b82f6,#1d4ed8_45%,#0b2a66)] p-4 text-center text-white shadow-[0_0_60px_rgba(56,189,248,0.35)] ring-1 ring-white/25">
         <div>
           <BrandMark className="mx-auto size-11" />
-          <p className="mt-2 text-[17px] font-semibold leading-tight">Undeclared HMS</p>
-          <p className="mt-0.5 text-[11.5px] text-blue-100/80">One connected workspace</p>
+          <p className="mt-2 text-section font-semibold leading-tight">HMS Workflows</p>
+          <p className="mt-0.5 text-label text-blue-100/80">One connected workspace</p>
         </div>
       </div>
     </div>

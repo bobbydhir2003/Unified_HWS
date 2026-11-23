@@ -347,3 +347,12 @@ All twelve planned phases are implemented. Highest-value follow-ups (see `PRODUC
 3. Validate and apply the Terraform in a staging account; wire alerting; load test.
 4. SMART on FHIR authorization and US Core conformance testing.
 5. Push to GitHub to run the CI E2E/Docker jobs; add visual regression snapshots.
+
+
+## HMS Workflows visual redesign (approved plan, all four phases)
+
+- **Foundation:** Harbor Blue tokens (light + separately tuned dark), 7-size type scale with a reviewed codemod of 627 ad-hoc sizes and a CI guard, density setting, contrast-safe status tints, HMS Workflows brand + W logo + favicon.
+- **Shared components:** buttons (one primary per view, `ai` variant), cards (border, no shadow), tables (sentence-case heads, density), two tab styles (`TabsList` underline, `Segmented`), `Metric`/`MetricStrip`, status language with amber Overdue vs red Urgent, `ProvenanceChip`, compact empty states, drawer sizes.
+- **Shell:** light sidebar with open-work count, facility selector in the top bar, wider patient search, breadcrumbs only for nested pages, copyright in the sidebar foot.
+- **Workspaces:** Home (priorities grouped by patient, Today strip, quick-action row; server ranks clinical severity before lateness), My work (aligned columns), patient chart (FAMILY-name banner, safe allergy wording, High/Low vital flags, content-sized overview), Front desk (arrivals list + status filter), ED (one-line actions, shared durations), pharmacy flags with words, row actions as outline buttons.
+- **Advanced:** Command Center in three levels (status → grouped attention → department detail), AI side panel with provenance/evidence/approvals, Agent Studio in plain language, patient portal in five sections (all old URLs still work) with deduplicated To do and larger type.

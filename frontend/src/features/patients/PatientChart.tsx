@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle, CalendarPlus, ClipboardList, ClipboardPen, FileStack, Receipt, TestTube, FileText, HeartPulse, History, Lock, Pencil, Phone, Pill, Plus, Route, ShieldAlert,
-  ShieldCheck, Sparkles, Stethoscope, StickyNote, Trash2, Users,
+  Sparkles, Stethoscope, StickyNote, Trash2, Users, Info,
 } from "lucide-react";
 import * as React from "react";
 import { Link, NavLink, useNavigate, useParams } from "react-router-dom";
@@ -58,7 +58,7 @@ function BreakGlass({ patientId, onDone }: { patientId: string; onDone: () => vo
           <span className="rounded-full bg-warning-soft p-2.5 text-warning"><Lock className="size-5" /></span>
           <div>
             <h2 className="text-base font-semibold">Restricted chart</h2>
-            <p className="mt-1 text-[13px] text-muted-foreground">
+            <p className="mt-1 text-table text-muted-foreground">
               This patient's record is restricted. Emergency ("break-the-glass") access is granted for 4 hours, is logged with your reason, and is reviewed by compliance.
             </p>
           </div>
@@ -78,7 +78,7 @@ function BreakGlass({ patientId, onDone }: { patientId: string; onDone: () => vo
               <Button variant="destructive" type="submit" loading={busy} disabled={reason.trim().length < 10}><ShieldAlert />Break the glass</Button>
             </div>
           </form>
-        ) : <p className="text-[13px] text-muted-foreground">Contact the patient's care team for access.</p>}
+        ) : <p className="text-table text-muted-foreground">Contact the patient's care team for access.</p>}
       </CardContent>
     </Card>
   );
@@ -86,9 +86,18 @@ function BreakGlass({ patientId, onDone }: { patientId: string; onDone: () => vo
 
 export function AllergyStrip({ summary }: { summary?: Summary }) {
   if (!summary) return <Skeleton className="h-6 w-40" />;
-  if (!summary.clinical_access) return <span className="text-xs text-muted-foreground">Allergies: clinical access required</span>;
+  if (!summary.clinical_access) return <span className="text-label text-muted-foreground">Allergies: clinical access required</span>;
   const list = summary.allergies ?? [];
-  if (!list.length) return <Badge variant="success"><ShieldCheck />No known allergies</Badge>;
+  // Patient safety: an empty list is NOT a documented "no known allergies". Never show a negative finding nobody recorded.
+  if (!list.length) {
+    return (
+      <Tooltip content="No allergy has been recorded for this patient. This is not a confirmed “no known allergies” — review with the patient.">
+        <span className="inline-flex items-center gap-1 rounded-full border border-control bg-card px-2 py-0.5 text-label font-medium text-foreground" data-testid="allergy-none-recorded">
+          <Info className="size-3 text-muted-foreground" aria-hidden />Allergies: none recorded
+        </span>
+      </Tooltip>
+    );
+  }
   return (
     <div className="flex flex-wrap items-center gap-1.5" aria-label="Allergies">
       <span className="flex items-center gap-1 text-xs font-semibold text-destructive"><AlertTriangle className="size-3.5" />Allergies</span>
@@ -107,20 +116,21 @@ function PatientBanner({ p, summary, onEdit, onBook, onStartVisit, onAsk, starti
   const { can, membership } = useAuth();
   const ins = p.insurances.find((i) => i.is_active && i.priority === "primary");
   return (
-    <Card className="sticky top-[60px] z-20 mb-4 overflow-hidden">
-      <div className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center">
+    <Card className="sticky top-16 z-20 mb-4 overflow-hidden" data-testid="patient-banner">
+      <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3.5">
-          <Avatar name={`${p.first_name} ${p.last_name}`} className="size-11 text-sm" />
+          <Avatar name={`${p.first_name} ${p.last_name}`} className="size-11 text-table" />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-semibold tracking-tight">{p.last_name}, {p.first_name} {p.middle_name?.[0] ? `${p.middle_name[0]}.` : ""}</h1>
-              {p.preferred_name && <span className="text-[13px] text-muted-foreground">“{p.preferred_name}”</span>}
+              {/* Patient-banner convention: FAMILY name in capitals, then given name — reduces wrong-patient errors. */}
+              <h1 className="text-metric font-semibold tracking-tight text-heading"><span className="uppercase">{p.last_name}</span>, {p.first_name} {p.middle_name?.[0] ? `${p.middle_name[0]}.` : ""}</h1>
+              {p.preferred_name && <span className="text-table text-muted-foreground">“{p.preferred_name}”</span>}
               {p.status !== "active" && <Badge variant="danger">{titleCase(p.status)}</Badge>}
               {p.is_restricted && <Badge variant="warning"><Lock />Restricted</Badge>}
             </div>
-            <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-muted-foreground tabular">
+            <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-table text-muted-foreground tabular">
               <span><strong className="font-medium text-foreground">{sexShort(p.sex_at_birth)}</strong> · DOB {fmtDob(p.date_of_birth)}</span>
-              <span>MRN <span className="font-mono text-foreground">{p.mrn}</span></span>
+              <span>MRN <span className="font-mono font-medium text-foreground">{p.mrn}</span></span>
               {p.phone && <span className="inline-flex items-center gap-1"><Phone className="size-3" />{p.phone}</span>}
               {p.pronouns && <span>{p.pronouns}</span>}
               {ins && <span>{ins.payer_name}</span>}
@@ -128,7 +138,7 @@ function PatientBanner({ p, summary, onEdit, onBook, onStartVisit, onAsk, starti
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {can("ai:use") && can("clinical:read") && <Button variant="soft" size="sm" onClick={onAsk}><Sparkles />Ask AI</Button>}
+          {can("ai:use") && can("clinical:read") && <Button variant="ai" size="sm" onClick={onAsk}><Sparkles />Ask AI about this chart</Button>}
           {can("patients:write") && <Button variant="outline" size="sm" onClick={onEdit}><Pencil />Edit</Button>}
           {can("schedule:write") && <Button variant="outline" size="sm" onClick={onBook} disabled={p.status !== "active"}><CalendarPlus />Book</Button>}
           {can("clinical:write") && membership?.provider_id && (
@@ -136,7 +146,7 @@ function PatientBanner({ p, summary, onEdit, onBook, onStartVisit, onAsk, starti
           )}
         </div>
       </div>
-      <div className="border-t bg-muted/30 px-4 py-2"><AllergyStrip summary={summary} /></div>
+      <div className="border-t bg-subtle px-4 py-2"><AllergyStrip summary={summary} /></div>
     </Card>
   );
 }
@@ -215,26 +225,26 @@ export function PatientChart() {
         const current = groups.find((g) => g.keys.includes(tab)) ?? groups[0];
         const url = (k: string) => `/patients/${p.id}${k ? `/${k}` : ""}`;
         return (
-          <div className="mb-5 space-y-2">
-            <nav className="-mx-1 flex gap-1 overflow-x-auto border-b px-1 scrollbar-thin" aria-label="Chart sections">
+          <div className="mb-5 space-y-3">
+            <nav className="flex max-w-full items-end gap-6 overflow-x-auto border-b scrollbar-thin" aria-label="Chart sections">
               {groups.map((g) => {
                 const active = g === current;
                 return (
                   <NavLink key={g.label} to={url(g.keys[0])} end aria-current={active ? "page" : undefined}
-                    className={cn("-mb-px flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground",
-                      active && "border-primary text-foreground")}>
-                    <g.icon className="size-3.5" />{g.label}
+                    className={cn("-mb-px flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-0.5 pb-2.5 pt-1.5 text-body font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      active && "border-primary font-semibold text-heading")}>
+                    <g.icon className="size-4" />{g.label}
                   </NavLink>
                 );
               })}
             </nav>
             {current.keys.length > 1 && (
-              <nav className="flex flex-wrap gap-1" aria-label={`${current.label} sections`}>
+              <nav className="inline-flex max-w-full flex-wrap overflow-hidden rounded-md border border-control bg-card" aria-label={`${current.label} sections`}>
                 {current.keys.map((k) => {
                   const t = tabs.find((x) => x.key === k)!;
                   return (
-                    <NavLink key={k} to={url(k)} end className={({ isActive }) => cn("inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-medium text-muted-foreground hover:bg-muted",
-                      isActive && "border-primary/40 bg-accent text-accent-foreground")}>
+                    <NavLink key={k} to={url(k)} end className={({ isActive }) => cn("inline-flex h-8 items-center gap-1.5 border-r border-control px-3 text-table font-medium text-muted-foreground last:border-r-0 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50",
+                      isActive && "bg-accent font-semibold text-accent-foreground hover:bg-accent hover:text-accent-foreground")}>
                       <t.icon className="size-3.5" />{t.label}
                     </NavLink>
                   );
@@ -269,12 +279,12 @@ export function PatientChart() {
   );
 }
 
-function Section({ title, to, children, className }: { title: string; to?: string; children: React.ReactNode; className?: string }) {
+function Section({ title, to, children, className, sub, link = "View all" }: { title: string; to?: string; children: React.ReactNode; className?: string; sub?: string; link?: string }) {
   return (
     <Card className={className}>
-      <CardHeader className="pb-2">
-        <CardTitle>{title}</CardTitle>
-        {to && <Link to={to} className="text-[12.5px] font-medium text-primary hover:underline">View all</Link>}
+      <CardHeader className="items-center pb-2">
+        <div><CardTitle>{title}</CardTitle>{sub && <p className="text-label text-muted-foreground">{sub}</p>}</div>
+        {to && <Link to={to} className="text-table font-medium text-primary hover:underline">{link}</Link>}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -284,53 +294,65 @@ function Section({ title, to, children, className }: { title: string; to?: strin
 function Overview({ p, summary }: { p: Patient; summary?: Summary }) {
   if (!summary) return <LoadingRows />;
   const base = `/patients/${p.id}`;
+  const none = (t: string) => <p className="text-table text-muted-foreground">{t}</p>;
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="space-y-4">
       {summary.clinical_access && (
-        <>
-          <Section title="Latest vitals" to={`${base}/vitals`} className="lg:col-span-2">
-            {summary.last_vitals ? (
-              <><VitalsSummary v={summary.last_vitals} /><p className="mt-3 text-xs text-muted-foreground">Measured {fmtDateTime(summary.last_vitals.measured_at)}</p></>
-            ) : <p className="text-[13px] text-muted-foreground">No vitals recorded.</p>}
-          </Section>
-          <Section title="Last visit" to={`${base}/visits`}>
-            {summary.last_encounter ? (
-              <Link to={`/encounters/${summary.last_encounter.id}`} className="block rounded-lg p-1 hover:bg-muted/50">
-                <p className="font-medium">{summary.last_encounter.chief_complaint ?? titleCase(summary.last_encounter.encounter_type)}</p>
-                <p className="text-xs text-muted-foreground">{fmtDate(summary.last_encounter.started_at)} · {summary.last_encounter.provider.name}</p>
-                <div className="mt-2 flex flex-wrap gap-1">{summary.last_encounter.diagnoses.map((d) => <Badge key={d.id} variant="outline">{d.code}</Badge>)}</div>
-              </Link>
-            ) : <p className="text-[13px] text-muted-foreground">No visits yet.</p>}
-          </Section>
-          <Section title="Active problems" to={`${base}/problems`}>
-            {summary.problems?.length ? (
-              <ul className="space-y-1.5">{summary.problems.map((x) => (
-                <li key={x.id} className="flex items-start justify-between gap-2 text-[13px]"><span>{x.description}</span><span className="font-mono text-xs text-muted-foreground">{x.code}</span></li>
-              ))}</ul>
-            ) : <p className="text-[13px] text-muted-foreground">None recorded.</p>}
-          </Section>
-          <Section title="Active medications" to={`${base}/medications`}>
-            {summary.medications?.length ? (
-              <ul className="space-y-1.5">{summary.medications.map((m) => (
-                <li key={m.id} className="text-[13px]"><span className="font-medium">{m.name}</span> <span className="text-muted-foreground">{[m.dose, m.frequency].filter(Boolean).join(" · ")}</span></li>
-              ))}</ul>
-            ) : <p className="text-[13px] text-muted-foreground">None recorded.</p>}
-          </Section>
-        </>
+        <Section title="Latest vitals" to={`${base}/vitals`} sub={summary.last_vitals ? `Measured ${fmtDateTime(summary.last_vitals.measured_at)}` : undefined} link="Trends">
+          {summary.last_vitals ? <VitalsSummary v={summary.last_vitals} /> : none("No vitals recorded.")}
+        </Section>
       )}
-      <Section title="Upcoming appointments" to={`${base}/appointments`}>
-        {summary.upcoming_appointments.length ? (
-          <ul className="space-y-2">{summary.upcoming_appointments.map((a) => (
-            <li key={a.id} className="flex items-center justify-between gap-2 text-[13px]">
-              <span><span className="font-medium">{fmtDateTime(a.start_at)}</span><span className="block text-xs text-muted-foreground">{[a.type, a.provider].filter(Boolean).join(" · ")}</span></span>
-              <AppointmentStatusBadge status={a.status} />
-            </li>
-          ))}</ul>
-        ) : <p className="text-[13px] text-muted-foreground">Nothing scheduled.</p>}
-      </Section>
-      {!summary.clinical_access && (
-        <Card className="lg:col-span-2"><EmptyState icon={Lock} title="Clinical details hidden" description="Your role can view demographics and scheduling only." /></Card>
-      )}
+      <div className="grid items-start gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          {summary.clinical_access ? (
+            <Section title="Problems and medications" to={`${base}/problems`} link="Clinical">
+              <dl className="divide-y text-table">
+                <div className="grid gap-1 py-2 first:pt-0 sm:grid-cols-[8rem_1fr]">
+                  <dt className="text-label font-medium text-muted-foreground">Active problems</dt>
+                  <dd>{summary.problems?.length ? <ul className="space-y-1">{summary.problems.map((x) => (
+                    <li key={x.id} className="flex items-start justify-between gap-2"><span className="font-medium text-heading">{x.description}</span><span className="font-mono text-label text-muted-foreground">{x.code}</span></li>
+                  ))}</ul> : none("None recorded.")}</dd>
+                </div>
+                <div className="grid gap-1 py-2 sm:grid-cols-[8rem_1fr]">
+                  <dt className="text-label font-medium text-muted-foreground">Medications</dt>
+                  <dd>{summary.medications?.length ? <ul className="space-y-1">{summary.medications.map((m) => (
+                    <li key={m.id}><span className="font-medium text-heading">{m.name}</span> <span className="text-muted-foreground">{[m.dose, m.frequency].filter(Boolean).join(" · ")}</span></li>
+                  ))}</ul> : none("None recorded.")}</dd>
+                </div>
+                <div className="grid gap-1 pt-2 sm:grid-cols-[8rem_1fr]">
+                  <dt className="text-label font-medium text-muted-foreground">Allergies</dt>
+                  <dd><AllergyStrip summary={summary} /></dd>
+                </div>
+              </dl>
+            </Section>
+          ) : (
+            <Card><EmptyState icon={Lock} title="Clinical details hidden" description="Your role can view demographics and scheduling only." /></Card>
+          )}
+        </div>
+        <div className="space-y-4">
+          {summary.clinical_access && (
+            <Section title="Last visit" to={`${base}/visits`} link="All visits">
+              {summary.last_encounter ? (
+                <Link to={`/encounters/${summary.last_encounter.id}`} className="-m-1 block rounded-md p-1 hover:bg-muted/60">
+                  <p className="font-medium text-heading">{summary.last_encounter.chief_complaint ?? titleCase(summary.last_encounter.encounter_type)}</p>
+                  <p className="text-label text-muted-foreground">{fmtDate(summary.last_encounter.started_at)} · {summary.last_encounter.provider.name}</p>
+                  <div className="mt-2 flex flex-wrap gap-1">{summary.last_encounter.diagnoses.map((d) => <Badge key={d.id} variant="outline">{d.code}</Badge>)}</div>
+                </Link>
+              ) : none("No visits yet.")}
+            </Section>
+          )}
+          <Section title="Upcoming appointments" to={`${base}/appointments`}>
+            {summary.upcoming_appointments.length ? (
+              <ul className="divide-y">{summary.upcoming_appointments.map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-2 py-2 text-table first:pt-0 last:pb-0">
+                  <span><span className="font-medium text-heading">{fmtDateTime(a.start_at)}</span><span className="block text-label text-muted-foreground">{[a.type, a.provider].filter(Boolean).join(" · ")}</span></span>
+                  <AppointmentStatusBadge status={a.status} />
+                </li>
+              ))}</ul>
+            ) : none("Nothing scheduled.")}
+          </Section>
+        </div>
+      </div>
     </div>
   );
 }
@@ -351,7 +373,7 @@ function VisitsTab({ patientId }: { patientId: string }) {
                 <TD>{e.provider.name}</TD>
                 <TD><div className="flex flex-wrap gap-1">{e.diagnoses.map((d) => <Tooltip key={d.id} content={d.description}><Badge variant="outline">{d.code}</Badge></Tooltip>)}</div></TD>
                 <TD>
-                  {e.status === "in_progress" ? <Badge variant="ai">In progress</Badge>
+                  {e.status === "in_progress" ? <Badge variant="primary">In progress</Badge>
                     : e.note_status === "signed" ? <Badge variant="success">Signed</Badge> : <Badge variant="warning">{e.note_status ? "Unsigned" : "No note"}</Badge>}
                 </TD>
               </TR>
@@ -384,8 +406,8 @@ function TimelineTab({ patientId }: { patientId: string }) {
             const href = i.type === "document" ? `/documents/${i.id}` : i.type === "encounter" ? `/encounters/${i.id}` : i.type === "note" && i.encounter_id ? `/encounters/${i.encounter_id}` : null;
             const body = (
               <>
-                <p className="text-[13.5px] font-medium">{i.title}{i.status && <span className="ml-2 text-xs font-normal text-muted-foreground">{titleCase(i.status)}</span>}</p>
-                {i.detail && <p className="text-[13px] text-muted-foreground">{i.detail}</p>}
+                <p className="text-body font-medium">{i.title}{i.status && <span className="ml-2 text-xs font-normal text-muted-foreground">{titleCase(i.status)}</span>}</p>
+                {i.detail && <p className="text-table text-muted-foreground">{i.detail}</p>}
                 <p className="mt-0.5 text-xs text-muted-foreground">{fmtDateTime(i.at)}{i.by ? ` · ${i.by}` : ""}</p>
               </>
             );
@@ -470,7 +492,7 @@ function DemographicsTab({ p }: { p: Patient }) {
           {can("patients:write") && <Button size="sm" variant="outline" onClick={() => setInsEdit("new")}><Plus />Add coverage</Button>}
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
-          {!p.insurances.length && <p className="text-[13px] text-muted-foreground">Self-pay — no coverage on file.</p>}
+          {!p.insurances.length && <p className="text-table text-muted-foreground">Self-pay — no coverage on file.</p>}
           {p.insurances.map((i) => (
             <div key={i.id} className={cn("rounded-lg border p-3.5", !i.is_active && "opacity-60")}>
               <div className="flex items-start justify-between gap-2">
@@ -480,7 +502,7 @@ function DemographicsTab({ p }: { p: Patient }) {
                 </div>
                 <Badge variant={ELIG[i.eligibility_status as keyof typeof ELIG] ?? "neutral"}>{titleCase(i.eligibility_status)}</Badge>
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+              <dl className="mt-3 grid grid-cols-2 gap-2 text-table">
                 <KeyValue label="Member ID" value={<span className="font-mono">{i.member_id}</span>} />
                 <KeyValue label="Group" value={i.group_number} />
                 <KeyValue label="Subscriber" value={i.subscriber_name ? `${i.subscriber_name} (${i.subscriber_relation})` : i.subscriber_relation} />
@@ -563,7 +585,7 @@ function AdminNotesTab({ patientId }: { patientId: string }) {
             {q.data.map((n) => (
               <li key={n.id} className="flex gap-3 p-4">
                 <div className="min-w-0 flex-1">
-                  <p className="whitespace-pre-wrap text-[13.5px]">{n.body}</p>
+                  <p className="whitespace-pre-wrap text-body">{n.body}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{n.author_name ?? "Unknown"} · {fmtDateTime(n.created_at)}</p>
                 </div>
                 {can("patients:write") && (

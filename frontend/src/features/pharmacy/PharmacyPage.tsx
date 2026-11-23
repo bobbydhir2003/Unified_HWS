@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRightLeft, Boxes, ClipboardCheck, PackagePlus, Pill, Search, ShieldCheck, ShoppingCart, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, Boxes, ClipboardCheck, PackagePlus, Search, ShieldCheck, ShoppingCart, Trash2, Clock } from "lucide-react";
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -43,15 +43,15 @@ export function PharmacyPage() {
   return (
     <>
       <PageHeader title="Pharmacy & inventory" description="Verify medication orders, keep stock safe and reorder in time. The Pharmacy Watchdog flags expiring stock, low stock and unusual use, and drafts reorders for approval."
-        actions={<AskAI agent="pharmacy_watchdog" label="Summarize inventory risks" variant="outline" question="Summarize medication stock and expiry risks that need pharmacy review today, most urgent first." />} />
+        actions={<AskAI agent="pharmacy_watchdog" label="Summarize inventory risks" question="Summarize medication stock and expiry risks that need pharmacy review today, most urgent first." />} />
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Watchdog cases" icon={AlertTriangle} tone="warning" value={cases.data?.length ?? "…"} sub="Expiry, low stock, unusual use" />
-        <Stat label="Below reorder point" icon={Boxes} tone="danger" value={r?.low_stock_items ?? "…"} />
-        <Stat label="Expiring ≤ 30 days" icon={Pill} tone="primary" value={r ? fmtMoney(r.expiring_30d_value_cents) : "…"} sub={r ? `Waste last 30 days ${fmtMoney(r.waste_30d_value_cents)}` : undefined} />
+        <Stat label="Below reorder point" icon={Boxes} tone="warning" value={r?.low_stock_items ?? "…"} />
+        <Stat label="Expiring ≤ 30 days" icon={Clock} value={r ? fmtMoney(r.expiring_30d_value_cents) : "…"} sub={r ? `Waste last 30 days ${fmtMoney(r.waste_30d_value_cents)}` : undefined} />
         <Stat label="Orders awaiting verification" icon={ClipboardCheck} tone="ai" value={r?.pending_verifications ?? "—"} />
       </div>
       <Tabs value={tab} onValueChange={(v) => set("tab", v === "inventory" ? null : v)}>
-        <TabsList><TabsTrigger value="inventory">Inventory</TabsTrigger><TabsTrigger value="watchdog">Watchdog {cases.data?.length ? <span className="ml-1.5 rounded-full bg-warning px-1.5 text-[11px]">{cases.data.length}</span> : null}</TabsTrigger>
+        <TabsList><TabsTrigger value="inventory">Inventory</TabsTrigger><TabsTrigger value="watchdog">Watchdog {cases.data?.length ? <span className="ml-1.5 rounded-full bg-warning px-1.5 text-label">{cases.data.length}</span> : null}</TabsTrigger>
           <TabsTrigger value="purchasing">Purchasing</TabsTrigger>{can("pharmacy:read") && <TabsTrigger value="verify">Verification</TabsTrigger>}</TabsList>
         <TabsContent value="inventory"><InventoryTable onOpen={(id) => set("item", id)} /></TabsContent>
         <TabsContent value="watchdog"><Card className="overflow-hidden">{cases.isLoading ? <LoadingRows /> : !cases.data?.length ? <EmptyState icon={ShieldCheck} title="No Watchdog alerts" /> : <ul className="divide-y">{cases.data.map((c) => <CaseRow key={c.id} c={c} onOpen={setOpenCase} />)}</ul>}</Card></TabsContent>
@@ -80,10 +80,10 @@ function InventoryTable({ onOpen }: { onOpen: (id: string) => void }) {
         <Table><THead><TR><TH>Item</TH><TH className="text-right">On hand</TH><TH className="text-right">Reorder at</TH><TH className="text-right">Avg use/day</TH><TH className="text-right">Days of supply</TH><TH>Nearest expiry</TH><TH>Status</TH></TR></THead>
           <TBody>{items.data.map((i) => (
             <TR key={i.id} className="cursor-pointer hover:bg-muted/40" onClick={() => onOpen(i.id)}>
-              <TD><p className="font-medium">{i.name} {i.strength && <span className="font-normal text-muted-foreground">{i.strength}</span>}</p><p className="text-xs text-muted-foreground">{i.sku}{i.is_controlled && <Badge variant="danger" className="ml-1.5 px-1 py-0 text-[10px]">Controlled</Badge>}</p></TD>
+              <TD><p className="font-medium">{i.name} {i.strength && <span className="font-normal text-muted-foreground">{i.strength}</span>}</p><p className="text-xs text-muted-foreground">{i.sku}{i.is_controlled && <Badge variant="danger" className="ml-1.5 px-1 py-0 text-label">Controlled</Badge>}</p></TD>
               <TD className="text-right tabular">{i.on_hand} <span className="text-xs text-muted-foreground">{i.unit}</span></TD><TD className="text-right tabular">{i.reorder_point}</TD>
               <TD className="text-right tabular">{i.avg_daily_use}</TD><TD className={cn("text-right tabular", i.days_of_supply != null && i.days_of_supply < 3 && "font-medium text-destructive")}>{i.days_of_supply ?? "—"}</TD>
-              <TD className={cn(i.expiring_soon && "font-medium text-warning")}>{i.nearest_expiry ? fmtDate(i.nearest_expiry) : "—"}</TD>
+              <TD className={cn("whitespace-nowrap", i.expiring_soon && "font-medium text-warning-foreground")}>{i.expiring_soon && <Clock className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />}{i.nearest_expiry ? fmtDate(i.nearest_expiry) : "—"}{i.expiring_soon && <span className="ml-1 text-label">(expiring soon)</span>}</TD>
               <TD><Badge variant={STATUS[i.stock_status]}>{titleCase(i.stock_status)}</Badge></TD>
             </TR>))}</TBody></Table>
       )}
@@ -108,8 +108,8 @@ function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose: () =>
       <SheetContent className="max-w-2xl overflow-y-auto" aria-describedby={undefined}>
         {!d.data || !it ? <div className="p-6"><LoadingRows /></div> : (
           <div className="space-y-5 p-5 pr-12">
-            <div><DialogTitle className="text-[17px] font-semibold">{it.name} {it.strength}</DialogTitle><p className="text-xs text-muted-foreground">{it.sku}{it.ndc ? ` · NDC ${it.ndc}` : ""} · {it.supplier ?? "no supplier"}{it.is_controlled ? " · controlled substance" : ""}</p></div>
-            <div className="rounded-lg border bg-muted/30 p-3 text-[13px]">
+            <div><DialogTitle className="text-section font-semibold">{it.name} {it.strength}</DialogTitle><p className="text-xs text-muted-foreground">{it.sku}{it.ndc ? ` · NDC ${it.ndc}` : ""} · {it.supplier ?? "no supplier"}{it.is_controlled ? " · controlled substance" : ""}</p></div>
+            <div className="rounded-lg border bg-muted/30 p-3 text-table">
               <p><span className="font-medium">Reorder recommendation:</span> {d.data.recommendation.recommended_qty} {it.unit} · {d.data.recommendation.avg_daily_use}/day average · {d.data.recommendation.days_of_supply ?? "—"} days of supply · lead time {d.data.recommendation.lead_time_days} d</p>
               <p className="mt-0.5 text-xs text-muted-foreground">Method: {d.data.recommendation.method}. A simple statistical baseline — not a validated forecast.</p>
             </div>
@@ -119,7 +119,7 @@ function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose: () =>
             </div>
             <section>
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Lots on hand</h4>
-              {!d.data.lots.length ? <p className="text-[13px] text-muted-foreground">No stock.</p> : (
+              {!d.data.lots.length ? <p className="text-table text-muted-foreground">No stock.</p> : (
                 <Table><THead><TR><TH>Lot</TH><TH>Location</TH><TH>Expiry</TH><TH className="text-right">Qty</TH><TH /></TR></THead>
                   <TBody>{d.data.lots.map((l) => (
                     <TR key={l.lot_id + l.location_id}><TD className="font-medium">{l.lot_number}</TD><TD>{l.location}</TD>
@@ -132,7 +132,7 @@ function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose: () =>
             </section>
             <section>
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ledger (most recent)</h4>
-              <ul className="space-y-1 text-[13px]">{d.data.movements.slice(0, 15).map((m) => <li key={m.id} className="flex flex-wrap gap-x-2"><span className="w-28 text-muted-foreground">{fmtDateTime(m.at)}</span><span className="font-medium">{titleCase(m.kind.replace("_", " "))} {m.quantity}</span><span className="text-muted-foreground">lot {m.lot} · {m.location} · bal {m.balance_after}{m.by ? ` · ${m.by}` : ""}{m.approved ? " · approved" : ""}</span></li>)}</ul>
+              <ul className="space-y-1 text-table">{d.data.movements.slice(0, 15).map((m) => <li key={m.id} className="flex flex-wrap gap-x-2"><span className="w-28 text-muted-foreground">{fmtDateTime(m.at)}</span><span className="font-medium">{titleCase(m.kind.replace("_", " "))} {m.quantity}</span><span className="text-muted-foreground">lot {m.lot} · {m.location} · bal {m.balance_after}{m.by ? ` · ${m.by}` : ""}{m.approved ? " · approved" : ""}</span></li>)}</ul>
             </section>
           </div>
         )}
@@ -211,7 +211,7 @@ function Verification() {
       {q.isLoading ? <LoadingRows /> : !q.data?.length ? <EmptyState icon={ClipboardCheck} title="Queue is clear" /> : (
         <ul className="divide-y">{q.data.map((v) => (
           <li key={v.order_id} className="flex flex-wrap items-start gap-3 px-4 py-3">
-            <div className="min-w-0 flex-1"><p className="text-[13.5px] font-medium">{v.title}</p>
+            <div className="min-w-0 flex-1"><p className="text-body font-medium">{v.title}</p>
               <p className="text-xs text-muted-foreground">{v.patient.name} ({v.patient.mrn}) · {v.prescriber ?? "—"} · signed {fromNow(v.signed_at)}</p>
               {v.safety_warnings?.length ? <Badge variant="warning" className="mt-1"><AlertTriangle />{v.safety_warnings.length} safety warning(s) overridden</Badge> : null}</div>
             {can("pharmacy:verify") && <div className="flex gap-1"><Button size="sm" onClick={() => decide(v, "verified")}><ShieldCheck />Verify</Button><Button size="sm" variant="outline" onClick={() => decide(v, "clarify")}>Clarify</Button><Button size="sm" variant="ghost" onClick={() => decide(v, "rejected")}>Reject</Button></div>}

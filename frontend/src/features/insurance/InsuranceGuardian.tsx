@@ -58,7 +58,7 @@ export function InsuranceGuardianPage() {
     <>
       <PageHeader title="Insurance Guardian" description="Every upcoming visit verified with the payer before the patient arrives. Stored plan dates are reminders to confirm — never proof of coverage."
         actions={<div className="flex flex-wrap items-center gap-2">
-          <AskAI agent="insurance_guardian" label="Summarize coverage issues" variant="outline" question="Summarize open insurance coverage issues for upcoming visits, most urgent first, and the next step for each." />
+          <AskAI agent="insurance_guardian" label="Summarize coverage issues" question="Summarize open insurance coverage issues for upcoming visits, most urgent first, and the next step for each." />
           {d?.simulated_eligibility && <SimulatedBadge label="Simulated payer (270/271)" />}
         </div>} />
       {s.isError ? <ErrorState error={s.error} retry={s.refetch} /> : (
@@ -73,7 +73,7 @@ export function InsuranceGuardianPage() {
       <Tabs value={tab} onValueChange={(v) => { const n = new URLSearchParams(); if (v !== "cases") n.set("tab", v); setParams(n); }}>
         <TabsList>
           <TabsTrigger value="cases">Cases</TabsTrigger>
-          <TabsTrigger value="review">Card review {reqs.data?.length ? <span className="ml-1.5 rounded-full bg-destructive px-1.5 text-[11px] text-white">{reqs.data.length}</span> : null}</TabsTrigger>
+          <TabsTrigger value="review">Card review {reqs.data?.length ? <span className="ml-1.5 rounded-full bg-destructive px-1.5 text-label text-white">{reqs.data.length}</span> : null}</TabsTrigger>
           <TabsTrigger value="patient">Patient lookup</TabsTrigger>
           <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
         </TabsList>
@@ -87,7 +87,7 @@ export function InsuranceGuardianPage() {
         <TabsContent value="outcomes">
           <Card><CardHeader><CardTitle>Resolved in the last 30 days</CardTitle></CardHeader>
             <CardContent>{!d?.resolved_30d.length ? <EmptyState title="No resolved cases yet" /> : (
-              <ul className="divide-y text-[13.5px]">{d.resolved_30d.map((r) => <li key={r.code} className="flex justify-between py-2"><span>{titleCase(r.code.replace(/_/g, " "))}</span><span className="tabular text-muted-foreground">{r.count} · avg {r.avg_hours} h</span></li>)}</ul>
+              <ul className="divide-y text-body">{d.resolved_30d.map((r) => <li key={r.code} className="flex justify-between py-2"><span>{titleCase(r.code.replace(/_/g, " "))}</span><span className="tabular text-muted-foreground">{r.count} · avg {r.avg_hours} h</span></li>)}</ul>
             )}
               {d && <p className="mt-3 text-xs text-muted-foreground">Patient reminders (7 days): {Object.entries(d.reminders_7d).map(([k, v]) => `${v} ${k}`).join(" · ") || "none"}. Email/SMS are delivered to the development outbox only.</p>}
             </CardContent></Card>
@@ -103,7 +103,7 @@ function ReadinessBar({ states, total }: { states: Record<string, number>; total
   const color: Record<string, string> = { verified_active: "bg-success", cleared_override: "bg-success/60", stale: "bg-warning/70", unverified: "bg-warning", error: "bg-warning/50", verified_inactive: "bg-destructive", no_coverage: "bg-destructive/70" };
   return (
     <Card className="mb-5 p-4">
-      <p className="mb-2 text-[13px] font-medium">Coverage status of the next {total} visits</p>
+      <p className="mb-2 text-table font-medium">Coverage status of the next {total} visits</p>
       <div className="flex h-3 overflow-hidden rounded-full bg-muted" role="img" aria-label="Coverage status distribution">
         {order.filter((k) => states[k]).map((k) => <div key={k} className={color[k]} style={{ width: `${(100 * states[k]) / total}%` }} title={`${STATE_META[k]?.label}: ${states[k]}`} />)}
       </div>
@@ -125,10 +125,10 @@ function CardReview({ selected, requests, loading }: { selected: string | null; 
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
       <Card className="overflow-hidden"><ul className="divide-y">{requests.map((r) => (
         <li key={r.id}><button onClick={() => setCurrent(r)} className={cn("w-full px-4 py-3 text-left hover:bg-muted/40", current?.id === r.id && "bg-accent")}>
-          <p className="text-[13.5px] font-medium">{r.patient_name} <span className="text-xs text-muted-foreground">{r.mrn}</span></p>
+          <p className="text-body font-medium">{r.patient_name} <span className="text-xs text-muted-foreground">{r.mrn}</span></p>
           <p className="text-xs text-muted-foreground">Submitted {fromNow(r.submitted_at)}{r.discrepancies.length ? ` · ${r.discrepancies.length} mismatch` : ""}</p>
         </button></li>))}</ul></Card>
-      {current ? <ReviewForm key={current.id} r={current} onDone={() => setCurrent(null)} /> : <Card className="grid place-items-center p-10 text-[13px] text-muted-foreground">Select a submission to review</Card>}
+      {current ? <ReviewForm key={current.id} r={current} onDone={() => setCurrent(null)} /> : <Card className="grid place-items-center p-10 text-table text-muted-foreground">Select a submission to review</Card>}
     </div>
   );
 }
@@ -150,12 +150,12 @@ function ReviewForm({ r, onDone }: { r: RequestT; onDone: () => void }) {
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between">
-        <div><CardTitle>{r.patient_name}</CardTitle><p className="text-[13px] text-muted-foreground">{r.reason}</p></div>
+        <div><CardTitle>{r.patient_name}</CardTitle><p className="text-table text-muted-foreground">{r.reason}</p></div>
         {r.document_id && <Button variant="outline" size="sm" asChild><a href={`/api/v1/documents/${r.document_id}/file`} target="_blank" rel="noreferrer" onClick={(e) => { e.preventDefault(); openDoc(r.document_id!); }}><FileImage />View card</a></Button>}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-[13px]"><thead className="bg-muted/50 text-xs text-muted-foreground"><tr><th className="px-3 py-2 text-left">Field</th><th className="px-3 py-2 text-left">Patient typed</th><th className="px-3 py-2 text-left">Read from card <Badge variant="ai" className="ml-1">AI draft</Badge></th></tr></thead>
+          <table className="w-full text-table"><thead className="bg-muted/50 text-xs text-muted-foreground"><tr><th className="px-3 py-2 text-left">Field</th><th className="px-3 py-2 text-left">Patient typed</th><th className="px-3 py-2 text-left">Read from card <Badge variant="ai" className="ml-1">AI draft</Badge></th></tr></thead>
             <tbody>{FIELDS.map(([k, label]) => (
               <tr key={k} className={cn("border-t", r.discrepancies.includes(k) && "bg-warning-soft/60")}>
                 <td className="px-3 py-1.5 font-medium">{label}</td><td className="px-3 py-1.5">{r.submitted[k] || "—"}</td>
@@ -164,7 +164,7 @@ function ReviewForm({ r, onDone }: { r: RequestT; onDone: () => void }) {
         </div>
         <div className="grid gap-3 sm:grid-cols-2">{FIELDS.map(([k, label]) => (
           <Field key={k} label={label} required={k === "payer_name" || k === "member_id"}><Input type={k === "effective_date" ? "date" : "text"} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></Field>))}</div>
-        <label className="flex items-start gap-2 text-[13px]"><Checkbox checked={attest} onCheckedChange={(v) => setAttest(!!v)} className="mt-0.5" />I compared these fields with the card image/details. AI extraction is a draft and may be wrong.</label>
+        <label className="flex items-start gap-2 text-table"><Checkbox checked={attest} onCheckedChange={(v) => setAttest(!!v)} className="mt-0.5" />I compared these fields with the card image/details. AI extraction is a draft and may be wrong.</label>
         <div className="flex flex-wrap gap-2">
           <Button disabled={!attest || !f.payer_name || !f.member_id} onClick={confirm}><BadgeCheck />Confirm & re-verify</Button>
           <Button variant="outline" onClick={() => setRejecting(true)}>Send back to patient</Button>
@@ -196,7 +196,7 @@ function PatientLookup({ patientId, onPick }: { patientId: string | null; onPick
   return (
     <div className="space-y-4">
       <Card className="p-3"><div className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input className="pl-9" placeholder="Find a patient by name or MRN…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search patients" /></div>
-        {res.data?.items?.length ? <ul className="mt-2 divide-y">{res.data.items.map((p) => <li key={p.id}><button className="w-full px-2 py-2 text-left text-[13.5px] hover:bg-muted/40" onClick={() => { onPick(p.id); setQ(""); }}>{p.first_name} {p.last_name} <span className="text-xs text-muted-foreground">{p.mrn} · DOB {fmtDate(p.date_of_birth)}</span></button></li>)}</ul> : null}
+        {res.data?.items?.length ? <ul className="mt-2 divide-y">{res.data.items.map((p) => <li key={p.id}><button className="w-full px-2 py-2 text-left text-body hover:bg-muted/40" onClick={() => { onPick(p.id); setQ(""); }}>{p.first_name} {p.last_name} <span className="text-xs text-muted-foreground">{p.mrn} · DOB {fmtDate(p.date_of_birth)}</span></button></li>)}</ul> : null}
       </Card>
       {patientId && <CoveragePanel patientId={patientId} />}
     </div>
@@ -223,7 +223,7 @@ export function CoveragePanel({ patientId }: { patientId: string }) {
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div>
           <CardTitle className="flex flex-wrap items-center gap-2">Coverage for {c.next_visit ? `visit ${fmtDateTime(c.next_visit.start_at)}` : `today (${fmtDate(c.date_of_service)})`} <CoverageStateBadge state={c.next_visit?.coverage_override ? "cleared_override" : c.state} /></CardTitle>
-          <p className="mt-1 text-[13px] text-muted-foreground">{c.reason}</p>
+          <p className="mt-1 text-table text-muted-foreground">{c.reason}</p>
         </div>
         <div className="flex shrink-0 gap-2">
           {can("insurance:write") && c.insurance_id && <Button size="sm" variant="outline" onClick={check}><RefreshCw />Check with payer</Button>}
@@ -232,11 +232,11 @@ export function CoveragePanel({ patientId }: { patientId: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         {c.open_cases.length > 0 && <div className="flex flex-wrap gap-2">{c.open_cases.map((k) => <Badge key={k.id} variant="warning">Case #{k.number}: {k.status}</Badge>)}</div>}
-        {c.requests.length > 0 && <p className="text-[13px]">Patient update request: <Badge variant="outline">{c.requests[0].status}</Badge>{c.requests[0].status === "submitted" && <Link className="ml-2 text-primary hover:underline" to={`/insurance?request=${c.requests[0].id}`}>Review card</Link>}</p>}
+        {c.requests.length > 0 && <p className="text-table">Patient update request: <Badge variant="outline">{c.requests[0].status}</Badge>{c.requests[0].status === "submitted" && <Link className="ml-2 text-primary hover:underline" to={`/insurance?request=${c.requests[0].id}`}>Review card</Link>}</p>}
         <div>
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payer responses {c.simulated && <SimulatedBadge className="ml-1" />}</h4>
-          {!c.checks.length ? <p className="text-[13px] text-muted-foreground">No eligibility checks yet.</p> : (
-            <div className="overflow-x-auto"><table className="w-full text-[13px]"><thead className="text-xs text-muted-foreground"><tr><th className="py-1 text-left">Checked</th><th className="text-left">For date</th><th className="text-left">Result</th><th className="text-left">Payer-reported period</th><th className="text-left">How</th></tr></thead>
+          {!c.checks.length ? <p className="text-table text-muted-foreground">No eligibility checks yet.</p> : (
+            <div className="overflow-x-auto"><table className="w-full text-table"><thead className="text-xs text-muted-foreground"><tr><th className="py-1 text-left">Checked</th><th className="text-left">For date</th><th className="text-left">Result</th><th className="text-left">Payer-reported period</th><th className="text-left">How</th></tr></thead>
               <tbody>{c.checks.map((k) => (
                 <tr key={k.id} className="border-t"><td className="py-1.5">{fmtDateTime(k.checked_at)}</td><td>{fmtDate(k.date_of_service)}</td>
                   <td><Badge variant={k.result === "active" ? "success" : k.result === "inactive" ? "danger" : "warning"}>{k.result}</Badge></td>

@@ -55,7 +55,7 @@ export function AnalyticsPage() {
           </NativeSelect>
         )} />
       <nav className="-mx-1 mb-5 flex gap-1 overflow-x-auto border-b px-1" aria-label="Analytics sections">
-        {tabs.filter((t) => t[2]).map(([k, l]) => <button key={k} onClick={() => set("tab", k)} className={cn("-mb-px shrink-0 border-b-2 border-transparent px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground", tab === k && "border-primary text-foreground")}>{l}</button>)}
+        {tabs.filter((t) => t[2]).map(([k, l]) => <button key={k} onClick={() => set("tab", k)} className={cn("-mb-px shrink-0 border-b-2 border-transparent px-3 py-2 text-table font-medium text-muted-foreground hover:text-foreground", tab === k && "border-primary text-foreground")}>{l}</button>)}
       </nav>
       {tab === "operations" && <Operations days={days} clinicId={clinic?.id} />}
       {tab === "providers" && <Providers days={days} />}
@@ -77,7 +77,7 @@ function Operations({ days, clinicId }: { days: number; clinicId?: string }) {
   const channels = Object.entries(d.booking_channels).map(([k, v]) => ({ name: { staff: "Front desk", portal: "Patient portal", ai_phone: "AI receptionist" }[k] ?? titleCase(k), value: v }));
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-2 text-[13px]"><span className="text-muted-foreground">Scope:</span>
+      <div className="flex items-center gap-2 text-table"><span className="text-muted-foreground">Scope:</span>
         {(["clinic", "all"] as const).map((s) => <button key={s} onClick={() => setScope(s)} className={cn("rounded-md px-2.5 py-1 font-medium text-muted-foreground", scope === s && "bg-accent text-accent-foreground")}>{s === "clinic" ? "Current location" : "All locations"}</button>)}
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -107,10 +107,10 @@ function Operations({ days, clinicId }: { days: number; clinicId?: string }) {
         </CardContent></Card>
         <Card><CardHeader><CardTitle>Provider utilization</CardTitle></CardHeader><CardContent className="space-y-3">
           {d.utilization.map((u) => (
-            <div key={u.provider}><div className="mb-1 flex justify-between text-[13px]"><span>{u.provider}</span><span className="tabular text-muted-foreground">{u.booked_hours}h / {u.available_hours}h</span></div>
+            <div key={u.provider}><div className="mb-1 flex justify-between text-table"><span>{u.provider}</span><span className="tabular text-muted-foreground">{u.booked_hours}h / {u.available_hours}h</span></div>
               <div className="h-2 overflow-hidden rounded-full bg-muted"><div className={cn("h-full rounded-full", u.utilization > 0.9 ? "bg-warning" : "bg-primary")} style={{ width: `${Math.min(100, u.utilization * 100)}%` }} /></div></div>
           ))}
-          {!d.utilization.length && <p className="text-[13px] text-muted-foreground">No scheduled hours in range.</p>}
+          {!d.utilization.length && <p className="text-table text-muted-foreground">No scheduled hours in range.</p>}
         </CardContent></Card>
       </div>
     </div>
@@ -157,7 +157,7 @@ function Population() {
       <div className="grid gap-5 lg:grid-cols-2">
         <Card><CardHeader><CardTitle>Chronic disease registries</CardTitle></CardHeader><CardContent className="space-y-2.5">
           {d.registries.map((r) => (
-            <div key={r.key}><div className="mb-1 flex justify-between text-[13px]"><span>{r.label}</span><span className="tabular font-medium">{r.patients} <span className="font-normal text-muted-foreground">({pct(d.active_patients ? r.patients / d.active_patients : null)})</span></span></div>
+            <div key={r.key}><div className="mb-1 flex justify-between text-table"><span>{r.label}</span><span className="tabular font-medium">{r.patients} <span className="font-normal text-muted-foreground">({pct(d.active_patients ? r.patients / d.active_patients : null)})</span></span></div>
               <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${d.active_patients ? (r.patients / d.active_patients) * 100 : 0}%` }} /></div></div>
           ))}
         </CardContent></Card>
@@ -187,12 +187,12 @@ function CareGaps() {
   return (
     <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
       <Card className="h-fit overflow-hidden"><ul className="divide-y">{summary.data.measures.map((m) => (
-        <li key={m.key}><button onClick={() => setMeasure(m.key)} className={cn("flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-[13px] hover:bg-muted/40", active === m.key && "bg-accent/60")}>
+        <li key={m.key}><button onClick={() => setMeasure(m.key)} className={cn("flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-table hover:bg-muted/40", active === m.key && "bg-accent/60")}>
           <span>{m.label}</span><Badge variant={m.count ? "warning" : "success"}>{m.count}</Badge></button></li>
       ))}</ul></Card>
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 border-b p-3">
-          <span className="text-[13px] font-medium">{summary.data.measures.find((m) => m.key === active)?.label}</span>
+          <span className="text-table font-medium">{summary.data.measures.find((m) => m.key === active)?.label}</span>
           <div className="ml-auto flex items-center gap-2">
             {!!sel.size && <><NativeSelect value={role} onChange={(e) => setRole(e.target.value)} className="h-8 w-36" aria-label="Assign outreach to"><option value="nurse">Nurse team</option><option value="receptionist">Front desk</option></NativeSelect>
               <Button size="sm" onClick={async () => {
@@ -209,7 +209,7 @@ function CareGaps() {
               <TR key={r.patient_id}>
                 <TD><Checkbox aria-label={`Select ${r.name}`} disabled={r.outreach_open} checked={sel.has(r.patient_id)} onCheckedChange={(c) => { const n = new Set(sel); if (c) n.add(r.patient_id); else n.delete(r.patient_id); setSel(n); }} /></TD>
                 <TD><Link to={`/patients/${r.patient_id}`} className="font-medium hover:underline">{r.name}</Link><span className="block text-xs text-muted-foreground tabular">{fmtDob(r.date_of_birth)} · {r.mrn}</span></TD>
-                <TD className="text-[13px]">{r.detail}</TD><TD className="hidden md:table-cell">{r.pcp ?? "—"}</TD>
+                <TD className="text-table">{r.detail}</TD><TD className="hidden md:table-cell">{r.pcp ?? "—"}</TD>
                 <TD>{r.outreach_open ? <Badge variant="info">Task open</Badge> : <span className="text-xs text-muted-foreground">—</span>}</TD>
               </TR>
             ))}</TBody>
@@ -232,7 +232,7 @@ function Quality() {
         const good = m.rate == null ? null : m.lower_is_better ? m.rate <= 0.2 : m.rate >= 0.7;
         return (
           <div key={m.key}>
-            <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-[13.5px]">
+            <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-body">
               <span className="font-medium">{m.name} <Badge variant="outline" className="ml-1">{m.modeled_on}</Badge>{m.lower_is_better && <span className="ml-1 text-xs text-muted-foreground">(lower is better)</span>}</span>
               <span className="tabular"><strong className={cn(good === false && "text-destructive", good && "text-success")}>{pct(m.rate)}</strong> <span className="text-muted-foreground">{m.numerator}/{m.denominator}</span></span>
             </div>
