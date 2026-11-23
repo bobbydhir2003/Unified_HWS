@@ -63,13 +63,14 @@ def account(key: str) -> tuple[str, str, str, str] | None:
 
 # ---------------------------------------------------------------------------------------------- AI scope per demo session
 
-_ids_cache: dict = {"at": 0.0, "ids": frozenset()}
+_ids_cache: dict = {"at": None, "ids": frozenset()}
 
 
 def demo_user_ids() -> frozenset:
     import time
 
-    if time.monotonic() - _ids_cache["at"] > 300:
+    # Never trust an empty or cold cache: a demo account missing from it would fall through to the platform AI settings.
+    if not _ids_cache["ids"] or _ids_cache["at"] is None or time.monotonic() - _ids_cache["at"] > 300:
         from sqlalchemy import select
 
         from app.core.db import SessionLocal
