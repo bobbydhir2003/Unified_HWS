@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -8,9 +7,10 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, inputBase } from "@/components/ui/input";
-import { ApiError, get, post } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { type DemoAccount, useDemoAccounts, useDemoLogin } from "./demo";
 
 const loginSchema = z.object({ email: z.email("Enter a valid email"), password: z.string().min(1, "Enter your password") });
 
@@ -31,31 +31,12 @@ const DEMO_ACCOUNTS: [string, string][] = !DEMO_LOGIN ? [] : [
   ...(import.meta.env.DEV ? [["admin@undeclared.dev", "Super admin"] as [string, string]] : []),
 ];
 
-/* Server demo mode (DEMO_MODE on a synthetic demonstration deployment): one click signs in to an allowlisted demo
- * account through POST /auth/demo-login — a normal session; demo accounts can't change admin settings or credentials. */
-type DemoAccount = { key: string; label: string; role: string };
-
 function ServerDemoAccess({ accounts }: { accounts: DemoAccount[] }) {
-  const { acceptTokens } = useAuth();
-  const navigate = useNavigate();
-  const [busy, setBusy] = React.useState<string | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const go = async (key: string) => {
-    setError(null);
-    setBusy(key);
-    try {
-      acceptTokens(await post<Parameters<typeof acceptTokens>[0]>("/auth/demo-login", { key }));
-      navigate("/", { replace: true });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Demo sign-in failed. Please try again.");
-    } finally {
-      setBusy(null);
-    }
-  };
+  const { signIn: go, busy, error } = useDemoLogin();
   return (
     <div className="mt-5 rounded-xl border border-dashed p-3" data-testid="demo-access">
       <p className="text-xs font-medium">Demo Access</p>
-      <p className="mb-2 text-label text-muted-foreground">Explore HMS Workflows with a preconfigured role.</p>
+      <p className="mb-2 text-label text-muted-foreground">Explore HMS Workflows with a preconfigured role. Synthetic data only.</p>
       {error && <p role="alert" className="mb-2 text-label text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-1.5">
         {accounts.map((a) => (
@@ -91,9 +72,7 @@ export function LoginForm({ autoFocus = false, emailId, heading }: { autoFocus?:
   const [busy, setBusy] = React.useState(false);
   const [show, setShow] = React.useState(false);
   const form = useForm({ resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" } });
-  const demoInfo = useQuery({ queryKey: ["auth", "demo"], queryFn: () => get<{ enabled: boolean; accounts: DemoAccount[] }>("/auth/demo"),
-    staleTime: 5 * 60_000, retry: false });
-  const serverDemo = demoInfo.data?.enabled && demoInfo.data.accounts.length ? demoInfo.data.accounts : null;
+  const { accounts: serverDemo } = useDemoAccounts();
 
   const onSubmit = form.handleSubmit(async (v) => {
     setError(null);

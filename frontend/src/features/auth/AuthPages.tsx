@@ -19,21 +19,17 @@ import { ROLE_LABELS, type Role } from "@/lib/types";
 function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
-      <aside className="relative isolate hidden overflow-hidden bg-sidebar p-12 text-white lg:flex lg:flex-col">
-        <img src="/images/hospital-hero.webp" alt="" aria-hidden className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center]" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#071a44]/95 via-[#0b2a66]/85 to-[#0b2a66]/50" aria-hidden />
-        <div className="pointer-events-none absolute -right-40 -top-40 size-[34rem] rounded-full bg-blue-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-48 -left-24 size-[30rem] rounded-full bg-indigo-400/10 blur-3xl" />
-        <div className="relative flex items-center gap-3">
-          <LogoMark size={40} />
-          <span className="text-lg font-semibold tracking-tight">HMS Workflows</span>
-        </div>
-        <div className="relative mt-auto max-w-md">
-          <h2 className="text-3xl font-semibold leading-tight tracking-tight">Clinical work, without the clutter.</h2>
-          <p className="mt-3 text-section leading-relaxed text-sidebar-foreground">
-            Scheduling, charting and AI-assisted documentation in one calm, fast workspace — with clinicians always in control.
+      <aside className="hidden bg-[#0B2545] p-12 text-white lg:flex lg:flex-col">
+        <Link to="/" className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+          <span className="rounded-[10px] ring-1 ring-white/25"><LogoMark size={40} /></span>
+          <span className="text-section font-semibold tracking-tight">HMS <span className="font-normal">Workflows</span></span>
+        </Link>
+        <div className="mt-auto max-w-md">
+          <h2 className="text-3xl font-semibold leading-tight tracking-tight">Your Entire Hospital. Working as One.</h2>
+          <p className="mt-3 text-section leading-relaxed text-white/80">
+            One shared patient record, owned and tracked work, and one live view of the hospital — with AI that drafts and summarizes while people decide.
           </p>
-          <ul className="mt-8 space-y-3 text-body text-sidebar-foreground">
+          <ul className="mt-8 space-y-3 text-body text-white/85">
             {[
               [CalendarCheck2, "Conflict-safe scheduling and a live waiting room"],
               [FileCheck2, "Versioned notes that can't be silently changed once signed"],
@@ -41,11 +37,11 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
               [ShieldCheck, "Role-based access, MFA and a tamper-evident audit trail"],
             ].map(([Icon, text], i) => {
               const I = Icon as typeof ShieldCheck;
-              return <li key={i} className="flex items-center gap-3"><span className="rounded-lg bg-white/10 p-1.5"><I className="size-4" /></span>{text as string}</li>;
+              return <li key={i} className="flex items-center gap-3"><I className="size-4 shrink-0 text-white/70" aria-hidden />{text as string}</li>;
             })}
           </ul>
         </div>
-        <p className="relative mt-12 text-xs text-sidebar-muted">Demonstration build · synthetic data only · not certified for clinical use</p>
+        <p className="mt-12 text-label text-white/70">Demonstration build · synthetic data only · not certified for clinical use</p>
       </aside>
       <main className="flex items-center justify-center px-4 py-10 sm:px-8">
         <div className="w-full max-w-sm">{children}<LegalFooter className="mt-8 px-0" /></div>

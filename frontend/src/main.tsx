@@ -16,7 +16,8 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 // Feature pages load on demand (route-level code splitting).
 const PublicPages = () => import("@/features/public/PublicPages");
 const HomePage = lazy(() => PublicPages().then((m) => ({ default: m.HomePage })));
-const ModulesPage = lazy(() => PublicPages().then((m) => ({ default: m.ModulesPage })));
+const PlatformPage = lazy(() => PublicPages().then((m) => ({ default: m.PlatformPage })));
+const AiAutomationPage = lazy(() => PublicPages().then((m) => ({ default: m.AiAutomationPage })));
 const SolutionsPage = lazy(() => PublicPages().then((m) => ({ default: m.SolutionsPage })));
 const PublicAboutPage = lazy(() => PublicPages().then((m) => ({ default: m.PublicAboutPage })));
 const PublicLoginPage = lazy(() => PublicPages().then((m) => ({ default: m.PublicLoginPage })));
@@ -106,6 +107,20 @@ function RequireAuth() {
   return <Outlet />;
 }
 
+/** /modules (the old Modules page) → /platform, mapping old per-module anchors to the matching capability area. */
+const MODULE_ANCHORS: Record<string, string> = {
+  patients: "clinical-care", scheduling: "clinical-care", ehr: "clinical-care", portal: "clinical-care", "group-clinical": "clinical-care",
+  acute: "hospital-operations", beds: "hospital-operations", "group-operations": "hospital-operations",
+  pharmacy: "diagnostics-pharmacy", diagnostics: "diagnostics-pharmacy", inventory: "diagnostics-pharmacy", "group-diagnostics": "diagnostics-pharmacy",
+  revenue: "revenue", "group-revenue": "revenue", ai: "coordination", automation: "coordination", command: "coordination",
+  analytics: "coordination", admin: "coordination", "group-ai": "coordination", "group-analytics": "coordination",
+};
+function ModulesRedirect() {
+  const { hash } = useLocation();
+  const key = decodeURIComponent(hash.replace(/^#/, ""));
+  return <Navigate to={{ pathname: "/platform", hash: key ? `#${MODULE_ANCHORS[key] ?? key}` : "" }} replace />;
+}
+
 function PublicOnly() {
   const { status } = useAuth();
   if (status === "loading") return <Splash />;
@@ -141,7 +156,9 @@ const router = createBrowserRouter([
   },
   { path: "/reset-password", element: <ResetPasswordPage /> },
   { path: "/about", element: <Suspense fallback={<Splash />}><PublicAboutPage /></Suspense> },
-  { path: "/modules", element: <Suspense fallback={<Splash />}><ModulesPage /></Suspense> },
+  { path: "/platform", element: <Suspense fallback={<Splash />}><PlatformPage /></Suspense> },
+  { path: "/modules", element: <ModulesRedirect /> },
+  { path: "/ai-automation", element: <Suspense fallback={<Splash />}><AiAutomationPage /></Suspense> },
   { path: "/solutions", element: <Suspense fallback={<Splash />}><SolutionsPage /></Suspense> },
   { path: "/accept-invite", element: <AcceptInvitePage /> },
   {
