@@ -6,7 +6,7 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from app.core.security import now
-from app.engine.cases import Finding
+from app.engine.cases import Finding, human_duration
 from app.engine.monitors import Monitor, register
 from app.models import EdVisit
 
@@ -30,7 +30,7 @@ class EdBoarding(Monitor):
                                                   EdVisit.disposition_at < now() - timedelta(minutes=int(cfg["threshold_minutes"])))):
             m = _mins(v.disposition_at)
             out.append(Finding(dedupe_key=f"ed.boarding:{v.id}", kind=self.key, category="ed", severity="high" if m >= int(cfg["critical_minutes"]) else "medium",
-                               title=f"ED boarding {m // 60}h {m % 60}m — {v.patient.full_name}", patient_id=v.patient_id, facility_id=v.facility_id,
+                               title=f"ED boarding {human_duration(m)} — {v.patient.full_name}", patient_id=v.patient_id, facility_id=v.facility_id,
                                subject_type="ed_visit", subject_id=str(v.id), assign_role=cfg["assign_role"], link="/beds", sla_minutes=30,
                                evidence={"boarding_minutes": m, "esi": v.esi_level, "stay_id": str(v.stay_id) if v.stay_id else None}))
         return out
@@ -58,14 +58,14 @@ class DoorToProvider(Monitor):
             if v.esi_level is None:
                 if m >= int(cfg["untriaged_minutes"]):
                     out.append(Finding(dedupe_key=f"ed.untriaged:{v.id}", kind=self.key, category="ed", severity="high",
-                                       title=f"Waiting {m} min without triage — {v.patient.full_name}", patient_id=v.patient_id, facility_id=v.facility_id,
+                                       title=f"Waiting {human_duration(m)} without triage — {v.patient.full_name}", patient_id=v.patient_id, facility_id=v.facility_id,
                                        subject_type="ed_visit", subject_id=str(v.id), assign_role="nurse", link="/ed", sla_minutes=10,
                                        evidence={"minutes_since_arrival": m, "complaint": v.chief_complaint}))
                 continue
             target = int(cfg["esi_1_2_minutes"] if v.esi_level <= 2 else cfg["esi_3_minutes"] if v.esi_level == 3 else cfg["esi_4_5_minutes"])
             if m >= target:
                 out.append(Finding(dedupe_key=f"ed.d2p:{v.id}", kind=self.key, category="ed", severity="critical" if v.esi_level <= 2 else "high" if v.esi_level == 3 else "medium",
-                                   title=f"ESI {v.esi_level} waiting {m} min for a provider (target {target}) — {v.patient.full_name}", patient_id=v.patient_id,
+                                   title=f"ESI {v.esi_level} waiting {human_duration(m)} for a provider (target {target} min) — {v.patient.full_name}", patient_id=v.patient_id,
                                    facility_id=v.facility_id, subject_type="ed_visit", subject_id=str(v.id), assign_role=cfg["assign_role"], link="/ed",
                                    sla_minutes=10, evidence={"esi": v.esi_level, "minutes_since_arrival": m, "target_minutes": target}))
         return out

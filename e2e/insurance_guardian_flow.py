@@ -4,6 +4,7 @@ Staff sees the detected case → patient uploads a card in the portal → staff 
 attests and confirms → payer re-check (simulated) → the monitor verifies and closes the case.
 """
 import os
+import re
 import sys
 
 from playwright.sync_api import expect, sync_playwright
@@ -26,6 +27,10 @@ with sync_playwright() as p:
 
     staff = login("insurance@harborview.dev")
     staff.goto(f"{BASE}/worklist")
+    expect(staff.get_by_role("heading", name="My work")).to_be_visible()
+    staff.wait_for_timeout(1500)
+    for g in staff.get_by_role("button", name=re.compile("similar alerts")).all():  # repeated alerts are grouped; expand them
+        g.click()
     row = staff.get_by_role("button", name="Payer reports coverage inactive — Elena Moreau").first
     expect(row).to_be_visible(timeout=10000)
     row.click()

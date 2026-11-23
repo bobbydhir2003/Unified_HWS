@@ -1,5 +1,6 @@
 """Command Center drill-down (synthetic data): tiles → filtered queue → case drawer → work area; AI workspace status."""
 import os
+import re
 import sys
 
 from playwright.sync_api import expect, sync_playwright
@@ -37,7 +38,7 @@ with sync_playwright() as p:
     pg.get_by_role("button", name="Insurance issues").click()
     pg.wait_for_url("**/insurance")
     pg.goto(f"{BASE}/ai")
-    expect(pg.get_by_text("Rule-based simulation").first).to_be_visible()
+    expect(pg.get_by_text(re.compile("Rule-based simulation|Live: ")).first).to_be_visible()  # simulated or a configured provider
     pg.screenshot(path=f"{SHOTS}/cc-03-ai-workspace.png")
     b.close()
 

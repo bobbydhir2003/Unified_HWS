@@ -191,7 +191,8 @@ def list_cases(status: Literal["open", "closed", "all"] = "open", category: str 
     if patient_id:
         stmt = stmt.where(Case.patient_id == patient_id)
     if mine:
-        stmt = stmt.where(or_(Case.assigned_user_id == ctx.user.id, (Case.assigned_user_id.is_(None) & Case.assigned_role.in_(ctx.roles))))
+        stmt = stmt.where(or_(Case.assigned_user_id == ctx.user.id, (Case.assigned_user_id.is_(None) & Case.assigned_role.in_(ctx.roles)),
+                              (Case.status == "escalated") & Case.data["escalated_to"].astext.in_(ctx.roles)))
     if overdue:
         stmt = stmt.where(Case.due_at < now(), Case.status.in_(("open", "in_progress", "waiting", "escalated")))
     if q:

@@ -6,7 +6,7 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from app.core.security import now
-from app.engine.cases import Finding
+from app.engine.cases import Finding, human_duration
 from app.engine.events import handler
 from app.engine.monitors import Monitor, register, run_monitor
 from app.models import DomainEvent, ImagingStudy
@@ -29,7 +29,7 @@ class Unread(Monitor):
             if m < target:
                 continue
             out.append(Finding(dedupe_key=f"rad.unread:{s.id}", kind=self.key, category="radiology", severity="high" if stat else "medium",
-                               title=f"{s.modality} #{s.accession_number} unread {m // 60}h {m % 60}m — {s.order.title}", patient_id=s.patient_id,
+                               title=f"{s.modality} #{s.accession_number} unread {human_duration(m)} — {s.order.title}", patient_id=s.patient_id,
                                subject_type="imaging_study", subject_id=str(s.id), assign_role=cfg["assign_role"], link="/radiology", sla_minutes=60,
                                evidence={"minutes_since_completed": m, "target": target, "priority": s.order.priority}))
         return out

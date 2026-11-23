@@ -28,7 +28,7 @@ const SystemPage = lazy(() => import("@/features/admin/AdminPages").then((m) => 
 const ClinicsPage = lazy(() => import("@/features/admin/ClinicsPages").then((m) => ({ default: m.ClinicsPage })));
 const SchedulingSetupPage = lazy(() => import("@/features/admin/ClinicsPages").then((m) => ({ default: m.SchedulingSetupPage })));
 const StaffPage = lazy(() => import("@/features/admin/StaffPage").then((m) => ({ default: m.StaffPage })));
-const Dashboard = lazy(() => import("@/features/dashboard/Dashboard").then((m) => ({ default: m.Dashboard })));
+const RoleHome = lazy(() => import("@/features/dashboard/RoleHome").then((m) => ({ default: m.RoleHome })));
 const DocumentReview = lazy(() => import("@/features/documents/DocumentReview").then((m) => ({ default: m.DocumentReview })));
 const DocumentsPage = lazy(() => import("@/features/documents/DocumentsPage").then((m) => ({ default: m.DocumentsPage })));
 const OrdersPage = lazy(() => import("@/features/orders/OrdersPages").then((m) => ({ default: m.OrdersPage })));
@@ -122,7 +122,7 @@ function Perm({ perm, children }: { perm: string; children: React.ReactNode }) {
 function Home() {
   const { membership } = useAuth();
   if (membership?.roles.length === 1 && membership.roles[0] === "patient") return <Navigate to="/portal" replace />;
-  return <Dashboard />;
+  return <RoleHome />;
 }
 
 function StaffOnly() {
@@ -176,10 +176,10 @@ const router = createBrowserRouter([
               { path: "insights", element: <Perm perm="analytics:read"><InsightsPage /></Perm>, handle: { crumb: "Insights" } },
               { path: "agents", element: <Perm perm="ai:use"><AgentStudio /></Perm>, handle: { crumb: "Agent Studio" } },
               { path: "admin/ai-governance", element: <Perm perm="ai:manage"><AIGovernancePage /></Perm>, handle: { crumb: "AI governance" } },
-              { path: "ai", element: <Perm perm="ai:use"><AIWorkspace /></Perm>, handle: { crumb: "AI workspace" } },
+              { path: "ai", element: <Perm perm="ai:use"><AIWorkspace /></Perm>, handle: { crumb: "AI assistants" } },
               { path: "or", element: <OrSchedulePage />, handle: { crumb: "Operating rooms" } },
               { path: "roster", element: <Perm perm="roster:self"><RosterPage /></Perm>, handle: { crumb: "Roster" } },
-              { path: "revenue", element: <Perm perm="billing:read"><RevenuePage /></Perm>, handle: { crumb: "Revenue integrity" } },
+              { path: "revenue", element: <Perm perm="billing:read"><RevenuePage /></Perm>, handle: { crumb: "Claims & authorizations" } },
               { path: "radiology", element: <Perm perm="radiology:work"><RadiologyPage /></Perm>, handle: { crumb: "Radiology" } },
               { path: "equipment", element: <Perm perm="inventory:read"><EquipmentPage /></Perm>, handle: { crumb: "Equipment" } },
               { path: "lab", element: <Perm perm="clinical:read"><LabPage /></Perm>, handle: { crumb: "Laboratory" } },

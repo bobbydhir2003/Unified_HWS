@@ -3078,6 +3078,21 @@
     "title": "DeliveryOut",
     "type": "object"
    },
+   "DemoLoginIn": {
+    "properties": {
+     "key": {
+      "maxLength": 40,
+      "minLength": 1,
+      "title": "Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "key"
+    ],
+    "title": "DemoLoginIn",
+    "type": "object"
+   },
    "DepartmentIn": {
     "properties": {
      "code": {
@@ -16997,6 +17012,67 @@
     ]
    }
   },
+  "/api/v1/auth/demo": {
+   "get": {
+    "description": "Public: which one-click demo roles exist. Empty unless DEMO_MODE is on (never in production).",
+    "operationId": "demo_accounts_api_v1_auth_demo_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Demo Accounts",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/v1/auth/demo-login": {
+   "post": {
+    "operationId": "demo_login_api_v1_auth_demo_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DemoLoginIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TokenOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Demo Login",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
   "/api/v1/auth/invitations/accept": {
    "post": {
     "operationId": "accept_invitation_api_v1_auth_invitations_accept_post",
@@ -24708,6 +24784,58 @@
     "summary": "Update History",
     "tags": [
      "clinical"
+    ]
+   }
+  },
+  "/api/v1/home": {
+   "get": {
+    "operationId": "home_api_v1_home_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Home",
+    "tags": [
+     "home"
     ]
    }
   },

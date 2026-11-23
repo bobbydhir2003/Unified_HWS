@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import now
-from app.engine.cases import Finding
+from app.engine.cases import Finding, human_duration
 from app.engine.monitors import Monitor, register
 from app.models import BedAssignment, InpatientStay, Location
 
@@ -33,7 +33,7 @@ class BedCleaningDelay(Monitor):
             m = _mins(b.bed_status_changed_at)
             out.append(Finding(dedupe_key=f"bed.clean:{b.id}:{b.bed_status_changed_at.isoformat()}", kind=self.key, category="bed",
                                severity="high" if m >= int(cfg["critical_minutes"]) else "medium",
-                               title=f"Bed {b.code} waiting for cleaning {m} min", facility_id=b.facility_id, department_id=b.department_id,
+                               title=f"Bed {b.code} waiting for cleaning {human_duration(m)}", facility_id=b.facility_id, department_id=b.department_id,
                                subject_type="bed", subject_id=str(b.id), assign_role=cfg["assign_role"], link="/beds", sla_minutes=30,
                                evidence={"bed": b.code, "minutes_in_cleaning": m, "since": b.bed_status_changed_at.isoformat()}))
         return out
@@ -60,7 +60,7 @@ class PendingAdmission(Monitor):
             m = _mins(s.requested_at)
             out.append(Finding(dedupe_key=f"adt.pending:{s.id}", kind=self.key, category="bed",
                                severity="high" if m >= int(cfg["critical_minutes"]) else "medium",
-                               title=f"Waiting {m // 60}h {m % 60}m for a bed — {s.patient.full_name} ({s.level_of_care.replace('_', '-')})",
+                               title=f"Waiting {human_duration(m)} for a bed — {s.patient.full_name} ({s.level_of_care.replace('_', '-')})",
                                patient_id=s.patient_id, facility_id=s.facility_id, department_id=s.requested_department_id,
                                subject_type="inpatient_stay", subject_id=str(s.id), assign_role=cfg["assign_role"], link="/beds", sla_minutes=30,
                                evidence={"waiting_minutes": m, "source": s.admit_source, "level_of_care": s.level_of_care, "isolation": s.isolation}))
@@ -94,7 +94,7 @@ class DischargeNotDeparted(Monitor):
             r = readiness(db, s)
             blockers = r["blocking"] if r else []
             out.append(Finding(dedupe_key=f"dc.delay:{s.id}", kind=self.key, category="discharge", severity="high" if m > 360 else "medium",
-                               title=f"Discharge ordered {m // 60}h ago, not departed — {s.patient.full_name}", patient_id=s.patient_id,
+                               title=f"Discharge ordered {human_duration(m)} ago, not departed — {s.patient.full_name}", patient_id=s.patient_id,
                                facility_id=s.facility_id, department_id=s.department_id, subject_type="inpatient_stay", subject_id=str(s.id),
                                assign_role=cfg["assign_role"], link=f"/inpatients/{s.id}", sla_minutes=60,
                                summary=("Outstanding: " + "; ".join(blockers)) if blockers else "Checklist complete — patient ready to depart.",

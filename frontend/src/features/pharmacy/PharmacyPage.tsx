@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtMoney, fromNow } from "@/lib/format";
 import { cn, titleCase } from "@/lib/utils";
 import { CaseDrawer, CaseRow, type CaseT } from "../ops/ops";
+import { AskAI } from "@/features/ai/AskAI";
 
 type Item = { id: string; name: string; sku: string; ndc: string | null; kind: string; unit: string; strength: string | null; form: string | null; is_controlled: boolean; on_hand: number; reorder_point: number; avg_daily_use: number; days_of_supply: number | null; nearest_expiry: string | null; expiring_soon: boolean; stock_status: string };
 type Lot = { lot_id: string; lot_number: string; expiry_date: string | null; expired: boolean; location_id: string; location: string; quantity: number };
@@ -41,7 +42,8 @@ export function PharmacyPage() {
   const r = report.data;
   return (
     <>
-      <PageHeader title="Pharmacy & inventory" description="Stock by lot and location with a permanent ledger. The Pharmacy Watchdog flags expiring stock, low stock and unusual use, and drafts reorders for approval." />
+      <PageHeader title="Pharmacy & inventory" description="Verify medication orders, keep stock safe and reorder in time. The Pharmacy Watchdog flags expiring stock, low stock and unusual use, and drafts reorders for approval."
+        actions={<AskAI agent="pharmacy_watchdog" label="Summarize inventory risks" variant="outline" question="Summarize medication stock and expiry risks that need pharmacy review today, most urgent first." />} />
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Watchdog cases" icon={AlertTriangle} tone="warning" value={cases.data?.length ?? "…"} sub="Expiry, low stock, unusual use" />
         <Stat label="Below reorder point" icon={Boxes} tone="danger" value={r?.low_stock_items ?? "…"} />

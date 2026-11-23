@@ -82,7 +82,7 @@ with sync_playwright() as p:
     doc.get_by_role("dialog").get_by_role("button", name="Order discharge").click()
     expect(doc.get_by_text("Discharge ordered — checklist created")).to_be_visible(timeout=10000)
     doc.get_by_role("tab", name=re.compile("Discharge")).click()
-    expect(doc.get_by_text("Medication reconciliation completed")).to_be_visible(timeout=10000)
+    expect(doc.get_by_text("Medication reconciliation completed").first).to_be_visible(timeout=10000)
     doc.screenshot(path=f"{SHOTS}/adt-02-checklist.png")
     stay_url = doc.url
 

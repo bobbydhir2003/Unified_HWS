@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fromNow } from "@/lib/format";
 import { cn, titleCase } from "@/lib/utils";
 import { CaseDrawer, CaseRow, type CaseT } from "../ops/ops";
+import { AskAI } from "@/features/ai/AskAI";
 
 type Summary = {
   window_days: number; visits: number; ready: number; ready_pct: number | null; states: Record<string, number>;
@@ -56,7 +57,10 @@ export function InsuranceGuardianPage() {
   return (
     <>
       <PageHeader title="Insurance Guardian" description="Every upcoming visit verified with the payer before the patient arrives. Stored plan dates are reminders to confirm — never proof of coverage."
-        actions={d?.simulated_eligibility ? <SimulatedBadge label="Simulated payer (270/271)" /> : undefined} />
+        actions={<div className="flex flex-wrap items-center gap-2">
+          <AskAI agent="insurance_guardian" label="Summarize coverage issues" variant="outline" question="Summarize open insurance coverage issues for upcoming visits, most urgent first, and the next step for each." />
+          {d?.simulated_eligibility && <SimulatedBadge label="Simulated payer (270/271)" />}
+        </div>} />
       {s.isError ? <ErrorState error={s.error} retry={s.refetch} /> : (
         <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Stat label="Visits ready (next 7 days)" icon={BadgeCheck} tone="success" value={d ? (d.ready_pct == null ? "—" : `${d.ready_pct}%`) : "…"} sub={d ? `${d.ready} of ${d.visits} visits verified or cleared` : undefined} />

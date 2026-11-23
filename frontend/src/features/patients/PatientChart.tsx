@@ -160,6 +160,16 @@ const TABS = [
   { key: "notes", label: "Front-desk notes", icon: StickyNote },
 ];
 
+/** Six top-level groups (sections keep their own URLs, so deep links still work). */
+const GROUPS: { label: string; icon: React.ElementType; keys: string[] }[] = [
+  { label: "Overview", icon: ClipboardList, keys: [""] },
+  { label: "Clinical", icon: HeartPulse, keys: ["problems", "medications", "allergies", "history", "vitals"] },
+  { label: "Visits", icon: Stethoscope, keys: ["visits", "appointments"] },
+  { label: "Orders & results", icon: ClipboardPen, keys: ["orders", "results"] },
+  { label: "Care journey", icon: Route, keys: ["journey", "timeline"] },
+  { label: "Documents & details", icon: FileStack, keys: ["documents", "demographics", "notes", "billing"] },
+];
+
 export function PatientChart() {
   const { patientId = "", "*": tab = "" } = useParams();
   const { can } = useAuth();
@@ -199,17 +209,41 @@ export function PatientChart() {
   return (
     <>
       <PatientBanner p={p} summary={summary.data} onEdit={() => setEditOpen(true)} onBook={() => setBookOpen(true)} onStartVisit={startVisit} onAsk={() => setAskOpen(true)} starting={starting} />
-      <nav className="-mx-1 mb-5 flex gap-1 overflow-x-auto border-b px-1 scrollbar-thin" aria-label="Chart sections">
-        {tabs.map((t) => (
-          <NavLink key={t.key} to={`/patients/${p.id}${t.key ? `/${t.key}` : ""}`} end
-            className={({ isActive }) => cn(
-              "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground",
-              isActive && "border-primary text-foreground",
-            )}>
-            <t.icon className="size-3.5" />{t.label}
-          </NavLink>
-        ))}
-      </nav>
+      {(() => {
+        const visible = new Set(tabs.map((t) => t.key));
+        const groups = GROUPS.map((g) => ({ ...g, keys: g.keys.filter((k) => visible.has(k)) })).filter((g) => g.keys.length);
+        const current = groups.find((g) => g.keys.includes(tab)) ?? groups[0];
+        const url = (k: string) => `/patients/${p.id}${k ? `/${k}` : ""}`;
+        return (
+          <div className="mb-5 space-y-2">
+            <nav className="-mx-1 flex gap-1 overflow-x-auto border-b px-1 scrollbar-thin" aria-label="Chart sections">
+              {groups.map((g) => {
+                const active = g === current;
+                return (
+                  <NavLink key={g.label} to={url(g.keys[0])} end aria-current={active ? "page" : undefined}
+                    className={cn("-mb-px flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground",
+                      active && "border-primary text-foreground")}>
+                    <g.icon className="size-3.5" />{g.label}
+                  </NavLink>
+                );
+              })}
+            </nav>
+            {current.keys.length > 1 && (
+              <nav className="flex flex-wrap gap-1" aria-label={`${current.label} sections`}>
+                {current.keys.map((k) => {
+                  const t = tabs.find((x) => x.key === k)!;
+                  return (
+                    <NavLink key={k} to={url(k)} end className={({ isActive }) => cn("inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-medium text-muted-foreground hover:bg-muted",
+                      isActive && "border-primary/40 bg-accent text-accent-foreground")}>
+                      <t.icon className="size-3.5" />{t.label}
+                    </NavLink>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        );
+      })()}
       <div className="animate-in">
         {tab === "" && <Overview p={p} summary={summary.data} />}
         {tab === "visits" && clinical && <VisitsTab patientId={p.id} />}

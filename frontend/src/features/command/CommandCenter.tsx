@@ -14,6 +14,7 @@ import { useLiveStatus } from "@/lib/live";
 import { cn, titleCase } from "@/lib/utils";
 import { useFacilities } from "../admin/FacilitiesPage";
 import { CaseDrawer, CaseRow, type CaseT, CATEGORY_LABEL, type Severity } from "../ops/ops";
+import { AskAI } from "@/features/ai/AskAI";
 
 type Tile = { key: string; label: string; value: number | string; link: string | null; tone: string; sub: string | null; source: string | null };
 type Hosp = { available: boolean; tiles?: Tile[]; occupancy_by_department?: { department: string; kind: string; available: number; occupied: number; cleaning: number; blocked: number; occupancy_pct: number | null }[] };
@@ -70,7 +71,8 @@ export function CommandCenter() {
   return (
     <div className={cn(wall && "fixed inset-0 z-50 overflow-auto bg-background p-6 text-[15px]")}>
       <PageHeader title="Command Center" description={`Live operations for ${s.data ? new Date(s.data.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) : "today"}. Every number links to its records.`}
-        actions={<div className="flex items-center gap-2">
+        actions={<div className="flex flex-wrap items-center gap-2">
+          <AskAI agent="hospital_operations" label="Explain bottlenecks" variant="outline" question="Explain today's operational bottlenecks and which teams they are waiting on, citing case references." />
           <Badge variant={live ? "success" : "neutral"} title={live ? "Receiving live updates" : "Reconnecting — refreshing every minute"}><Radio className={cn(live && "animate-pulse")} />{live ? "Live" : "Polling"}</Badge>
           <NativeSelect className="w-52" aria-label="Facility" value={facility} onChange={(e) => set("facility", e.target.value || null)}>
             <option value="">All my facilities</option>{facs.data?.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}

@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LegalFooter } from "@/components/common/LegalFooter";
 import { useLiveConnection } from "@/lib/live";
-import { Bell, Building, Check, ChevronRight, ChevronsLeft, ChevronsUpDown, FlaskConical, Info, LifeBuoy, LogOut, Menu, Monitor, Moon, Search, Sun, UserRound } from "lucide-react";
+import { Bell, Building, Check, ChevronDown, ChevronRight, ChevronsLeft, ChevronsUpDown, FlaskConical, Info, LifeBuoy, LogOut, Menu, Monitor, MoreHorizontal, Moon, Search, Sun, UserRound } from "lucide-react";
 import * as React from "react";
 import { Link, NavLink, Outlet, useLocation, useMatches, useNavigate } from "react-router-dom";
 import { Dialog, SheetContent } from "@/components/ui/dialog";
@@ -17,7 +17,7 @@ import { fromNow } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CommandSearch } from "./CommandSearch";
-import { NAV } from "./nav";
+import { NAV, type NavItem, primaryNav, profileFor } from "./nav";
 
 // ---------- Breadcrumb label overrides (e.g. patient name for /patients/:id) ----------
 const CrumbCtx = React.createContext<{ set: (path: string, label: string | null) => void; labels: Record<string, string> }>({
@@ -64,42 +64,63 @@ function Brand({ collapsed }: { collapsed?: boolean }) {
   );
 }
 
+function SidebarLink({ it, collapsed, onNavigate }: { it: NavItem; collapsed: boolean; onNavigate?: () => void }) {
+  return (
+    <li>
+      <Tooltip content={collapsed ? it.label : null} side="right">
+        <NavLink
+          to={it.to}
+          end={it.to === "/"}
+          onClick={onNavigate}
+          className={({ isActive }) => cn(
+            "group flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13.5px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+            isActive && "bg-sidebar-active text-white shadow-inner",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          <it.icon className="size-[18px] shrink-0 opacity-90" />
+          {!collapsed && <span className="truncate">{it.label}</span>}
+        </NavLink>
+      </Tooltip>
+    </li>
+  );
+}
+
+const MORE_KEY = "ud-nav-more";
+
+/** Role-based sidebar: a short primary list for daily work, everything else permitted under "All tools". */
 function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { can, membership } = useAuth();
+  const { pathname } = useLocation();
+  const allowed = (it: NavItem) => (!it.perm || can(it.perm)) && (!it.any || it.any.some((p) => can(p))) && (!it.providerOnly || !!membership?.provider_id);
+  const primary = primaryNav(profileFor(membership?.roles)).filter(allowed);
+  const primaryPaths = new Set(primary.map((p) => p.to));
+  const rest = NAV.map((sec) => ({ ...sec, items: sec.items.filter((it) => allowed(it) && !primaryPaths.has(it.to)) })).filter((sec) => sec.items.length);
+  const restActive = rest.some((sec) => sec.items.some((it) => it.to !== "/" && pathname.startsWith(it.to)));
+  const [open, setOpen] = React.useState<boolean>(() => { try { return localStorage.getItem(MORE_KEY) === "1"; } catch { return false; } });
+  const showMore = open || restActive;
+  const toggle = () => { const v = !showMore; setOpen(v); try { localStorage.setItem(MORE_KEY, v ? "1" : "0"); } catch { /* ignore */ } };
   return (
-    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-2 scrollbar-thin" aria-label="Main">
-      {NAV.map((section, i) => {
-        const items = section.items.filter((it) => (!it.perm || can(it.perm)) && (!it.any || it.any.some((p) => can(p))) && (!it.providerOnly || membership?.provider_id));
-        if (!items.length) return null;
-        return (
-          <div key={i}>
-            {section.title && !collapsed && (
-              <p className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted">{section.title}</p>
-            )}
-            <ul className="space-y-0.5">
-              {items.map((it) => (
-                <li key={it.to}>
-                  <Tooltip content={collapsed ? it.label : null} side="right">
-                    <NavLink
-                      to={it.to}
-                      end={it.to === "/"}
-                      onClick={onNavigate}
-                      className={({ isActive }) => cn(
-                        "group flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13.5px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-white",
-                        isActive && "bg-sidebar-active text-white shadow-inner",
-                        collapsed && "justify-center px-0",
-                      )}
-                    >
-                      <it.icon className="size-[18px] shrink-0 opacity-90" />
-                      {!collapsed && <span className="truncate">{it.label}</span>}
-                    </NavLink>
-                  </Tooltip>
-                </li>
+    <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-2 scrollbar-thin" aria-label="Main">
+      <ul className="space-y-0.5">{primary.map((it) => <SidebarLink key={it.to} it={it} collapsed={collapsed} onNavigate={onNavigate} />)}</ul>
+      {!!rest.length && (
+        <div>
+          <button type="button" onClick={toggle} aria-expanded={showMore} aria-controls="nav-all-tools"
+            className={cn("flex h-8 w-full items-center gap-2 rounded-lg px-2.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40", collapsed && "justify-center px-0")}>
+            {collapsed ? <MoreHorizontal className="size-4" /> : <>All tools<ChevronDown className={cn("ml-auto size-3.5 transition-transform", showMore && "rotate-180")} /></>}
+          </button>
+          {showMore && (
+            <div id="nav-all-tools" className="mt-1 space-y-4">
+              {rest.map((section, i) => (
+                <div key={i}>
+                  {section.title && !collapsed && <p className="mb-1 px-2.5 text-[10.5px] font-medium uppercase tracking-wider text-sidebar-muted/80">{section.title}</p>}
+                  <ul className="space-y-0.5">{section.items.map((it) => <SidebarLink key={it.to} it={it} collapsed={collapsed} onNavigate={onNavigate} />)}</ul>
+                </div>
               ))}
-            </ul>
-          </div>
-        );
-      })}
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   );
 }

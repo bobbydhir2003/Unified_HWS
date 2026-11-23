@@ -14,6 +14,7 @@ import { get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime, fromNow } from "@/lib/format";
 import { ROLE_LABELS, STAFF_ROLES, type Role } from "@/lib/types";
+import { StatusChip, toWorkStatus } from "@/components/common/Status";
 import { cn, titleCase } from "@/lib/utils";
 
 export type CaseT = {
@@ -70,7 +71,7 @@ export function SlaBadge({ c }: { c: Pick<CaseT, "due_at" | "overdue" | "status"
   return (
     <span className={cn("inline-flex items-center gap-1 text-xs tabular", c.overdue ? "font-medium text-destructive" : "text-muted-foreground")}>
       <Clock className="size-3.5" />{c.overdue ? `Overdue ${fromNow(c.due_at)}` : `Due ${fromNow(c.due_at)}`}
-      {c.escalation_level > 0 && <Badge variant="danger" className="ml-1">Escalated L{c.escalation_level}</Badge>}
+      {c.escalation_level > 0 && <span className="ml-1 text-muted-foreground">· escalated</span>}
     </span>
   );
 }
@@ -87,16 +88,15 @@ export function CaseRow({ c, onOpen, compact }: { c: CaseT; onOpen: (id: string)
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-[13.5px] font-medium">{c.title}</span>
-            {!compact && <SeverityBadge severity={c.severity} />}
-            {c.status !== "open" && <CaseStatusBadge status={c.status} />}
+            <span className="sr-only">Severity {c.severity}.</span>
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-            <span>#{c.number} · {CATEGORY_LABEL[c.category] ?? c.category}</span>
-            <span className="inline-flex items-center gap-1"><UserRound className="size-3" />{ownerLabel(c)}</span>
+            <span>#{c.number} · {CATEGORY_LABEL[c.category] ?? c.category}{c.source === "monitor" ? " · rule alert" : ""}</span>
+            <span className="inline-flex items-center gap-1"><UserRound className="size-3" />Owner: {ownerLabel(c)}</span>
             <SlaBadge c={c} />
-            {c.source === "monitor" && <span className="inline-flex items-center gap-1"><Bot className="size-3" />Detected automatically</span>}
           </div>
         </div>
+        {!compact && <StatusChip status={toWorkStatus(c.status, { overdue: c.overdue })} className="mt-0.5" />}
       </button>
     </li>
   );

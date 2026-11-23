@@ -17,6 +17,7 @@ import { get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtMoney, fromNow } from "@/lib/format";
 import { titleCase } from "@/lib/utils";
+import { AskAI } from "@/features/ai/AskAI";
 
 type PA = { id: string; number: number; status: string; patient: { id: string; name: string; mrn: string }; service_code: string; service_description: string; payer_name: string | null;
   checklist: { key: string; label: string; done: boolean; note: string | null }[]; clinical_summary: string | null; auth_number: string | null; valid_from: string | null; valid_to: string | null;
@@ -35,7 +36,8 @@ export function RevenuePage() {
   const tab = params.get("tab") ?? (can("insurance:write") ? "prior-auth" : "review");
   return (
     <>
-      <PageHeader title="Revenue integrity" description="Prior authorizations, claim review and coding — catching problems before claims go out. Reviews only flag issues; people decide." />
+      <PageHeader title="Claims & authorizations" description="Prior authorizations, claim review and coding — catching problems before claims go out. Reviews only flag issues; people decide."
+        actions={<AskAI agent="claims_review" label="Explain claim problems" variant="outline" question="Explain which claims need attention and why, citing case references, most urgent first." />} />
       <Tabs value={tab} onValueChange={(v) => setParams({ tab: v })}>
         <TabsList>
           {can("insurance:write") && <TabsTrigger value="prior-auth">Prior authorizations</TabsTrigger>}

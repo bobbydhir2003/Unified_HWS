@@ -133,7 +133,8 @@ def test_escalation_fires_once_per_level(db):
     C.escalate_due(db)  # second sweep: no double escalation
     db.commit()
     db.refresh(c)
-    assert c.escalation_level == 1 and c.status == "escalated" and c.assigned_role == "clinic_admin"
+    # Owner (nurse) keeps the case; the escalation target is recorded and notified.
+    assert c.escalation_level == 1 and c.status == "escalated" and c.assigned_role == "nurse" and c.data["escalated_to"] == "clinic_admin"
     esc_events = db.scalar(select(func.count()).select_from(CaseEvent).where(CaseEvent.case_id == c.id, CaseEvent.kind == "escalated"))
     assert esc_events == 1
     C.resolve(db, c, "done in test")

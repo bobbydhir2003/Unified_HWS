@@ -59,6 +59,47 @@ Foundations already in place: locations with `bed_status`, hospital seed (Harbor
 - **Final role-based UI/UX refinement pass** across the 11 roles (layout/accessibility audit, dark mode review, empty states) — not done as a dedicated pass.
 - **OpenAI live validation:** pending — no key configured; every AI path above ran on the simulated/rule-based provider (labeled in the UI).
 
+## UX simplification — audit phases 1–3 implemented (2026-11-23) ✅
+Source: `docs/UX_SIMPLIFICATION_AUDIT.md`.
+
+**Phase 1 — clarity**
+- **Role-based Home.** `features/dashboard/RoleHome.tsx` + `GET /home` (`routers/home.py`) replace the generic clinic
+  dashboard, including its empty chart. Home has three sections:
+  - *My priorities*: at most 5, merged from cases, tasks, approvals and critical results, ranked overdue → severity →
+    due time. Each shows its type, owner, status and one action.
+  - *Today*: role-specific counts from the same functions the department screens use.
+  - *Quick actions*: 3–5 working links, permission-checked.
+- **Sidebar.** 6–9 primary links per role (`nav.ts` `primaryNav`), with every other permitted page under a collapsible
+  "All tools" group that opens automatically on those pages. Routes and permissions are unchanged.
+- **Renames.** "Revenue integrity" → "Claims & authorizations"; "AI workspace" → "AI assistants".
+
+**Phase 2 — workflows**
+- **My work.** Opens on the tab that has work (or `?tab=`), explains cases vs tasks vs approvals, groups 3+ alerts from
+  the same rule, and uses one status chip and an owner label per row.
+- **Readable durations.** Case titles now read "3 d 18 h" instead of "5452 min" (`human_duration`).
+- **Escalation keeps the frontline owner.** Escalation records `data.escalated_to` and notifies that role, which also
+  sees the case. Migration 0029 (data-only) repaired existing escalated cases from their first escalation event.
+  Deadlines, levels, events and audit are unchanged.
+- **Patient chart.** 15 tabs → 6 groups (Overview, Clinical, Visits, Orders & results, Care journey, Documents &
+  details) with sub-tabs; every section keeps its URL.
+- **Discharge.** "Waiting on: <teams>" with each team's open steps; the reason Complete discharge is unavailable is
+  shown under the button. Sign-off rules are unchanged.
+- **Status language.** Shared `StatusChip`: not started, in progress, waiting, blocked, needs approval, done, failed,
+  urgent — always with an icon and a label.
+
+**Phase 3 — contextual AI**
+- `AskAI` runs existing agents with preset questions from Home, Command Center, Insurance Guardian, Pharmacy,
+  Claims & authorizations and the discharge checklist.
+- Shown only when the server says the user may run that agent.
+- Results are labelled "Live AI · model" or "Simulated · rule-based summary"; any proposals link to Approvals.
+
+**Tests**
+- Backend: 156 passed, including `test_home.py` (3 tests) and the updated escalation test.
+- Browser smoke for 8 roles: nav ≤ 9, Home sections, AI buttons only where permitted, My work tab, chart groups,
+  discharge summary.
+- Updated flows (`adt_flow`, `command_center_flow`, `insurance_guardian_flow`) for the intended UI changes.
+- A contextual Hospital Operations run on the local stack (OpenAI configured there) succeeded live with gpt-4.1-mini.
+
 ## Demo AI settings, session-scoped (2026-11-20) ✅
 - **What changed:** the demo Super Admin can now use AI settings end to end (key, models, per-agent models, Test
   connection) and Agent Studio edits. Everything saves to that sign-in session's isolated `demo_ai_settings` row, not the

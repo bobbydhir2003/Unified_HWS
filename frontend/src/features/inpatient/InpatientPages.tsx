@@ -16,8 +16,10 @@ import { get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fromNow } from "@/lib/format";
 import { ROLE_LABELS, type Role } from "@/lib/types";
+import { StatusChip } from "@/components/common/Status";
 import { cn, titleCase } from "@/lib/utils";
 import { AdmitDialog, losLabel, type StayT, StayStatusBadge } from "./shared";
+import { AskAI } from "@/features/ai/AskAI";
 
 type Item = { id: string; key: string; label: string; required: boolean; owner_role: Role; verification: string; status: string; note: string | null; evidence: Record<string, string>; completed_at: string | null };
 type Readiness = { ready: boolean; blocking: string[]; done: number; total: number; items: Item[]; instructions: { text: string | null; source: string | null; approved_at: string | null }; plan_status: string };
@@ -83,7 +85,13 @@ export function InpatientDetail() {
           <Button variant="outline" asChild><Link to={`/patients/${s.patient.id}`}>Open chart</Link></Button>
           {s.encounter_id && <Button variant="outline" asChild><Link to={`/encounters/${s.encounter_id}`}><FileText />Documentation</Link></Button>}
           {s.status === "admitted" && can("orders:sign") && <Button onClick={() => setDialog("order")}><LogOut />Order discharge</Button>}
-          {s.status === "discharge_ordered" && can("adt:write") && <Button disabled={!r || (!r.ready && !can("orders:sign"))} title={r && !r.ready && !can("orders:sign") ? "Checklist incomplete — a physician can override" : undefined} onClick={() => setDialog(r && !r.ready ? "override" : "discharge")}><CheckCircle2 />Complete discharge</Button>}
+          {s.status === "discharge_ordered" && can("adt:write") && (
+            <div className="flex flex-col items-end gap-1">
+              <Button disabled={!r || (!r.ready && !can("orders:sign"))} aria-describedby="complete-discharge-reason" onClick={() => setDialog(r && !r.ready ? "override" : "discharge")}><CheckCircle2 />Complete discharge</Button>
+              {r && !r.ready && <p id="complete-discharge-reason" className="max-w-xs text-right text-[11.5px] text-muted-foreground">
+                {can("orders:sign") ? `${r.blocking.length} required step(s) still open — completing now is an audited override.` : `Available when ${r.blocking.length} required step(s) are done (see Discharge tab) — or a physician overrides.`}</p>}
+            </div>
+          )}
         </div>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="p-4"><KeyValue label="Status" value={<StayStatusBadge status={s.status} />} /></Card>
@@ -150,9 +158,28 @@ function DischargePanel({ stay, data, onChange }: { stay: StayT; data?: Discharg
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_420px]">
       <Card>
-        <CardHeader className="flex-row items-center justify-between"><CardTitle>Discharge checklist</CardTitle>
-          <Badge variant={r.ready ? "success" : "warning"}>{r.ready ? "Ready to go" : `${r.blocking.length} blocking`}</Badge></CardHeader>
-        <CardContent><ul className="divide-y">{r.items.map((it) => {
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2"><CardTitle>Discharge checklist</CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+          <AskAI agent="discharge_coordination" size="xs" variant="ghost" label="What's this waiting on?" question={`Summarize what the discharge for ${stay.patient.name} (stay ${stay.id}) is waiting on, which team owns each step, and what should happen next.`} />
+          <StatusChip status={r.ready ? "done" : "waiting"} label={r.ready ? "Ready to discharge" : `${r.blocking.length} step${r.blocking.length === 1 ? "" : "s"} left`} /></div></CardHeader>
+        <CardContent>
+        {(() => {
+          // Plain-language summary: which teams the discharge is waiting on, and what each still has to do.
+          const open = r.items.filter((it) => it.required && !["done", "not_applicable"].includes(it.status));
+          const byOwner = new Map<string, string[]>();
+          for (const it of open) byOwner.set(it.owner_role, [...(byOwner.get(it.owner_role) ?? []), it.label]);
+          if (!open.length) return <p className="mb-3 rounded-lg bg-success-soft/60 px-3 py-2 text-[13px]"><strong>All required steps are done.</strong> The discharge can be completed.</p>;
+          return (
+            <div className="mb-3 rounded-lg border border-warning/40 bg-warning-soft/50 px-3 py-2.5 text-[13px]" data-testid="discharge-waiting-on">
+              <p><strong>Waiting on:</strong> {[...byOwner.keys()].map((role) => `${ROLE_LABELS[role as Role] ?? role}${roles.includes(role as Role) ? " (you)" : ""}`).join(", ")}</p>
+              <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                {[...byOwner.entries()].map(([role, labels]) => <li key={role}><span className="text-foreground">{ROLE_LABELS[role as Role] ?? role}:</span> {labels.join("; ")}</li>)}
+              </ul>
+              <p className="mt-1.5 text-muted-foreground">Complete discharge becomes available when these are done. A physician can discharge with open items; that override is recorded in the audit log.</p>
+            </div>
+          );
+        })()}
+        <ul className="divide-y">{r.items.map((it) => {
           const Icon = ITEM_ICON[it.status] ?? CircleDashed;
           const mine = roles.includes(it.owner_role) || roles.includes("doctor") || roles.includes("hospital_admin");
           return (

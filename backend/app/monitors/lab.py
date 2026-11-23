@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy import select
 
 from app.core.security import now
-from app.engine.cases import Finding
+from app.engine.cases import Finding, human_duration
 from app.engine.events import handler
 from app.engine.monitors import Monitor, register, run_monitor
 from app.models import CriticalResultAlert, DomainEvent, Patient, Specimen
@@ -70,7 +70,7 @@ class Turnaround(Monitor):
                 continue
             out.append(Finding(dedupe_key=f"lab.tat:{sp.id}:{sp.status if sp.status == 'collected' else 'lab'}", kind=self.key, category="lab",
                                severity="high" if sp.order.priority == "stat" else "medium",
-                               title=f"Accession {sp.accession_number} {what} for {m} min — {sp.order.title}", patient_id=sp.patient_id,
+                               title=f"Accession {sp.accession_number} {what} for {human_duration(m)} — {sp.order.title}", patient_id=sp.patient_id,
                                subject_type="specimen", subject_id=str(sp.id), assign_role=cfg["assign_role"], link="/lab", sla_minutes=60,
                                evidence={"minutes": m, "target": target, "priority": sp.order.priority, "status": sp.status}))
         return out

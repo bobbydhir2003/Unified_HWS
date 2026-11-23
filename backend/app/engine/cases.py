@@ -24,6 +24,19 @@ log = logging.getLogger("undeclared.engine.cases")
 SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 DEFAULT_SLA_MINUTES = {"info": 7 * 1440, "low": 3 * 1440, "medium": 1440, "high": 240, "critical": 30}
 DEFAULT_ESCALATION = {"default": "clinic_admin"}
+
+
+def human_duration(minutes: int | float) -> str:
+    """45 → '45 min', 200 → '3 h 20 min', 5452 → '3 d 18 h' (used in case titles)."""
+    m = max(int(minutes), 0)
+    if m < 60:
+        return f"{m} min"
+    if m < 24 * 60:
+        h, r = divmod(m, 60)
+        return f"{h} h {r} min" if r else f"{h} h"
+    d, r = divmod(m, 24 * 60)
+    h = r // 60
+    return f"{d} d {h} h" if h else f"{d} d"
 MAX_ESCALATION_LEVEL = 2
 
 # Allowed manual transitions (system transitions — escalate, auto-resolve, unsnooze — are handled explicitly).
@@ -244,12 +257,15 @@ def escalate_due(db: Session) -> dict[str, int]:
         to_role = (c.data or {}).get("escalate_to") or DEFAULT_ESCALATION["default"]
         if level + 1 >= 2:
             to_role = "hospital_admin" if role_user_ids(db, c.organization_id, "hospital_admin") else "clinic_admin"
-        prev = c.assigned_role or "unassigned"
-        c.status, c.escalated_at, c.assigned_role, c.assigned_user_id = "escalated", now(), to_role, None
+        owner = c.assigned_role or "unassigned"
+        # The frontline owner keeps the case (it stays in their worklist); the escalation role is notified and also sees
+        # it in their worklist via data.escalated_to. Ownership is never silently moved away from the team doing the work.
+        c.status, c.escalated_at = "escalated", now()
+        c.data = {**(c.data or {}), "escalated_to": to_role}
         sla = DEFAULT_SLA_MINUTES.get(c.severity, 1440)
         c.due_at = now() + timedelta(minutes=max(sla // 2, 15))
-        log_event(db, c, "escalated", f"SLA missed — escalated (level {level + 1}) from {prev} to {to_role}",
-                  data={"level": level + 1, "from": prev, "to": to_role})
+        log_event(db, c, "escalated", f"SLA missed — escalated (level {level + 1}) to {to_role}; still owned by {owner}",
+                  data={"level": level + 1, "from": owner, "to": to_role, "owner_kept": True})
         audit.record(db, "case.escalated", org_id=c.organization_id, resource_type="case", resource_id=c.id, patient_id=c.patient_id,
                      details={"level": level + 1, "to": to_role})
         deliver_to_role(db, c.organization_id, to_role, case=c, category="escalation",

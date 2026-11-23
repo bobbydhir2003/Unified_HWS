@@ -41,7 +41,7 @@ export function AIWorkspace() {
   };
   return (
     <>
-      <PageHeader title="AI workspace" description="One place for the AI tools. AI output is always a draft: a person reviews, edits and approves before anything reaches a chart, a claim or a patient." />
+      <PageHeader title="AI assistants" description="One place for the AI tools. AI output is always a draft: a person reviews, edits and approves before anything reaches a chart, a claim or a patient." />
       <Card className="mb-5">
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-3">
           <div><CardTitle className="flex items-center gap-2"><Bot className="size-4" />AI provider</CardTitle>

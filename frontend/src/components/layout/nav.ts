@@ -43,14 +43,14 @@ export const NAV: NavSection[] = [
     items: [
       { to: "/insurance", label: "Insurance Guardian", icon: ShieldCheck, any: ["insurance:write", "automation:manage"] },
       { to: "/billing", label: "Billing", icon: Receipt, perm: "billing:read" },
-      { to: "/revenue", label: "Revenue integrity", icon: FileCheck2, any: ["billing:read", "insurance:write"] },
+      { to: "/revenue", label: "Claims & authorizations", icon: FileCheck2, any: ["billing:read", "insurance:write"] },
       { to: "/analytics", label: "Analytics", icon: BarChart3, perm: "analytics:read" },
     ],
   },
   {
     title: "AI & automation",
     items: [
-      { to: "/ai", label: "AI workspace", icon: Sparkles, perm: "ai:use" },
+      { to: "/ai", label: "AI assistants", icon: Sparkles, perm: "ai:use" },
       { to: "/insights", label: "Insights", icon: Lightbulb, perm: "analytics:read" },
       { to: "/agents", label: "Agent Studio", icon: Bot, perm: "ai:use" },
       { to: "/admin/ai-governance", label: "AI governance", icon: ShieldCheck, perm: "ai:manage" },
@@ -79,3 +79,51 @@ export const NAV: NavSection[] = [
     items: [{ to: "/help", label: "Help & About", icon: LifeBuoy }],
   },
 ];
+
+/* ---------------------------------------------------------------------------------------------------------------------
+ * Role-based primary navigation (UX simplification). Each role sees 6–9 destinations it uses daily; every other
+ * permitted page stays one click away under "All tools" (and via ⌘K search). Permissions are taken from NAV above and
+ * are enforced again by the server — this only decides what is shown first.
+ * ------------------------------------------------------------------------------------------------------------------- */
+
+export type HomeProfile =
+  | "super_admin" | "hospital_admin" | "clinic_admin" | "doctor" | "nurse" | "pharmacist" | "lab_tech" | "radiologist"
+  | "bed_manager" | "billing" | "insurance_specialist" | "receptionist" | "staff";
+
+const PROFILE_ORDER: [string, HomeProfile][] = [
+  ["super_admin", "super_admin"], ["hospital_admin", "hospital_admin"], ["clinic_admin", "clinic_admin"], ["doctor", "doctor"],
+  ["nurse", "nurse"], ["pharmacist", "pharmacist"], ["lab_tech", "lab_tech"], ["radiologist", "radiologist"], ["radiology_tech", "radiologist"],
+  ["bed_manager", "bed_manager"], ["billing", "billing"], ["insurance_specialist", "insurance_specialist"], ["receptionist", "receptionist"],
+];
+
+export function profileFor(roles: string[] | undefined): HomeProfile {
+  for (const [role, profile] of PROFILE_ORDER) if (roles?.includes(role)) return profile;
+  return "staff";
+}
+
+/** Primary links per profile: [path, label override?]. Labels default to the NAV label. */
+const PRIMARY: Record<HomeProfile, [string, string?][]> = {
+  super_admin: [["/"], ["/worklist"], ["/command"], ["/admin/staff"], ["/admin/facilities"], ["/admin/ai-settings"], ["/agents"], ["/admin/audit"], ["/help"]],
+  hospital_admin: [["/"], ["/worklist"], ["/command"], ["/beds"], ["/ed"], ["/inpatients"], ["/analytics", "Reports"], ["/agents", "AI agents"], ["/help"]],
+  clinic_admin: [["/"], ["/worklist"], ["/front-desk"], ["/schedule"], ["/patients"], ["/analytics", "Reports"], ["/admin/staff"], ["/admin/clinics"], ["/help"]],
+  doctor: [["/"], ["/worklist"], ["/encounters"], ["/patients"], ["/messages"], ["/orders", "Orders & results"], ["/ed"], ["/inpatients"], ["/help"]],
+  nurse: [["/"], ["/worklist"], ["/nursing"], ["/patients"], ["/ed"], ["/beds"], ["/messages"], ["/help"]],
+  pharmacist: [["/"], ["/worklist"], ["/pharmacy"], ["/patients"], ["/orders"], ["/messages"], ["/help"]],
+  lab_tech: [["/"], ["/worklist"], ["/lab"], ["/patients"], ["/orders"], ["/help"]],
+  radiologist: [["/"], ["/worklist"], ["/radiology"], ["/patients"], ["/orders"], ["/help"]],
+  bed_manager: [["/"], ["/worklist"], ["/beds"], ["/inpatients"], ["/ed"], ["/command"], ["/help"]],
+  billing: [["/"], ["/worklist"], ["/billing"], ["/revenue", "Claims & authorizations"], ["/insurance"], ["/patients"], ["/analytics", "Reports"], ["/help"]],
+  insurance_specialist: [["/"], ["/worklist"], ["/insurance"], ["/revenue", "Claims & authorizations"], ["/patients"], ["/documents"], ["/help"]],
+  receptionist: [["/"], ["/worklist"], ["/front-desk"], ["/schedule"], ["/patients"], ["/insurance"], ["/messages"], ["/help"]],
+  staff: [["/"], ["/worklist"], ["/patients"], ["/help"]],
+};
+
+const ALL_ITEMS: NavItem[] = NAV.flatMap((s) => s.items);
+const RENAME: Record<string, string> = { "/": "Home" };
+
+export function primaryNav(profile: HomeProfile): NavItem[] {
+  return PRIMARY[profile].flatMap(([to, label]) => {
+    const item = ALL_ITEMS.find((i) => i.to === to);
+    return item ? [{ ...item, label: label ?? RENAME[to] ?? item.label }] : [];
+  });
+}

@@ -228,17 +228,17 @@ export const MODULES: Module[] = [
   },
   {
     id: "billing", title: "Billing, claims & prior authorization", icon: Receipt,
-    summary: "Charges become claims, which go to the payer and then to the patient for any balance. Revenue integrity checks claims and prior authorizations before they are sent. It suggests; people decide.",
+    summary: "Charges become claims, which go to the payer and then to the patient for any balance. Claims review checks claims and prior authorizations before they are sent. It suggests; people decide.",
     who: "Billing and insurance specialists", when: "After visits and discharges, and when payers respond.",
     steps: [
       "In Billing, review the visit's charges, then choose “Save & create claim” (or “Save & bill patient” for self-pay).",
-      "In Revenue integrity, under “Claim review”, choose “Run review”. Fix any blocking findings before “Submit to payer”.",
+      "In Claims & authorizations, under “Claim review”, choose “Run review”. Fix any blocking findings before “Submit to payer”.",
       "Track required authorizations under “Prior authorizations”.",
       "Under “Denials”, review the reason and choose “Appeal” when appropriate.",
       "Patients can see their balance and pay in the portal.",
     ],
     example: "A claim is held because a prior authorization is missing. You obtain it, re-run the review and submit.",
-    links: [{ label: "Billing", to: "/billing", perm: "billing:read" }, { label: "Revenue integrity", to: "/revenue", any: ["billing:read", "insurance:write"] }],
+    links: [{ label: "Billing", to: "/billing", perm: "billing:read" }, { label: "Claims & authorizations", to: "/revenue", any: ["billing:read", "insurance:write"] }],
     access: { perm: "billing:read" },
     simulated: "Payer responses, appeals and patient card payments are simulated. No money moves.",
   },
@@ -351,10 +351,10 @@ export const ROLE_GUIDES: RoleGuide[] = [
     ],
   },
   {
-    id: "billing", title: "Billing & insurance specialist", roles: ["billing", "insurance_specialist"], intro: "You work across Insurance Guardian, Billing and Revenue integrity.",
+    id: "billing", title: "Billing & insurance specialist", roles: ["billing", "insurance_specialist"], intro: "You work across Insurance Guardian, Billing and Claims & authorizations.",
     tasks: [
       { title: "Review insurance cases", steps: ["Open Insurance Guardian → Cases, open a case and read the evidence, then “Check with payer”."], module: "insurance" },
-      { title: "Check authorization requirements", steps: ["Open Revenue integrity → “Prior authorizations”. Orders that need one are flagged automatically."], module: "billing", link: { label: "Revenue integrity", to: "/revenue", any: ["billing:read", "insurance:write"] } },
+      { title: "Check authorization requirements", steps: ["Open Claims & authorizations → “Prior authorizations”. Orders that need one are flagged automatically."], module: "billing", link: { label: "Claims & authorizations", to: "/revenue", any: ["billing:read", "insurance:write"] } },
       { title: "Prepare claims", steps: ["In Billing, review the charges and choose “Save & create claim”.", "Run a claim review and clear any blockers before “Submit to payer”."], module: "billing" },
       { title: "Investigate denials", steps: ["Open “Denials”, read the payer's reason, correct the issue or choose “Appeal”."], module: "billing" },
       { title: "Track balances", steps: ["Billing shows open balances; patients pay in the portal."], module: "billing" },
@@ -425,7 +425,7 @@ export const AI_TOPICS: AITopic[] = [
   { id: "automation", title: "How pharmacy and discharge automations work", body: ["Automated checks (monitors) run in the background. Examples: expiring or low stock, critical results not acknowledged, discharges with missing items, follow-ups not booked.", "Each problem becomes one case, assigned to the right role with a deadline. The case closes only when the record shows the problem is fixed."] },
   { id: "approval", title: "Why some actions need approval", body: ["Anything that changes data, spends money or affects a patient goes through a person: AI proposals, stock waste, purchases and discharge instructions. Usually a second person must approve, never the one who asked."] },
   { id: "check", title: "Why you must check AI suggestions", body: ["AI can be wrong, can miss things, or can misread a document. Always compare against the source (the document, the chart, the patient) before you accept anything."] },
-  { id: "live", title: "Is it live or simulated?", body: ["Look for the “Simulated” label on screens and results. Administrators can check AI workspace → “Check provider connection” and AI governance for the active provider. Payers, pharmacies, the image archive, email and text messages, and card payments are simulated in this build."] },
+  { id: "live", title: "Is it live or simulated?", body: ["Look for the “Simulated” label on screens and results. Administrators can check AI assistants → “Check provider connection” and AI governance for the active provider. Payers, pharmacies, the image archive, email and text messages, and card payments are simulated in this build."] },
 ];
 
 export type FAQ = { id: string; q: string; a: string; audience: "staff" | "patient"; link?: HelpLink };
