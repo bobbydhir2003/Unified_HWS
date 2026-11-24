@@ -56,7 +56,9 @@ with sync_playwright() as p:
 
     rx2 = login("pharmacist2@harborview.dev")
     rx2.goto(f"{BASE}/worklist")
-    rx2.get_by_role("tab", name=re.compile("Approvals")).click()
+    tab = rx2.get_by_role("tab", name=re.compile("Approvals"))  # narrow screens: tabs; desktop: three panels side by side
+    if tab.count():
+        tab.click()
     li = rx2.locator("li", has_text=LOT)
     li.get_by_role("button", name="Approve").click()
     expect(rx2.get_by_text("Approved and executed")).to_be_visible(timeout=10000)

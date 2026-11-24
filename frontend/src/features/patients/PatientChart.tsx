@@ -21,6 +21,7 @@ import { ChartAssistant } from "@/features/ai/ChartAssistant";
 import { PatientBillingTab } from "@/features/billing/BillingPage";
 import { PatientDocumentsTab } from "@/features/documents/DocumentReview";
 import { PatientOrdersTab, PatientResultsTab } from "@/features/orders/OrdersPages";
+import { PatientMarTab } from "@/features/medication/Medication";
 import { AppointmentDialog } from "@/features/schedule/AppointmentDialog";
 import { ApiError, del, get, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -161,6 +162,7 @@ const TABS = [
   { key: "vitals", label: "Vitals", icon: HeartPulse, clinical: true },
   { key: "orders", label: "Orders", icon: ClipboardPen, clinical: true },
   { key: "results", label: "Results", icon: TestTube, clinical: true },
+  { key: "mar", label: "MAR", icon: Pill, clinical: true },
   { key: "timeline", label: "Timeline", icon: History, clinical: true },
   { key: "journey", label: "Journey", icon: Route },
   { key: "documents", label: "Documents", icon: FileStack, docs: true },
@@ -175,7 +177,7 @@ const GROUPS: { label: string; icon: React.ElementType; keys: string[] }[] = [
   { label: "Overview", icon: ClipboardList, keys: [""] },
   { label: "Clinical", icon: HeartPulse, keys: ["problems", "medications", "allergies", "history", "vitals"] },
   { label: "Visits", icon: Stethoscope, keys: ["visits", "appointments"] },
-  { label: "Orders & results", icon: ClipboardPen, keys: ["orders", "results"] },
+  { label: "Orders & results", icon: ClipboardPen, keys: ["orders", "results", "mar"] },
   { label: "Care journey", icon: Route, keys: ["journey", "timeline"] },
   { label: "Documents & details", icon: FileStack, keys: ["documents", "demographics", "notes", "billing"] },
 ];
@@ -264,6 +266,7 @@ export function PatientChart() {
         {tab === "vitals" && clinical && <VitalsTab patientId={p.id} />}
         {tab === "orders" && clinical && <PatientOrdersTab patientId={p.id} />}
         {tab === "results" && clinical && <PatientResultsTab patientId={p.id} />}
+        {tab === "mar" && clinical && <PatientMarTab patientId={p.id} />}
         {tab === "timeline" && clinical && <TimelineTab patientId={p.id} />}
         {tab === "journey" && <JourneyTab patientId={p.id} />}
         {tab === "documents" && can("documents:read") && <PatientDocumentsTab patientId={p.id} />}

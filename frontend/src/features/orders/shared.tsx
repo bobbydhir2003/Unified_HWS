@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Ban, CheckCircle2, FileSignature, FlaskConical, Pill, ScanLine, Send, Stethoscope, TestTube } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, FileSignature, FlaskConical, Info, Pill, ScanLine, Send, Stethoscope, TestTube } from "lucide-react";
 import { Dialog as D } from "radix-ui";
 import * as React from "react";
 import { Link } from "react-router-dom";
@@ -19,11 +19,12 @@ import { fmtDateTime, fmtDob } from "@/lib/format";
 import { cn, titleCase } from "@/lib/utils";
 
 export type OrderType = "medication" | "lab" | "imaging" | "referral";
-export type Warning = { type: string; severity: "high" | "moderate" | "low"; message: string };
+export type Warning = { type: string; severity: "high" | "moderate" | "low" | "info"; message: string };
 export type LabResultT = { id: string; name: string; value: string; unit: string | null; reference_range: string | null; flag: string; status: string; resulted_at: string; source: string };
 export type Order = {
   id: string; patient_id: string; patient: { id: string; name: string; mrn: string; date_of_birth: string }; encounter_id: string | null;
-  order_type: OrderType; status: "draft" | "signed" | "transmitted" | "in_progress" | "resulted" | "completed" | "cancelled";
+  order_type: OrderType; status: "draft" | "signed" | "transmitted" | "in_progress" | "resulted" | "completed" | "cancelled"
+    | "pending_verification" | "clarification_needed" | "rejected" | "active" | "on_hold" | "discontinued";
   priority: "routine" | "urgent" | "stat"; title: string; code: string | null; details: Record<string, unknown>; indication_codes: string[];
   notes: string | null; ordered_by: string; signed_by: string | null; signed_at: string | null; safety_warnings: Warning[] | null;
   safety_override_reason: string | null; transmitted_at: string | null; transmission: { channel: string; reference: string; simulated: boolean; destination: string } | null;
@@ -34,8 +35,12 @@ export type Order = {
 export const TYPE_ICON: Record<OrderType, typeof Pill> = { medication: Pill, lab: TestTube, imaging: ScanLine, referral: Send };
 const STATUS_VARIANT: Record<Order["status"], React.ComponentProps<typeof Badge>["variant"]> = {
   draft: "warning", signed: "info", transmitted: "info", in_progress: "primary", resulted: "ai", completed: "success", cancelled: "neutral",
+  pending_verification: "warning", clarification_needed: "warning", rejected: "danger", active: "success", on_hold: "neutral", discontinued: "neutral",
 };
-const STATUS_LABEL: Partial<Record<Order["status"], string>> = { transmitted: "Sent", resulted: "Results in", in_progress: "In progress", draft: "Unsigned" };
+const STATUS_LABEL: Partial<Record<Order["status"], string>> = {
+  transmitted: "Sent", resulted: "Results in", in_progress: "In progress", draft: "Unsigned",
+  pending_verification: "Awaiting pharmacist", clarification_needed: "Pharmacist query", active: "Active (verified)", on_hold: "On hold",
+};
 
 export function OrderStatusBadge({ o }: { o: Order }) {
   const critical = o.results.some((r) => r.flag.startsWith("critical"));
@@ -97,7 +102,7 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
   const [indications, setIndications] = React.useState<string[]>(initialIndications);
   const [notes, setNotes] = React.useState("");
   const [med, setMed] = React.useState<MedCat | null>(null);
-  const [medF, setMedF] = React.useState({ strength: "", sig: "", quantity: "30", refills: "0", days_supply: "30", pharmacy: "" });
+  const [medF, setMedF] = React.useState({ strength: "", sig: "", quantity: "30", refills: "0", days_supply: "30", pharmacy: "", setting: "auto", frequency: "", prn_interval_hours: "4", prn_reason: "" });
   const [lab, setLab] = React.useState<LabCat | null>(null);
   const [fasting, setFasting] = React.useState(false);
   const [img, setImg] = React.useState<{ code: string; name: string } | null>(null);
@@ -108,7 +113,17 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
   React.useEffect(() => { if (open) { setMed(null); setLab(null); setImg(null); setNotes(""); setPriority("routine"); setIndications(initialIndications); setRefF({ specialty: "", specialist: "", reason: "" }); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const details = (): Record<string, unknown> | null => {
-    if (type === "medication") return med && medF.strength && medF.sig ? { name: med.name, strength: medF.strength, form: med.form, route: med.route, sig: medF.sig, quantity: Number(medF.quantity), refills: Number(medF.refills), days_supply: Number(medF.days_supply) || null, pharmacy: medF.pharmacy || null } : null;
+    if (type === "medication") {
+      if (!med || !medF.strength || !medF.sig) return null;
+      const inpatient = medF.setting === "inpatient";
+      if (inpatient && !medF.frequency) return null;
+      return {
+        name: med.name, strength: medF.strength, dose: medF.strength, form: med.form, route: med.route, sig: medF.sig,
+        quantity: inpatient ? 1 : Number(medF.quantity), refills: inpatient ? 0 : Number(medF.refills), days_supply: inpatient ? null : Number(medF.days_supply) || null,
+        pharmacy: inpatient ? null : medF.pharmacy || null, setting: medF.setting === "auto" ? null : medF.setting, frequency: medF.frequency || null,
+        prn_interval_hours: medF.frequency === "prn" ? Number(medF.prn_interval_hours) || 4 : null, prn_reason: medF.frequency === "prn" ? medF.prn_reason || null : null,
+      };
+    }
     if (type === "lab") return lab ? { code: lab.code, fasting } : null;
     if (type === "imaging") return img && imgF.clinical_question.trim().length >= 3 ? { code: img.code, ...imgF } : null;
     const s = spec.data?.specialists.find((x) => x.name === refF.specialist);
@@ -145,12 +160,28 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
             ) : (
               <div className="grid gap-3 sm:grid-cols-4">
                 <div className="flex items-center justify-between rounded-lg border bg-accent/30 px-3 py-2 sm:col-span-4"><span><strong>{med.name}</strong> <span className="text-muted-foreground">{med.form} · {med.route}</span></span><Button size="xs" variant="ghost" onClick={() => setMed(null)}>Change</Button></div>
-                <Field label="Strength"><NativeSelect value={medF.strength} onChange={(e) => setMedF({ ...medF, strength: e.target.value })}>{med.strengths.map((s) => <option key={s}>{s}</option>)}</NativeSelect></Field>
-                <Field label="Quantity"><Input inputMode="numeric" value={medF.quantity} onChange={(e) => setMedF({ ...medF, quantity: e.target.value.replace(/\D/g, "") })} /></Field>
+                <Field label="Setting" hint="Auto: inpatient if the patient is currently admitted">
+                  <NativeSelect value={medF.setting} onChange={(e) => setMedF({ ...medF, setting: e.target.value })}>
+                    <option value="auto">Auto</option><option value="inpatient">Inpatient (MAR)</option><option value="outpatient">Outpatient prescription</option>
+                  </NativeSelect>
+                </Field>
+                <Field label="Dose"><NativeSelect value={medF.strength} onChange={(e) => setMedF({ ...medF, strength: e.target.value })}>{med.strengths.map((s) => <option key={s}>{s}</option>)}</NativeSelect></Field>
+                <Field label="Frequency" required={medF.setting === "inpatient"} hint="Required for inpatient (MAR) orders">
+                  <NativeSelect value={medF.frequency} onChange={(e) => setMedF({ ...medF, frequency: e.target.value })}>
+                    <option value="">—</option>
+                    {[["once", "Once"], ["daily", "Daily"], ["bid", "Twice daily"], ["tid", "Three times daily"], ["qid", "Four times daily"], ["q4h", "Every 4 h"], ["q6h", "Every 6 h"], ["q8h", "Every 8 h"], ["q12h", "Every 12 h"], ["prn", "As needed (PRN)"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </NativeSelect>
+                </Field>
+                <Field label="Route"><Input value={med.route} readOnly aria-readonly /></Field>
+                {medF.frequency === "prn" && <>
+                  <Field label="PRN minimum interval (h)"><Input inputMode="decimal" value={medF.prn_interval_hours} onChange={(e) => setMedF({ ...medF, prn_interval_hours: e.target.value.replace(/[^\d.]/g, "") })} /></Field>
+                  <Field label="PRN reason" className="sm:col-span-3"><Input value={medF.prn_reason} onChange={(e) => setMedF({ ...medF, prn_reason: e.target.value })} placeholder="e.g. nausea" /></Field>
+                </>}
+                {medF.setting !== "inpatient" && <><Field label="Quantity"><Input inputMode="numeric" value={medF.quantity} onChange={(e) => setMedF({ ...medF, quantity: e.target.value.replace(/\D/g, "") })} /></Field>
                 <Field label="Refills"><Input inputMode="numeric" value={medF.refills} onChange={(e) => setMedF({ ...medF, refills: e.target.value.replace(/\D/g, "").slice(0, 2) })} /></Field>
                 <Field label="Days supply"><Input inputMode="numeric" value={medF.days_supply} onChange={(e) => setMedF({ ...medF, days_supply: e.target.value.replace(/\D/g, "") })} /></Field>
+                <Field label="Pharmacy" className="sm:col-span-4" hint="Pharmacy directory integration is not connected yet."><Input value={medF.pharmacy} onChange={(e) => setMedF({ ...medF, pharmacy: e.target.value })} placeholder="e.g. Harbor Pharmacy (synthetic), 12 Main St" /></Field></>}
                 <Field label="Sig (directions)" className="sm:col-span-4"><Input value={medF.sig} onChange={(e) => setMedF({ ...medF, sig: e.target.value })} /></Field>
-                <Field label="Pharmacy" className="sm:col-span-4" hint="Pharmacy directory integration is not connected yet."><Input value={medF.pharmacy} onChange={(e) => setMedF({ ...medF, pharmacy: e.target.value })} placeholder="e.g. Harbor Pharmacy (synthetic), 12 Main St" /></Field>
               </div>
             )}
           </TabsContent>
@@ -222,7 +253,10 @@ export function SignOrderDialog({ order, onOpenChange, onSigned }: { order: Orde
       else toastError(e);
     } finally { setBusy(false); }
   };
-  const needsReason = warnings.length > 0;
+  const blocking = warnings.filter((w) => w.severity !== "info");
+  const notices = warnings.filter((w) => w.severity === "info");
+  const needsReason = blocking.length > 0;
+  const inpatientMed = order.order_type === "medication" && (order.details as { setting?: string }).setting !== "outpatient";
   return (
     <Dialog open={!!order} onOpenChange={onOpenChange}>
       <DialogContent size="md">
@@ -233,12 +267,15 @@ export function SignOrderDialog({ order, onOpenChange, onSigned }: { order: Orde
         <OrderSummary o={order} />
         {needsReason && (
           <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive-soft p-3">
-            {warnings.map((w, i) => <p key={i} className="flex gap-2 text-table text-destructive"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span><strong className="uppercase">{w.severity}</strong> · {w.message}</span></p>)}
+            {blocking.map((w, i) => <p key={i} className="flex gap-2 text-table text-destructive"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span><strong className="uppercase">{w.severity}</strong> · {w.message}</span></p>)}
             <p className="text-xs text-muted-foreground">Basic allergy and duplicate checks only — not comprehensive clinical decision support.</p>
             <Field label="Override reason" required><Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
           </div>
         )}
-        <p className="flex items-center gap-2 text-xs text-muted-foreground"><FlaskConical className="size-3.5" />Signing transmits through a simulated channel — no pharmacy, lab or specialist receives it.</p>
+        {notices.map((w, i) => <p key={i} className="flex gap-2 rounded-lg border border-warning/35 bg-warning-soft p-3 text-table text-warning-foreground" data-testid="screening-notice"><Info className="mt-0.5 size-4 shrink-0" />{w.message}</p>)}
+        <p className="flex items-center gap-2 text-xs text-muted-foreground"><FlaskConical className="size-3.5" />
+          {inpatientMed ? "Inpatient medication orders go to the pharmacist verification queue; nothing can be dispensed or given until a pharmacist verifies it."
+            : "Signing transmits through a simulated channel — no pharmacy, lab or specialist receives it."}</p>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={sign} loading={busy} disabled={needsReason && reason.trim().length < 5} variant={needsReason ? "destructive" : "default"}>

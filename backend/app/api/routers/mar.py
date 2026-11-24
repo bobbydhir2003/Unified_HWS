@@ -173,6 +173,8 @@ def patient_mar(patient_id: uuid.UUID, hours_back: int = Query(12, ge=1, le=96),
         sched = []
         for s in MED.slots(ctx.db, o, start, end, verified_at) if o.status in ("active", "on_hold", "completed", "discontinued") else []:
             m = documented.get(s)
+            if not m and o.status not in ("active", "on_hold"):
+                continue  # a closed order shows only the doses that were documented
             state = m.status if m else ("due" if abs((t - s).total_seconds()) <= MED.LATE_MINUTES * 60
                                         else "overdue" if t > s else "scheduled")
             sched.append({"at": s, "state": state, "administration_id": m.id if m else None})
@@ -237,9 +239,9 @@ def dose_labels(oid: uuid.UUID, ctx: TenantContext = Depends(require(P.CLINICAL_
                           .join(InventoryItem, InventoryItem.id == StockMovement.item_id)
                           .where(StockMovement.organization_id == ctx.org_id, StockMovement.kind == "dispense",
                                  StockMovement.reference_type == "order", StockMovement.reference_id == str(o.id))
-                          .order_by(StockMovement.created_at.desc())).all()
+                          .order_by(StockMovement.at.desc())).all()
     return [{"barcode": MED.dose_label_barcode(m.id), "item": i.name, "strength": i.strength, "lot": lot.lot_number,
-             "quantity": m.quantity, "dispensed_at": m.created_at} for m, lot, i in rows]
+             "quantity": m.quantity, "dispensed_at": m.at} for m, lot, i in rows]
 
 
 # ---------------------------------------------------------------------------------------------- pharmacy queue

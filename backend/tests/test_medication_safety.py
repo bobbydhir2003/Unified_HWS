@@ -75,6 +75,7 @@ def test_closed_loop_verification_gates_dispense_and_administration(as_user):
     assert bad.status_code == 409 and bad.json()["detail"]["code"] == "patient_mismatch"
     label = _dispense(rx, o).json()["dose_label"]
     assert label.startswith("RXD-")
+    assert [x["barcode"] for x in rn.get(f"/mar/orders/{o['id']}/dose-labels").json()] == [label]
 
     wristband, slot = _slot(rn, o)
     assert slot, "a verified once-only order has one scheduled dose"

@@ -18,6 +18,7 @@ import { fmtDate, fmtDateTime, fmtMoney, fromNow } from "@/lib/format";
 import { cn, titleCase } from "@/lib/utils";
 import { CaseDrawer, CaseRow, type CaseT } from "../ops/ops";
 import { AskAI } from "@/features/ai/AskAI";
+import { PharmacyMedicationQueue } from "@/features/medication/Medication";
 
 type Item = { id: string; name: string; sku: string; ndc: string | null; kind: string; unit: string; strength: string | null; form: string | null; is_controlled: boolean; on_hand: number; reorder_point: number; avg_daily_use: number; days_of_supply: number | null; nearest_expiry: string | null; expiring_soon: boolean; stock_status: string };
 type Lot = { lot_id: string; lot_number: string; expiry_date: string | null; expired: boolean; location_id: string; location: string; quantity: number };
@@ -25,7 +26,6 @@ type Detail = { item: Item & { supplier: string | null }; lots: Lot[]; movements
   recommendation: { on_hand: number; avg_daily_use: number; days_of_supply: number | null; recommended_qty: number; method: string; lead_time_days: number }; purchase_requests: PR[] };
 type PR = { id: string; number: number; item_id: string; item: string; unit: string; quantity: number; received_quantity: number; status: string; source: string; reason: string | null; supplier: string | null; estimated_cost_cents: number; created_at: string; po_reference: string | null; deliver_to_location_id: string | null; can_decide: boolean };
 type Loc = { id: string; name: string; code: string };
-type Ver = { order_id: string; title: string; details: Record<string, string>; patient: { id: string; name: string; mrn: string }; prescriber: string | null; signed_at: string; waiting_minutes: number | null; safety_warnings: unknown[] | null };
 type Report = { valuation: { kind: string; value_cents: number; units: number }[]; expiring_30d_value_cents: number; waste_30d_value_cents: number; low_stock_items: number; pending_verifications: number | null };
 
 const STATUS: Record<string, React.ComponentProps<typeof Badge>["variant"]> = { ok: "success", low: "warning", out: "danger" };
@@ -52,11 +52,11 @@ export function PharmacyPage() {
       </div>
       <Tabs value={tab} onValueChange={(v) => set("tab", v === "inventory" ? null : v)}>
         <TabsList><TabsTrigger value="inventory">Inventory</TabsTrigger><TabsTrigger value="watchdog">Watchdog {cases.data?.length ? <span className="ml-1.5 rounded-full bg-warning px-1.5 text-label">{cases.data.length}</span> : null}</TabsTrigger>
-          <TabsTrigger value="purchasing">Purchasing</TabsTrigger>{can("pharmacy:read") && <TabsTrigger value="verify">Verification</TabsTrigger>}</TabsList>
+          <TabsTrigger value="purchasing">Purchasing</TabsTrigger>{can("pharmacy:read") && <TabsTrigger value="verify">Medication orders</TabsTrigger>}</TabsList>
         <TabsContent value="inventory"><InventoryTable onOpen={(id) => set("item", id)} /></TabsContent>
         <TabsContent value="watchdog"><Card className="overflow-hidden">{cases.isLoading ? <LoadingRows /> : !cases.data?.length ? <EmptyState icon={ShieldCheck} title="No Watchdog alerts" /> : <ul className="divide-y">{cases.data.map((c) => <CaseRow key={c.id} c={c} onOpen={setOpenCase} />)}</ul>}</Card></TabsContent>
         <TabsContent value="purchasing"><Purchasing /></TabsContent>
-        <TabsContent value="verify"><Verification /></TabsContent>
+        <TabsContent value="verify"><PharmacyMedicationQueue /></TabsContent>
       </Tabs>
       <ItemDrawer itemId={itemId} onClose={() => set("item", null)} />
       <CaseDrawer caseId={openCase} onClose={() => setOpenCase(null)} />
@@ -192,31 +192,6 @@ function Purchasing() {
           <DialogFooter><Button variant="outline" onClick={() => setRecv(null)}>Cancel</Button><Button disabled={!f.lot || !f.loc} onClick={async () => { await act("/inventory/receive", { item_id: recv!.item_id, location_id: f.loc, lot_number: f.lot, expiry_date: f.exp || null, quantity: recv!.quantity - recv!.received_quantity, purchase_request_id: recv!.id }, "Received into stock"); setRecv(null); }}>Receive {recv ? recv.quantity - recv.received_quantity : ""}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
-  );
-}
-
-function Verification() {
-  const qc = useQueryClient();
-  const { can } = useAuth();
-  const q = useQuery({ queryKey: ["pharmacy", "verifications"], queryFn: () => get<Ver[]>("/pharmacy/verifications") });
-  const decide = async (v: Ver, status: string) => {
-    const note = status === "verified" ? null : window.prompt(status === "rejected" ? "Why is this order rejected?" : "What needs clarification?");
-    if (status !== "verified" && !note) return;
-    try { await post("/pharmacy/verifications", { order_id: v.order_id, status, note }); toast.success(`Order ${status}`); qc.invalidateQueries({ queryKey: ["pharmacy"] }); qc.invalidateQueries({ queryKey: ["inventory", "report"] }); } catch (e) { toastError(e); }
-  };
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader><CardTitle>Inpatient medication orders awaiting verification</CardTitle></CardHeader>
-      {q.isLoading ? <LoadingRows /> : !q.data?.length ? <EmptyState icon={ClipboardCheck} title="Queue is clear" /> : (
-        <ul className="divide-y">{q.data.map((v) => (
-          <li key={v.order_id} className="flex flex-wrap items-start gap-3 px-4 py-3">
-            <div className="min-w-0 flex-1"><p className="text-body font-medium">{v.title}</p>
-              <p className="text-xs text-muted-foreground">{v.patient.name} ({v.patient.mrn}) · {v.prescriber ?? "—"} · signed {fromNow(v.signed_at)}</p>
-              {v.safety_warnings?.length ? <Badge variant="warning" className="mt-1"><AlertTriangle />{v.safety_warnings.length} safety warning(s) overridden</Badge> : null}</div>
-            {can("pharmacy:verify") && <div className="flex gap-1"><Button size="sm" onClick={() => decide(v, "verified")}><ShieldCheck />Verify</Button><Button size="sm" variant="outline" onClick={() => decide(v, "clarify")}>Clarify</Button><Button size="sm" variant="ghost" onClick={() => decide(v, "rejected")}>Reject</Button></div>}
-          </li>))}</ul>
-      )}
     </Card>
   );
 }
