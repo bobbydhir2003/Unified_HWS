@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 
 /** Server demo mode (DEMO_MODE on a synthetic-data deployment): allowlisted accounts, one-click sign-in through
  *  POST /auth/demo-login. Shared by the /login page and the public "Explore the demo" section — one implementation. */
-export type DemoAccount = { key: string; label: string; role: string };
+export type DemoAccount = { key: string; label: string; role: string; featured?: boolean };
 
 export function useDemoAccounts() {
   const q = useQuery({

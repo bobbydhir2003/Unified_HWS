@@ -3148,6 +3148,50 @@
     "title": "DemoLoginIn",
     "type": "object"
    },
+   "DemoResetIn": {
+    "properties": {
+     "confirm": {
+      "maxLength": 20,
+      "title": "Confirm",
+      "type": "string"
+     }
+    },
+    "required": [
+     "confirm"
+    ],
+    "title": "DemoResetIn",
+    "type": "object"
+   },
+   "DemoSwitchIn": {
+    "properties": {
+     "key": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Key"
+     },
+     "user_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "User Id"
+     }
+    },
+    "title": "DemoSwitchIn",
+    "type": "object"
+   },
    "DepartmentIn": {
     "properties": {
      "code": {
@@ -6219,6 +6263,11 @@
    },
    "MeOut": {
     "properties": {
+     "demo_hospital": {
+      "default": false,
+      "title": "Demo Hospital",
+      "type": "boolean"
+     },
      "memberships": {
       "items": {
        "$ref": "#/components/schemas/MembershipOut"
@@ -17671,7 +17720,26 @@
   },
   "/api/v1/auth/demo-login": {
    "post": {
+    "description": "Start a demo: the visitor gets their own private demo hospital and is signed in as the chosen role there. A browser\nthat already has an active demo hospital keeps it (the chosen role is opened inside it) instead of starting another.",
     "operationId": "demo_login_api_v1_auth_demo_login_post",
+    "parameters": [
+     {
+      "in": "cookie",
+      "name": "ud_refresh",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Ud Refresh"
+      }
+     }
+    ],
     "requestBody": {
      "content": {
       "application/json": {
@@ -17705,6 +17773,125 @@
      }
     },
     "summary": "Demo Login",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/v1/auth/demo/reset": {
+   "post": {
+    "description": "Replace the visitor's demo hospital with a fresh one (same role). Only this visitor's hospital is removed.",
+    "operationId": "demo_reset_api_v1_auth_demo_reset_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DemoResetIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TokenOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Demo Reset",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/v1/auth/demo/session": {
+   "get": {
+    "description": "The visitor's demo hospital: active role, everyone they can switch to, and when it ends.",
+    "operationId": "demo_session_api_v1_auth_demo_session_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Demo Session",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/v1/auth/demo/switch": {
+   "post": {
+    "description": "Switch to another role (or a specific staff member / the patient) inside the SAME demo hospital, without\nstarting a new demo. The new identity's ordinary permissions apply; the previous session ends.",
+    "operationId": "demo_switch_api_v1_auth_demo_switch_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DemoSwitchIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TokenOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Demo Switch",
     "tags": [
      "auth"
     ]

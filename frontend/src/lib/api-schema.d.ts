@@ -1112,8 +1112,73 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Demo Login */
+        /**
+         * Demo Login
+         * @description Start a demo: the visitor gets their own private demo hospital and is signed in as the chosen role there. A browser
+         *     that already has an active demo hospital keeps it (the chosen role is opened inside it) instead of starting another.
+         */
         post: operations["demo_login_api_v1_auth_demo_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/demo/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Demo Reset
+         * @description Replace the visitor's demo hospital with a fresh one (same role). Only this visitor's hospital is removed.
+         */
+        post: operations["demo_reset_api_v1_auth_demo_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/demo/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Demo Session
+         * @description The visitor's demo hospital: active role, everyone they can switch to, and when it ends.
+         */
+        get: operations["demo_session_api_v1_auth_demo_session_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/demo/switch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Demo Switch
+         * @description Switch to another role (or a specific staff member / the patient) inside the SAME demo hospital, without
+         *     starting a new demo. The new identity's ordinary permissions apply; the previous session ends.
+         */
+        post: operations["demo_switch_api_v1_auth_demo_switch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6939,6 +7004,18 @@ export interface components {
             /** Key */
             key: string;
         };
+        /** DemoResetIn */
+        DemoResetIn: {
+            /** Confirm */
+            confirm: string;
+        };
+        /** DemoSwitchIn */
+        DemoSwitchIn: {
+            /** Key */
+            key?: string | null;
+            /** User Id */
+            user_id?: string | null;
+        };
         /** DepartmentIn */
         DepartmentIn: {
             /** Code */
@@ -7965,6 +8042,11 @@ export interface components {
         };
         /** MeOut */
         MeOut: {
+            /**
+             * Demo Hospital
+             * @default false
+             */
+            demo_hospital: boolean;
             /** Memberships */
             memberships: components["schemas"]["MembershipOut"][];
             /**
@@ -12620,11 +12702,99 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                ud_refresh?: string | null;
+            };
         };
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DemoLoginIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demo_reset_api_v1_auth_demo_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoResetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demo_session_api_v1_auth_demo_session_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    demo_switch_api_v1_auth_demo_switch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoSwitchIn"];
             };
         };
         responses: {

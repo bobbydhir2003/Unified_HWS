@@ -33,10 +33,23 @@ const DEMO_ACCOUNTS: [string, string][] = !DEMO_LOGIN ? [] : [
 
 function ServerDemoAccess({ accounts }: { accounts: DemoAccount[] }) {
   const { signIn: go, busy, error } = useDemoLogin();
+  const [ended] = React.useState(() => {
+    try {
+      const v = sessionStorage.getItem("ud-demo-ended");
+      sessionStorage.removeItem("ud-demo-ended");
+      return !!v;
+    } catch { return false; }
+  });
+  const privateHospitals = accounts.some((a) => a.featured !== undefined);
   return (
     <div className="mt-5 rounded-xl border border-dashed p-3" data-testid="demo-access">
       <p className="text-xs font-medium">Demo Access</p>
-      <p className="mb-2 text-label text-muted-foreground">Explore HMS Workflows with a preconfigured role. Synthetic data only.</p>
+      <p className="mb-2 text-label text-muted-foreground">
+        {privateHospitals
+          ? "Start a private demo hospital (synthetic data, only you can see it). Pick a role to start with; you can switch roles inside."
+          : "Explore HMS Workflows with a preconfigured role. Synthetic data only."}
+      </p>
+      {ended && <p role="status" className="mb-2 rounded-md bg-warning-soft px-2 py-1 text-label text-warning-foreground" data-testid="demo-ended">Your demo hospital ended (it expires after a period without activity). Start a new one below.</p>}
       {error && <p role="alert" className="mb-2 text-label text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-1.5">
         {accounts.map((a) => (

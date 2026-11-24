@@ -18,6 +18,7 @@ import { fromNow } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CommandSearch } from "./CommandSearch";
+import { DemoBar } from "@/features/demo/DemoBar";
 import { PRODUCT_NAME } from "@/lib/legal";
 import { NAV, type NavItem, primaryNav, profileFor } from "./nav";
 
@@ -313,7 +314,7 @@ export function AppShell() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [labels, setLabels] = React.useState<Record<string, string>>({});
-  const { membership } = useAuth();
+  const { membership, me } = useAuth();
   const org = useQuery({ queryKey: ["organization", membership?.organization_id], queryFn: () => get<{ settings: { synthetic_data?: boolean } }>("/organization"), enabled: !!membership, staleTime: 300_000 });
   const synthetic = !!org.data?.settings.synthetic_data;
   useLiveConnection(membership?.organization_id);
@@ -396,6 +397,7 @@ export function AppShell() {
               <UserMenu />
             </div>
           </header>
+          {me?.demo_hospital && <DemoBar />}
           <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 sm:px-6 lg:py-6 min-[1600px]:px-8">
             <React.Suspense fallback={<div className="space-y-3" aria-busy="true"><Skeleton className="h-8 w-56" /><Skeleton className="h-64 w-full rounded-lg" /></div>}>
               <Outlet />

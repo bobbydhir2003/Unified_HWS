@@ -168,7 +168,8 @@ export function OrganizationsPage() {
   const memberOf = new Set(me?.memberships.map((m) => m.organization_id));
   return (
     <>
-      <PageHeader title="Organizations" description="Platform-level tenant management." actions={<Button onClick={() => setOpen(true)}><Plus />New organization</Button>} />
+      <PageHeader title="Organizations" description={me?.demo_hospital ? "Your demo hospital. Creating organizations is a platform-owner action and isn't part of the demo."
+        : "Platform-level tenant management."} actions={me?.demo_hospital ? undefined : <Button onClick={() => setOpen(true)}><Plus />New organization</Button>} />
       <Card className="overflow-hidden">
         {q.isLoading ? <LoadingRows /> : (
           <Table>

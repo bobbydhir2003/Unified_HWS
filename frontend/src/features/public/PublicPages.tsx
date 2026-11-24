@@ -294,7 +294,7 @@ function DemoSection() {
             </div>
           )}
           <ul className="grid gap-3 sm:grid-cols-2" data-testid="demo-roles">
-            {(accounts ?? Object.keys(DEMO_ROLE_INFO).map((key) => ({ key, label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), role: key }))).map((a) => {
+            {(accounts?.filter((a) => a.featured !== false) ?? Object.keys(DEMO_ROLE_INFO).map((key) => ({ key, label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), role: key }))).map((a) => {
               const info = DEMO_ROLE_INFO[a.key] ?? { sees: "Explore this role's workspace.", icon: UsersRound };
               return (
                 <li key={a.key} className="flex flex-col rounded-xl border bg-card p-5">
@@ -307,6 +307,12 @@ function DemoSection() {
               );
             })}
           </ul>
+          {accounts?.some((a) => a.featured === false) && (
+            <p className="mt-4 text-table text-muted-foreground" data-testid="demo-private-note">
+              Every visitor gets a private demo hospital with synthetic data. Inside it you can switch between all {accounts.length} roles,
+              change settings and reset it whenever you like.
+            </p>
+          )}
           <p className="mt-4 text-table text-muted-foreground">Returning user? <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link></p>
         </div>
       </div>

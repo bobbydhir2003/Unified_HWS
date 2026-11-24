@@ -23,6 +23,7 @@ import { VideoVisit } from "@/features/telehealth/VideoVisit";
 import { PatientHelp } from "@/features/help/HelpPage";
 import { get, post } from "@/lib/api";
 import { fmtMoney, newIdempotencyKey } from "@/lib/format";
+import { DemoBar } from "@/features/demo/DemoBar";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtTime } from "@/lib/format";
 import type { Appointment } from "@/lib/types";
@@ -90,6 +91,7 @@ export function PortalHome() {
             ))}
           </span>
         </nav>
+        {me?.demo_hospital && <DemoBar className="px-4" />}
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
         {section?.sub && (

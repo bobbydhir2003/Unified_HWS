@@ -94,7 +94,14 @@ export async function refreshSession<T = unknown>(): Promise<T | null> {
   if (!refreshing) {
     refreshing = fetch("/api/v1/auth/refresh", { method: "POST", credentials: "include" })
       .then(async (r) => {
-        if (!r.ok) return null;
+        if (!r.ok) {
+          // A private demo hospital that expired or was reset: tell the visitor why they were signed out.
+          try {
+            const j = await r.json();
+            if (j?.detail?.code === "demo_expired") sessionStorage.setItem("ud-demo-ended", "1");
+          } catch { /* not JSON */ }
+          return null;
+        }
         const data = await r.json();
         accessToken = data.access_token;
         return data;

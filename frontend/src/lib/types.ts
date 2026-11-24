@@ -47,7 +47,7 @@ export type User = {
   preferences: Record<string, unknown>;
 };
 
-export type Me = { user: User; memberships: Membership[]; mfa_enrollment_required: boolean };
+export type Me = { user: User; memberships: Membership[]; mfa_enrollment_required: boolean; demo_hospital?: boolean };
 
 export type Page<T> = { items: T[]; total: number; page: number; page_size: number };
 
