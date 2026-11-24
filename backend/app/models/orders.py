@@ -8,8 +8,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, OrgScoped, Timestamps, UUIDPk, fk
 from app.models.identity import User
 
-ORDER_TYPES = ("medication", "lab", "imaging", "referral")
-ORDER_STATUSES = ("draft", "signed", "transmitted", "in_progress", "resulted", "completed", "cancelled")
+ORDER_TYPES = ("medication", "lab", "imaging", "referral", "procedure", "nursing")
+ORDER_STATUSES = ("draft", "signed", "transmitted", "in_progress", "resulted", "completed", "cancelled",
+                  # inpatient medication lifecycle (services/medication.py)
+                  "pending_verification", "clarification_needed", "rejected", "active", "on_hold", "discontinued")
 
 
 class Order(UUIDPk, Timestamps, OrgScoped, Base):
@@ -38,7 +40,9 @@ class Order(UUIDPk, Timestamps, OrgScoped, Base):
     results_reviewed_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete=None)
     results_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     released_to_patient_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    cancelled_reason: Mapped[str | None] = mapped_column(String(300))
+    cancelled_reason: Mapped[str | None] = mapped_column(String(300))  # also the discontinue / hold reason
+    discontinued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    discontinued_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete=None, index=False)
 
     ordered_by: Mapped[User] = relationship(foreign_keys=[ordered_by_id], lazy="joined")
     signed_by: Mapped[User | None] = relationship(foreign_keys=[signed_by_id], lazy="joined")

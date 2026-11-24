@@ -145,7 +145,8 @@ class PurchaseRequest(UUIDPk, Timestamps, OrgScoped, Base):
 
 
 class MedicationVerification(UUIDPk, OrgScoped, Base):
-    """Pharmacist verification of a signed inpatient medication order. One decision per order."""
+    """Pharmacist decision on a signed inpatient medication order. History is kept: an order can be sent back for
+    clarification and verified later, so there may be several rows per order (latest wins, see services/medication.py)."""
 
     __tablename__ = "medication_verifications"
     order_id: Mapped[uuid.UUID] = fk("orders.id")
@@ -154,8 +155,10 @@ class MedicationVerification(UUIDPk, OrgScoped, Base):
     note: Mapped[str | None] = mapped_column(Text)
     pharmacist_id: Mapped[uuid.UUID] = fk("users.id", index=False)
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # True when interaction screening was unavailable and the pharmacist confirmed a manual interaction review.
+    manual_interaction_review: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
-    __table_args__ = (UniqueConstraint("order_id"), CheckConstraint("status in ('verified','rejected','clarify')", name="status"))
+    __table_args__ = (CheckConstraint("status in ('verified','rejected','clarify')", name="status"),)
 
 
 class StockPar(UUIDPk, OrgScoped, Base):

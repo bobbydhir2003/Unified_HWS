@@ -36,6 +36,12 @@ MEDICATIONS = [
     ("Prednisone", ["5 mg", "10 mg", "20 mg"], "tablet", "oral", "As directed (taper)", "corticosteroid"),
     ("Ondansetron", ["4 mg", "8 mg"], "tablet", "oral", "1 tablet by mouth every 8 hours as needed for nausea", "antiemetic"),
     ("Codeine-acetaminophen", ["30-300 mg"], "tablet", "oral", "1 tablet by mouth every 6 hours as needed", "opioid"),
+    # Inpatient demonstration formulary (synthetic environment only; not a clinical formulary). High-alert classes need a witness.
+    ("Heparin", ["5,000 units"], "injection", "subcutaneous", "5,000 units subcutaneously every 8 hours", "anticoagulant"),
+    ("Insulin regular", ["4 units", "6 units", "8 units"], "injection", "subcutaneous", "per sliding scale before meals", "insulin"),
+    ("Morphine", ["2 mg", "4 mg"], "injection", "intravenous", "2 mg IV every 4 hours as needed for severe pain", "opioid"),
+    ("Ondansetron IV", ["4 mg"], "injection", "intravenous", "4 mg IV every 8 hours as needed for nausea", "antiemetic"),
+    ("Ceftriaxone", ["1 g", "2 g"], "injection", "intravenous", "1 g IV every 24 hours", "cephalosporin"),
 ]
 
 # Allergy substance keyword → drug classes it implies (basic cross-reactivity; not a substitute for a full DDI/allergy database)

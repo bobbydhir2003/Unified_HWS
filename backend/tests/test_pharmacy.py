@@ -102,5 +102,8 @@ def test_stock_rules_and_verification(as_user):
     assert q, "expected seeded inpatient medication orders"
     assert doc.post("/pharmacy/verifications", json={"order_id": q[0]["order_id"], "status": "verified"}).status_code == 403
     assert rx.post("/pharmacy/verifications", json={"order_id": q[0]["order_id"], "status": "rejected"}).status_code == 400  # note required
-    assert rx.post("/pharmacy/verifications", json={"order_id": q[0]["order_id"], "status": "verified"}).status_code == 201
+    # Interaction screening is unavailable (no licensed knowledge base), so verifying needs an explicit manual review.
+    assert rx.post("/pharmacy/verifications", json={"order_id": q[0]["order_id"], "status": "verified"}).status_code == 409
+    assert rx.post("/pharmacy/verifications", json={"order_id": q[0]["order_id"], "status": "verified",
+                                                    "manual_interaction_review": True}).status_code == 201
     assert all(x["order_id"] != q[0]["order_id"] for x in rx.get("/pharmacy/verifications").json())

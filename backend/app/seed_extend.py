@@ -113,18 +113,26 @@ def seed_med_orders(db, org: Organization) -> int:
                                         Order.notes == "Synthetic inpatient order").limit(1)):
         return 0
     stays = db.scalars(select(InpatientStay).where(InpatientStay.organization_id == org.id, InpatientStay.status == "admitted").limit(4)).all()
-    meds = [("Ceftriaxone 1 g IV every 24 hours", {"drug": "Ceftriaxone", "dose": "1 g", "route": "IV", "frequency": "q24h"}),
-            ("Enoxaparin 40 mg subcut daily", {"drug": "Enoxaparin", "dose": "40 mg", "route": "SC", "frequency": "daily"}),
-            ("Ondansetron 4 mg PO every 8 hours as needed for nausea", {"drug": "Ondansetron", "dose": "4 mg", "route": "PO", "frequency": "q8h PRN"}),
-            ("Morphine 2 mg IV every 4 hours as needed for severe pain", {"drug": "Morphine", "dose": "2 mg", "route": "IV", "frequency": "q4h PRN"})]
+    def med(name, strength, form, route, freq, sig, drug_class, **kw):
+        return (f"{name} {strength}", {"name": name, "strength": strength, "dose": strength, "form": form, "route": route, "frequency": freq,
+                                       "sig": sig, "quantity": 1, "refills": 0, "setting": "inpatient", "drug_class": drug_class, **kw})
+
+    meds = [med("Ceftriaxone", "1 g", "injection", "intravenous", "daily", "1 g IV every 24 hours", "cephalosporin"),
+            med("Heparin", "5,000 units", "injection", "subcutaneous", "q8h", "5,000 units subcutaneously every 8 hours", "anticoagulant"),
+            med("Ondansetron IV", "4 mg", "injection", "intravenous", "prn", "4 mg IV every 8 hours as needed for nausea", "antiemetic",
+                prn_interval_hours=8, prn_reason="nausea"),
+            med("Morphine", "2 mg", "injection", "intravenous", "prn", "2 mg IV every 4 hours as needed for severe pain", "opioid",
+                prn_interval_hours=4, prn_reason="severe pain")]
     n = 0
     for s, (title, details) in zip(stays, meds, strict=False):
         prov = db.get(ProviderProfile, s.attending_provider_id) if s.attending_provider_id else None
         if not prov:
             continue
         t = now() - timedelta(minutes=20 + 15 * n)
-        db.add(Order(organization_id=org.id, patient_id=s.patient_id, encounter_id=s.encounter_id, order_type="medication", status="signed",
-                     title=title, details=details, ordered_by_id=prov.user_id, signed_by_id=prov.user_id, signed_at=t, notes="Synthetic inpatient order"))
+        db.add(Order(organization_id=org.id, patient_id=s.patient_id, encounter_id=s.encounter_id, order_type="medication", status="pending_verification",
+                     title=title, details=details, transmission={"channel": "pharmacy_verification_queue", "simulated": False},
+                     safety_warnings=[{"type": "screening_incomplete", "severity": "info",
+                                       "message": "Drug–drug interaction screening is NOT available (no licensed drug knowledge base)."}], ordered_by_id=prov.user_id, signed_by_id=prov.user_id, signed_at=t, notes="Synthetic inpatient order"))
         n += 1
     db.flush()
     return n

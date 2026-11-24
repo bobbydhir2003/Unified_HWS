@@ -7,7 +7,7 @@ record carries `simulated: true` and the UI labels it. Results arrive only via t
 
 import random
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -22,6 +22,7 @@ from app.data import catalogs
 from app.integrations import adapters
 from app.models import Allergy, Encounter, LabResult, Order, Organization, Patient, PatientMedication
 from app.schemas.common import Page
+from app.services import medication as MED
 from app.services.notify import notify
 from app.services.patients import get_patient
 
@@ -41,6 +42,12 @@ class MedicationDetails(BaseModel):
     days_supply: int | None = Field(default=None, ge=1, le=365)
     dispense_as_written: bool = False
     pharmacy: str | None = Field(default=None, max_length=200)
+    # Inpatient (eMAR) fields. `setting` defaults from the patient's current admission when the order is signed.
+    setting: Literal["inpatient", "outpatient"] | None = None
+    dose: str | None = Field(default=None, max_length=60)          # per-administration dose; defaults to strength
+    frequency: Literal["once", "daily", "bid", "tid", "qid", "q4h", "q6h", "q8h", "q12h", "prn"] | None = None
+    prn_interval_hours: float | None = Field(default=None, ge=0.5, le=72)
+    prn_reason: str | None = Field(default=None, max_length=200)
 
 
 class LabDetails(BaseModel):
@@ -204,6 +211,9 @@ def safety_checks(ctx: TenantContext, o: Order) -> list[dict]:
         elif drug_class and (cat := catalogs.medication(m.name)) and cat["drug_class"] == drug_class:
             warnings.append({"type": "duplicate_class", "severity": "low",
                              "message": f"Same therapeutic class as active medication {m.name}."})
+    notice = MED.screening_warning(o.details or {}, [m.name for m in active])
+    if notice:
+        warnings.append(notice)
     return warnings
 
 
@@ -285,24 +295,30 @@ def sign_order(oid: uuid.UUID, body: SignIn, ctx: TenantContext = Depends(requir
         raise forbidden("Only clinicians with a provider profile can sign orders")
     warnings = safety_checks(ctx, o)
     o.safety_warnings = warnings
-    if warnings and not (body.override_reason and body.override_reason.strip()):
+    blocking = [w for w in warnings if w.get("severity") != "info"]
+    if blocking and not (body.override_reason and body.override_reason.strip()):
         ctx.db.commit()
         raise HTTPException(409, {"code": "safety_warnings", "message": "Review the safety warnings and give an override reason to sign.",
                                   "warnings": warnings})
     ts = now()
     o.status, o.signed_by_id, o.signed_at = "signed", ctx.user.id, ts
-    o.safety_override_reason = body.override_reason if warnings else None
-    o.transmission = adapters.order_transmitter().transmit(o.order_type, o.details, o.id)
-    o.transmitted_at = ts
-    o.status = "completed" if o.order_type == "medication" else "transmitted"
+    o.safety_override_reason = body.override_reason if blocking else None
     if o.order_type == "medication":
-        d = o.details
-        ctx.db.add(PatientMedication(organization_id=ctx.org_id, patient_id=o.patient_id, name=d["name"], dose=d["strength"],
-                                     route=d.get("route"), frequency=d["sig"][:100], source="prescribed", start_date=date.today(),
-                                     indication=", ".join(o.indication_codes) or None, recorded_by_id=ctx.user.id))
+        # Inpatient → pharmacist verification queue (never "completed" by signing); outpatient → simulated e-prescribing.
+        try:
+            MED.on_sign(ctx.db, o, actor_id=ctx.user.id, org_id=ctx.org_id)
+        except MED.MedicationError as e:
+            ctx.db.rollback()
+            raise HTTPException(409, {"code": e.code, "message": str(e)}) from None
+        if o.details.get("setting") == "outpatient":
+            o.transmission = adapters.order_transmitter().transmit(o.order_type, o.details, o.id)
+    else:
+        o.transmission = adapters.order_transmitter().transmit(o.order_type, o.details, o.id)
+        o.status = "transmitted"
+    o.transmitted_at = ts
     ctx.audit("order.signed", resource_type="order", resource_id=o.id, patient_id=o.patient_id,
               details={"type": o.order_type, "override": bool(o.safety_override_reason), "warnings": len(warnings),
-                       "simulated_transmission": bool(o.transmission.get("simulated"))})
+                       "simulated_transmission": bool((o.transmission or {}).get("simulated")), "status": o.status})
     ctx.db.commit()
     ctx.db.refresh(o)
     return order_out(o, ctx.db.get(Patient, o.patient_id))
@@ -311,8 +327,10 @@ def sign_order(oid: uuid.UUID, body: SignIn, ctx: TenantContext = Depends(requir
 @router.post("/orders/{oid}/cancel", response_model=OrderOut)
 def cancel_order(oid: uuid.UUID, body: CancelIn, ctx: TenantContext = Depends(require(P.ORDERS_WRITE))):
     o = _order(ctx, oid, P.CLINICAL_WRITE)
-    if o.status in ("resulted", "completed", "cancelled"):
+    if o.status in ("resulted", "completed", "cancelled", "rejected", "discontinued"):
         raise bad_request(f"Can't cancel an order that is {o.status}")
+    if MED.is_inpatient(o) and o.status != "draft":
+        raise bad_request("Signed inpatient medication orders are discontinued, not cancelled, so the administration history is kept")
     if o.status != "draft" and not ctx.can(P.ORDERS_SIGN):
         raise forbidden("Only a signing clinician can cancel a transmitted order")
     o.status, o.cancelled_reason = "cancelled", body.reason

@@ -13,13 +13,10 @@ from app.core.errors import bad_request, forbidden, not_found
 from app.core.permissions import P
 from app.core.security import now
 from app.models import (
-    InpatientStay,
     InventoryItem,
     InventoryLot,
     Location,
-    MedicationVerification,
     Order,
-    Patient,
     PurchaseRequest,
     StockBalance,
     StockMovement,
@@ -219,10 +216,27 @@ def dispense(body: DispenseIn, ctx: TenantContext = Depends(require(P.INVENTORY_
         from app.services.patients import get_patient
 
         get_patient(ctx, body.patient_id)
+    if lot.item.kind == "medication" and (body.patient_id or body.order_id):
+        # Patient-specific medication dispensing requires the verified order for that patient (closed loop).
+        from fastapi import HTTPException
+
+        from app.services import medication as MED
+
+        o = ctx.db.get(Order, body.order_id) if body.order_id else None
+        if o is not None and o.organization_id != ctx.org_id:
+            o = None
+        try:
+            MED.assert_dispensable(o, body.patient_id)
+        except MED.MedicationError as e:
+            raise HTTPException(409, {"code": e.code, "message": str(e)}) from None
+        body.patient_id = o.patient_id
     m = _err(ctx, lambda: I.dispense(ctx.db, lot, location=_loc(ctx, body.location_id), qty=body.quantity, actor_id=ctx.user.id,
                                      patient_id=body.patient_id, order_id=body.order_id))
     ctx.db.commit()
-    return {"balance_after": m.balance_after}
+    from app.services.medication import dose_label_barcode
+
+    return {"balance_after": m.balance_after, "movement_id": m.id,
+            "dose_label": dose_label_barcode(m.id) if lot.item.kind == "medication" and body.order_id else None}
 
 
 class AdjustIn(BaseModel):
@@ -369,43 +383,27 @@ def order_pr(pid: uuid.UUID, ctx: TenantContext = Depends(require(P.INVENTORY_WR
 
 @router.get("/pharmacy/verifications")
 def verification_queue(ctx: TenantContext = Depends(require(P.PHARMACY_READ))):
-    """Signed medication orders for patients currently admitted, awaiting a pharmacist decision."""
-    active = select(InpatientStay.patient_id).where(InpatientStay.organization_id == ctx.org_id, InpatientStay.status.in_(("admitted", "discharge_ordered")))
-    rows = ctx.db.execute(select(Order, Patient).join(Patient, Patient.id == Order.patient_id)
-                          .outerjoin(MedicationVerification, MedicationVerification.order_id == Order.id)
-                          .where(Order.organization_id == ctx.org_id, Order.order_type == "medication", Order.status.in_(("signed", "transmitted")),
-                                 Order.patient_id.in_(active), MedicationVerification.id.is_(None), Patient.is_restricted.is_(False))
-                          .order_by(Order.signed_at)).all()
-    return [{"order_id": o.id, "title": o.title, "details": o.details, "priority": o.priority, "signed_at": o.signed_at,
-             "safety_warnings": o.safety_warnings, "override_reason": o.safety_override_reason,
-             "patient": {"id": p.id, "name": p.full_name, "mrn": p.mrn}, "prescriber": o.signed_by.display_name if o.signed_by else None,
-             "waiting_minutes": int((now() - o.signed_at).total_seconds() // 60) if o.signed_at else None} for o, p in rows]
+    """Inpatient medication orders awaiting a pharmacist decision (compatibility alias of /pharmacy/medication-queue)."""
+    from app.api.routers.mar import medication_queue
+
+    return [{**r, "order_id": r["id"]} for r in medication_queue(status="pending_verification", ctx=ctx)]
 
 
 class VerifyIn(BaseModel):
     order_id: uuid.UUID
     status: Literal["verified", "rejected", "clarify"]
     note: str | None = Field(default=None, max_length=1000)
+    manual_interaction_review: bool = False
 
 
 @router.post("/pharmacy/verifications", status_code=201)
 def verify(body: VerifyIn, ctx: TenantContext = Depends(require(P.PHARMACY_VERIFY))):
-    o = ctx.db.get(Order, body.order_id)
-    if not o or o.organization_id != ctx.org_id or o.order_type != "medication":
-        raise not_found("Medication order")
-    if body.status != "verified" and not body.note:
-        raise bad_request("Explain the rejection or clarification needed")
-    if ctx.db.scalar(select(MedicationVerification.id).where(MedicationVerification.order_id == o.id)):
-        raise bad_request("Already decided")
-    ctx.db.add(MedicationVerification(organization_id=ctx.org_id, order_id=o.id, patient_id=o.patient_id, status=body.status, note=body.note,
-                                      pharmacist_id=ctx.user.id, at=now()))
-    if body.status != "verified" and o.signed_by_id:
-        from app.services.notify import notify
+    """Compatibility alias of POST /orders/{id}/pharmacy-decision (same rules)."""
+    from app.api.routers.mar import DecisionIn, pharmacy_decision
 
-        notify(ctx.db, ctx.org_id, o.signed_by_id, "pharmacy", f"Pharmacist {body.status}: {o.title}", body.note, f"/patients/{o.patient_id}")
-    ctx.audit(f"pharmacy.order_{body.status}", resource_type="order", resource_id=o.id, patient_id=o.patient_id)
-    ctx.db.commit()
-    return {"status": body.status}
+    out = pharmacy_decision(body.order_id, DecisionIn(decision=body.status, note=body.note,
+                                                      manual_interaction_review=body.manual_interaction_review), ctx=ctx)
+    return {"status": body.status, "order_status": out["status"]}
 
 
 @router.get("/inventory/report")

@@ -20,7 +20,8 @@ def test_nurse_drafts_doctor_signs_and_allergy_requires_override(as_user):
     r = doc.post(f"/orders/{o['id']}/sign", json={})
     assert r.status_code == 409 and r.json()["detail"]["code"] == "safety_warnings"
     signed = doc.post(f"/orders/{o['id']}/sign", json={"override_reason": "Tolerated amoxicillin in 2024 without reaction"}).json()
-    assert signed["status"] == "completed" and signed["transmission"]["simulated"] is True
+    # Outpatient prescription: sent through the simulated e-prescribing channel; signing never marks it "completed".
+    assert signed["status"] == "transmitted" and signed["transmission"]["simulated"] is True
     assert signed["safety_override_reason"]
     meds = doc.get(f"/patients/{p['id']}/medications").json()
     assert any(m["name"] == "Amoxicillin" and m["source"] == "prescribed" for m in meds)
