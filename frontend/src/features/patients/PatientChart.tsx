@@ -22,6 +22,7 @@ import { PatientBillingTab } from "@/features/billing/BillingPage";
 import { PatientDocumentsTab } from "@/features/documents/DocumentReview";
 import { PatientOrdersTab, PatientResultsTab } from "@/features/orders/OrdersPages";
 import { PatientMarTab } from "@/features/medication/Medication";
+import { NursingTab } from "@/features/nursing/NursingDocs";
 import { AppointmentDialog } from "@/features/schedule/AppointmentDialog";
 import { ApiError, del, get, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -160,6 +161,7 @@ const TABS = [
   { key: "allergies", label: "Allergies", icon: AlertTriangle, clinical: true },
   { key: "history", label: "History", icon: Users, clinical: true },
   { key: "vitals", label: "Vitals", icon: HeartPulse, clinical: true },
+  { key: "nursing", label: "Nursing", icon: ClipboardList, clinical: true },
   { key: "orders", label: "Orders", icon: ClipboardPen, clinical: true },
   { key: "results", label: "Results", icon: TestTube, clinical: true },
   { key: "mar", label: "MAR", icon: Pill, clinical: true },
@@ -175,7 +177,7 @@ const TABS = [
 /** Six top-level groups (sections keep their own URLs, so deep links still work). */
 const GROUPS: { label: string; icon: React.ElementType; keys: string[] }[] = [
   { label: "Overview", icon: ClipboardList, keys: [""] },
-  { label: "Clinical", icon: HeartPulse, keys: ["problems", "medications", "allergies", "history", "vitals"] },
+  { label: "Clinical", icon: HeartPulse, keys: ["problems", "medications", "allergies", "history", "vitals", "nursing"] },
   { label: "Visits", icon: Stethoscope, keys: ["visits", "appointments"] },
   { label: "Orders & results", icon: ClipboardPen, keys: ["orders", "results", "mar"] },
   { label: "Care journey", icon: Route, keys: ["journey", "timeline"] },
@@ -264,6 +266,7 @@ export function PatientChart() {
         {tab === "allergies" && clinical && <AllergiesTab patientId={p.id} />}
         {tab === "history" && clinical && <HistoryTab patientId={p.id} />}
         {tab === "vitals" && clinical && <VitalsTab patientId={p.id} />}
+        {tab === "nursing" && clinical && <NursingTab patientId={p.id} />}
         {tab === "orders" && clinical && <PatientOrdersTab patientId={p.id} />}
         {tab === "results" && clinical && <PatientResultsTab patientId={p.id} />}
         {tab === "mar" && clinical && <PatientMarTab patientId={p.id} />}

@@ -125,6 +125,115 @@
     "title": "AdjustIn",
     "type": "object"
    },
+   "AdministerIn": {
+    "properties": {
+     "dose": {
+      "anyOf": [
+       {
+        "maxLength": 60,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dose"
+     },
+     "medication_barcode": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Medication Barcode"
+     },
+     "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+     },
+     "patient_barcode": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Patient Barcode"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "maxLength": 1000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "route": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Route"
+     },
+     "scheduled_for": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Scheduled For"
+     },
+     "site": {
+      "anyOf": [
+       {
+        "maxLength": 60,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Site"
+     },
+     "status": {
+      "enum": [
+       "given",
+       "held",
+       "refused",
+       "omitted"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "order_id",
+     "status"
+    ],
+    "title": "AdministerIn",
+    "type": "object"
+   },
    "AdmitIn": {
     "properties": {
      "admit_source": {
@@ -519,6 +628,21 @@
     "title": "AllergyOut",
     "type": "object"
    },
+   "AmendIn": {
+    "properties": {
+     "reason": {
+      "maxLength": 300,
+      "minLength": 5,
+      "title": "Reason",
+      "type": "string"
+     }
+    },
+    "required": [
+     "reason"
+    ],
+    "title": "AmendIn",
+    "type": "object"
+   },
    "AppealIn": {
     "properties": {
      "text": {
@@ -534,40 +658,46 @@
     "title": "AppealIn",
     "type": "object"
    },
-   "ApplyIn": {
+   "ApplyItem": {
     "properties": {
-     "expected_version": {
+     "details": {
       "anyOf": [
        {
-        "type": "integer"
+        "additionalProperties": true,
+        "type": "object"
        },
        {
         "type": "null"
        }
       ],
-      "title": "Expected Version"
+      "title": "Details"
      },
-     "mode": {
-      "default": "replace",
-      "enum": [
-       "replace",
-       "append"
-      ],
-      "title": "Mode",
+     "item_id": {
+      "format": "uuid",
+      "title": "Item Id",
       "type": "string"
      },
-     "sections": {
+     "priority": {
       "anyOf": [
        {
-        "$ref": "#/components/schemas/NoteContent"
+        "enum": [
+         "routine",
+         "urgent",
+         "stat"
+        ],
+        "type": "string"
        },
        {
         "type": "null"
        }
-      ]
+      ],
+      "title": "Priority"
      }
     },
-    "title": "ApplyIn",
+    "required": [
+     "item_id"
+    ],
+    "title": "ApplyItem",
     "type": "object"
    },
    "AppointmentIn": {
@@ -1322,6 +1452,24 @@
      "question"
     ],
     "title": "AskIn",
+    "type": "object"
+   },
+   "AssessmentIn": {
+    "properties": {
+     "data": {
+      "additionalProperties": true,
+      "title": "Data",
+      "type": "object"
+     },
+     "template_key": {
+      "title": "Template Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "template_key"
+    ],
+    "title": "AssessmentIn",
     "type": "object"
    },
    "AuditOut": {
@@ -2994,39 +3142,39 @@
     "title": "ConfirmIn",
     "type": "object"
    },
-   "CorrectIn": {
+   "DecisionIn": {
     "properties": {
-     "flag": {
+     "decision": {
       "enum": [
-       "normal",
-       "high",
-       "low",
-       "abnormal",
-       "critical_high",
-       "critical_low"
+       "verified",
+       "rejected",
+       "clarify"
       ],
-      "title": "Flag",
+      "title": "Decision",
       "type": "string"
      },
-     "reason": {
-      "maxLength": 300,
-      "minLength": 5,
-      "title": "Reason",
-      "type": "string"
+     "manual_interaction_review": {
+      "default": false,
+      "title": "Manual Interaction Review",
+      "type": "boolean"
      },
-     "value": {
-      "maxLength": 60,
-      "minLength": 1,
-      "title": "Value",
-      "type": "string"
+     "note": {
+      "anyOf": [
+       {
+        "maxLength": 1000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
      }
     },
     "required": [
-     "value",
-     "flag",
-     "reason"
+     "decision"
     ],
-    "title": "CorrectIn",
+    "title": "DecisionIn",
     "type": "object"
    },
    "DeliveryOut": {
@@ -4131,6 +4279,20 @@
      }
     },
     "title": "DocumentUpdate",
+    "type": "object"
+   },
+   "DraftIn": {
+    "properties": {
+     "data": {
+      "additionalProperties": true,
+      "title": "Data",
+      "type": "object"
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "title": "DraftIn",
     "type": "object"
    },
    "DuplicateCandidate": {
@@ -5239,6 +5401,31 @@
      "created_at"
     ],
     "title": "HistoryOut",
+    "type": "object"
+   },
+   "HoldIn": {
+    "properties": {
+     "hold": {
+      "title": "Hold",
+      "type": "boolean"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     }
+    },
+    "required": [
+     "hold"
+    ],
+    "title": "HoldIn",
     "type": "object"
    },
    "InsuranceIn": {
@@ -6742,6 +6929,21 @@
     "title": "NoteCreate",
     "type": "object"
    },
+   "NoteIn": {
+    "properties": {
+     "note": {
+      "maxLength": 1000,
+      "minLength": 3,
+      "title": "Note",
+      "type": "string"
+     }
+    },
+    "required": [
+     "note"
+    ],
+    "title": "NoteIn",
+    "type": "object"
+   },
    "NoteOut": {
     "properties": {
      "addenda": {
@@ -6945,6 +7147,46 @@
     "title": "NoteVersionOut",
     "type": "object"
    },
+   "ObservationsIn": {
+    "properties": {
+     "observed_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Observed At"
+     },
+     "values": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "number"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "maxProperties": 20,
+      "minProperties": 1,
+      "title": "Values",
+      "type": "object"
+     }
+    },
+    "required": [
+     "values"
+    ],
+    "title": "ObservationsIn",
+    "type": "object"
+   },
    "OrderIn": {
     "properties": {
      "details": {
@@ -6989,7 +7231,9 @@
        "medication",
        "lab",
        "imaging",
-       "referral"
+       "referral",
+       "procedure",
+       "nursing"
       ],
       "title": "Order Type",
       "type": "string"
@@ -7271,6 +7515,55 @@
      "created_at"
     ],
     "title": "OrderOut",
+    "type": "object"
+   },
+   "OrderSetIn": {
+    "properties": {
+     "category": {
+      "anyOf": [
+       {
+        "maxLength": 60,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "maxLength": 2000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/app__api__routers__ordersets__ItemIn"
+      },
+      "maxItems": 40,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 3,
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "items"
+    ],
+    "title": "OrderSetIn",
     "type": "object"
    },
    "OrderUpdate": {
@@ -8906,6 +9199,58 @@
     "title": "PersonRef",
     "type": "object"
    },
+   "PlanIn": {
+    "properties": {
+     "goal": {
+      "maxLength": 500,
+      "minLength": 3,
+      "title": "Goal",
+      "type": "string"
+     },
+     "interventions": {
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "title": "Interventions",
+      "type": "array"
+     },
+     "problem": {
+      "maxLength": 300,
+      "minLength": 3,
+      "title": "Problem",
+      "type": "string"
+     },
+     "responsible_role": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": "nurse",
+      "title": "Responsible Role"
+     },
+     "review_in_hours": {
+      "default": 24,
+      "maximum": 168.0,
+      "minimum": 1.0,
+      "title": "Review In Hours",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "problem",
+     "goal",
+     "interventions"
+    ],
+    "title": "PlanIn",
+    "type": "object"
+   },
    "PlatformSwitchIn": {
     "properties": {
      "ai_disabled": {
@@ -9158,6 +9503,46 @@
      }
     },
     "title": "ProfileUpdate",
+    "type": "object"
+   },
+   "ProgressIn": {
+    "properties": {
+     "note": {
+      "maxLength": 1000,
+      "minLength": 3,
+      "title": "Note",
+      "type": "string"
+     },
+     "review_in_hours": {
+      "anyOf": [
+       {
+        "maximum": 168.0,
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": 24,
+      "title": "Review In Hours"
+     },
+     "status": {
+      "default": "active",
+      "enum": [
+       "active",
+       "met",
+       "not_met",
+       "discontinued"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "note"
+    ],
+    "title": "ProgressIn",
     "type": "object"
    },
    "ProviderIn": {
@@ -11442,6 +11827,11 @@
    },
    "VerifyIn": {
     "properties": {
+     "manual_interaction_review": {
+      "default": false,
+      "title": "Manual Interaction Review",
+      "type": "boolean"
+     },
      "note": {
       "anyOf": [
        {
@@ -12130,6 +12520,41 @@
     "title": "RejectIn",
     "type": "object"
    },
+   "app__api__routers__lab__CorrectIn": {
+    "properties": {
+     "flag": {
+      "enum": [
+       "normal",
+       "high",
+       "low",
+       "abnormal",
+       "critical_high",
+       "critical_low"
+      ],
+      "title": "Flag",
+      "type": "string"
+     },
+     "reason": {
+      "maxLength": 300,
+      "minLength": 5,
+      "title": "Reason",
+      "type": "string"
+     },
+     "value": {
+      "maxLength": 60,
+      "minLength": 1,
+      "title": "Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "flag",
+     "reason"
+    ],
+    "title": "CorrectIn",
+    "type": "object"
+   },
    "app__api__routers__lab__RejectIn": {
     "properties": {
      "reason": {
@@ -12143,6 +12568,36 @@
      "reason"
     ],
     "title": "RejectIn",
+    "type": "object"
+   },
+   "app__api__routers__nursing_docs__CorrectIn": {
+    "properties": {
+     "reason": {
+      "maxLength": 300,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "value",
+     "reason"
+    ],
+    "title": "CorrectIn",
     "type": "object"
    },
    "app__api__routers__operations__AssignIn": {
@@ -12491,6 +12946,104 @@
     "title": "DecideIn",
     "type": "object"
    },
+   "app__api__routers__ordersets__ApplyIn": {
+    "properties": {
+     "encounter_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Encounter Id"
+     },
+     "indication_codes": {
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 8,
+      "title": "Indication Codes",
+      "type": "array"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ApplyItem"
+      },
+      "maxItems": 40,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+     },
+     "patient_id": {
+      "format": "uuid",
+      "title": "Patient Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "patient_id",
+     "items"
+    ],
+    "title": "ApplyIn",
+    "type": "object"
+   },
+   "app__api__routers__ordersets__ItemIn": {
+    "properties": {
+     "default_selected": {
+      "default": true,
+      "title": "Default Selected",
+      "type": "boolean"
+     },
+     "details": {
+      "additionalProperties": true,
+      "title": "Details",
+      "type": "object"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "order_type": {
+      "enum": [
+       "medication",
+       "lab",
+       "imaging",
+       "referral",
+       "procedure",
+       "nursing"
+      ],
+      "title": "Order Type",
+      "type": "string"
+     },
+     "priority": {
+      "default": "routine",
+      "enum": [
+       "routine",
+       "urgent",
+       "stat"
+      ],
+      "title": "Priority",
+      "type": "string"
+     }
+    },
+    "required": [
+     "order_type",
+     "details"
+    ],
+    "title": "ItemIn",
+    "type": "object"
+   },
    "app__api__routers__pharmacy__DecideIn": {
     "properties": {
      "approve": {
@@ -12717,6 +13270,42 @@
      "to"
     ],
     "title": "StatusIn",
+    "type": "object"
+   },
+   "app__api__routers__scribe__ApplyIn": {
+    "properties": {
+     "expected_version": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Version"
+     },
+     "mode": {
+      "default": "replace",
+      "enum": [
+       "replace",
+       "append"
+      ],
+      "title": "Mode",
+      "type": "string"
+     },
+     "sections": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/NoteContent"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "title": "ApplyIn",
     "type": "object"
    },
    "app__schemas__clinical__AddendumIn": {
@@ -18685,6 +19274,78 @@
     "summary": "Billing Summary",
     "tags": [
      "billing"
+    ]
+   }
+  },
+  "/api/v1/care-plans/{plan_id}/progress": {
+   "post": {
+    "operationId": "plan_progress_api_v1_care_plans__plan_id__progress_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "plan_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Plan Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProgressIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Plan Progress",
+    "tags": [
+     "nursing documentation"
     ]
    }
   },
@@ -24670,6 +25331,78 @@
     ]
    }
   },
+  "/api/v1/flowsheet/{obs_id}/correct": {
+   "post": {
+    "operationId": "correct_api_v1_flowsheet__obs_id__correct_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "obs_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Obs Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/app__api__routers__nursing_docs__CorrectIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Correct",
+    "tags": [
+     "nursing documentation"
+    ]
+   }
+  },
   "/api/v1/forecasts": {
    "get": {
     "operationId": "forecasts_api_v1_forecasts_get",
@@ -26799,7 +27532,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/CorrectIn"
+        "$ref": "#/components/schemas/app__api__routers__lab__CorrectIn"
        }
       }
      },
@@ -27473,6 +28206,296 @@
     "summary": "Generate Rooms",
     "tags": [
      "facilities"
+    ]
+   }
+  },
+  "/api/v1/mar/administrations": {
+   "post": {
+    "operationId": "administer_api_v1_mar_administrations_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdministerIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Administer",
+    "tags": [
+     "medications"
+    ]
+   }
+  },
+  "/api/v1/mar/administrations/{aid}/witness": {
+   "post": {
+    "operationId": "witness_api_v1_mar_administrations__aid__witness_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/NoteIn"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Body"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Witness",
+    "tags": [
+     "medications"
+    ]
+   }
+  },
+  "/api/v1/mar/orders/{oid}/dose-labels": {
+   "get": {
+    "description": "Pharmacy dispensing labels for this order (used by the simulated scanner).",
+    "operationId": "dose_labels_api_v1_mar_orders__oid__dose_labels_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Dose Labels",
+    "tags": [
+     "medications"
+    ]
+   }
+  },
+  "/api/v1/mar/patients/{patient_id}": {
+   "get": {
+    "operationId": "patient_mar_api_v1_mar_patients__patient_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "patient_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Patient Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "hours_back",
+      "required": false,
+      "schema": {
+       "default": 12,
+       "maximum": 96,
+       "minimum": 1,
+       "title": "Hours Back",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "hours_ahead",
+      "required": false,
+      "schema": {
+       "default": 24,
+       "maximum": 72,
+       "minimum": 1,
+       "title": "Hours Ahead",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Patient Mar",
+    "tags": [
+     "medications"
     ]
    }
   },
@@ -28793,6 +29816,264 @@
     ]
    }
   },
+  "/api/v1/nursing-assessments/{aid}": {
+   "put": {
+    "operationId": "save_draft_api_v1_nursing_assessments__aid__put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DraftIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Save Draft",
+    "tags": [
+     "nursing documentation"
+    ]
+   }
+  },
+  "/api/v1/nursing-assessments/{aid}/amend": {
+   "post": {
+    "operationId": "amend_api_v1_nursing_assessments__aid__amend_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AmendIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Amend",
+    "tags": [
+     "nursing documentation"
+    ]
+   }
+  },
+  "/api/v1/nursing-assessments/{aid}/sign": {
+   "post": {
+    "operationId": "sign_assessment_api_v1_nursing_assessments__aid__sign_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Sign Assessment",
+    "tags": [
+     "nursing documentation"
+    ]
+   }
+  },
+  "/api/v1/nursing/definitions": {
+   "get": {
+    "operationId": "definitions_api_v1_nursing_definitions_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Definitions",
+    "tags": [
+     "nursing documentation"
+    ]
+   }
+  },
   "/api/v1/nursing/patients": {
    "get": {
     "operationId": "nursing_patients_api_v1_nursing_patients_get",
@@ -29072,6 +30353,460 @@
     "summary": "Or Schedule",
     "tags": [
      "or-roster"
+    ]
+   }
+  },
+  "/api/v1/order-sets": {
+   "get": {
+    "operationId": "list_sets_api_v1_order_sets_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "published",
+       "enum": [
+        "published",
+        "all"
+       ],
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "List Sets",
+    "tags": [
+     "order sets & terminology"
+    ]
+   },
+   "post": {
+    "operationId": "create_set_api_v1_order_sets_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OrderSetIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Create Set",
+    "tags": [
+     "order sets & terminology"
+    ]
+   }
+  },
+  "/api/v1/order-sets/{sid}": {
+   "get": {
+    "operationId": "get_set_api_v1_order_sets__sid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Get Set",
+    "tags": [
+     "order sets & terminology"
+    ]
+   },
+   "put": {
+    "operationId": "update_set_api_v1_order_sets__sid__put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OrderSetIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Update Set",
+    "tags": [
+     "order sets & terminology"
+    ]
+   }
+  },
+  "/api/v1/order-sets/{sid}/apply": {
+   "post": {
+    "operationId": "apply_api_v1_order_sets__sid__apply_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/app__api__routers__ordersets__ApplyIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Apply",
+    "tags": [
+     "order sets & terminology"
+    ]
+   }
+  },
+  "/api/v1/order-sets/{sid}/new-version": {
+   "post": {
+    "operationId": "new_version_api_v1_order_sets__sid__new_version_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "New Version",
+    "tags": [
+     "order sets & terminology"
+    ]
+   }
+  },
+  "/api/v1/order-sets/{sid}/publish": {
+   "post": {
+    "operationId": "publish_api_v1_order_sets__sid__publish_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Publish",
+    "tags": [
+     "order sets & terminology"
     ]
    }
   },
@@ -29503,6 +31238,222 @@
     ]
    }
   },
+  "/api/v1/orders/{oid}/discontinue": {
+   "post": {
+    "operationId": "discontinue_api_v1_orders__oid__discontinue_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NoteIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Discontinue",
+    "tags": [
+     "medications"
+    ]
+   }
+  },
+  "/api/v1/orders/{oid}/hold": {
+   "post": {
+    "operationId": "hold_api_v1_orders__oid__hold_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HoldIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Hold",
+    "tags": [
+     "medications"
+    ]
+   }
+  },
+  "/api/v1/orders/{oid}/pharmacy-decision": {
+   "post": {
+    "operationId": "pharmacy_decision_api_v1_orders__oid__pharmacy_decision_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Pharmacy Decision",
+    "tags": [
+     "medications"
+    ]
+   }
+  },
   "/api/v1/orders/{oid}/referral-status": {
    "post": {
     "operationId": "referral_status_api_v1_orders__oid__referral_status_post",
@@ -29638,6 +31589,78 @@
     "summary": "Release Results",
     "tags": [
      "orders"
+    ]
+   }
+  },
+  "/api/v1/orders/{oid}/resubmit": {
+   "post": {
+    "operationId": "resubmit_api_v1_orders__oid__resubmit_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NoteIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Resubmit",
+    "tags": [
+     "medications"
     ]
    }
   },
@@ -30932,6 +32955,138 @@
     ]
    }
   },
+  "/api/v1/patients/{patient_id}/care-plans": {
+   "get": {
+    "operationId": "list_plans_api_v1_patients__patient_id__care_plans_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "patient_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Patient Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "List Plans",
+    "tags": [
+     "nursing documentation"
+    ]
+   },
+   "post": {
+    "operationId": "create_plan_api_v1_patients__patient_id__care_plans_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "patient_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Patient Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlanIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Create Plan",
+    "tags": [
+     "nursing documentation"
+    ]
+   }
+  },
   "/api/v1/patients/{patient_id}/coverage": {
    "get": {
     "description": "Coverage state for the patient's next visit (or today), with payer check history.",
@@ -31128,6 +33283,150 @@
     "summary": "List Encounters",
     "tags": [
      "clinical"
+    ]
+   }
+  },
+  "/api/v1/patients/{patient_id}/flowsheet": {
+   "get": {
+    "operationId": "flowsheet_api_v1_patients__patient_id__flowsheet_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "patient_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Patient Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "hours",
+      "required": false,
+      "schema": {
+       "default": 24,
+       "maximum": 168,
+       "minimum": 1,
+       "title": "Hours",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Flowsheet",
+    "tags": [
+     "nursing documentation"
+    ]
+   },
+   "post": {
+    "operationId": "record_api_v1_patients__patient_id__flowsheet_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "patient_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Patient Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ObservationsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Record",
+    "tags": [
+     "nursing documentation"
     ]
    }
   },
@@ -32087,6 +34386,138 @@
     ]
    }
   },
+  "/api/v1/patients/{patient_id}/nursing-assessments": {
+   "get": {
+    "operationId": "list_assessments_api_v1_patients__patient_id__nursing_assessments_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "patient_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Patient Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "List Assessments",
+    "tags": [
+     "nursing documentation"
+    ]
+   },
+   "post": {
+    "operationId": "create_assessment_api_v1_patients__patient_id__nursing_assessments_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "patient_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Patient Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AssessmentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Create Assessment",
+    "tags": [
+     "nursing documentation"
+    ]
+   }
+  },
   "/api/v1/patients/{patient_id}/orders": {
    "get": {
     "operationId": "patient_orders_api_v1_patients__patient_id__orders_get",
@@ -32811,9 +35242,76 @@
     ]
    }
   },
+  "/api/v1/pharmacy/medication-queue": {
+   "get": {
+    "operationId": "medication_queue_api_v1_pharmacy_medication_queue_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "pending_verification",
+       "enum": [
+        "pending_verification",
+        "clarification_needed",
+        "active"
+       ],
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Medication Queue",
+    "tags": [
+     "medications"
+    ]
+   }
+  },
   "/api/v1/pharmacy/verifications": {
    "get": {
-    "description": "Signed medication orders for patients currently admitted, awaiting a pharmacist decision.",
+    "description": "Inpatient medication orders awaiting a pharmacist decision (compatibility alias of /pharmacy/medication-queue).",
     "operationId": "verification_queue_api_v1_pharmacy_verifications_get",
     "parameters": [
      {
@@ -32864,6 +35362,7 @@
     ]
    },
    "post": {
+    "description": "Compatibility alias of POST /orders/{id}/pharmacy-decision (same rules).",
     "operationId": "verify_api_v1_pharmacy_verifications_post",
     "parameters": [
      {
@@ -36825,7 +39324,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/ApplyIn"
+        "$ref": "#/components/schemas/app__api__routers__scribe__ApplyIn"
        }
       }
      },
@@ -38314,6 +40813,224 @@
     "summary": "Create Template",
     "tags": [
      "clinical"
+    ]
+   }
+  },
+  "/api/v1/terminology/systems": {
+   "get": {
+    "operationId": "terminology_systems_api_v1_terminology_systems_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Terminology Systems",
+    "tags": [
+     "order sets & terminology"
+    ]
+   }
+  },
+  "/api/v1/terminology/{system}/codes/{code}": {
+   "get": {
+    "operationId": "terminology_lookup_api_v1_terminology__system__codes__code__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "system",
+      "required": true,
+      "schema": {
+       "const": "ICD-10-CM",
+       "title": "System",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Terminology Lookup",
+    "tags": [
+     "order sets & terminology"
+    ]
+   }
+  },
+  "/api/v1/terminology/{system}/search": {
+   "get": {
+    "operationId": "terminology_search_api_v1_terminology__system__search_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "system",
+      "required": true,
+      "schema": {
+       "const": "ICD-10-CM",
+       "title": "System",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": true,
+      "schema": {
+       "maxLength": 100,
+       "minLength": 1,
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "include_retired",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Include Retired",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 20,
+       "maximum": 50,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Terminology Search",
+    "tags": [
+     "order sets & terminology"
     ]
    }
   },

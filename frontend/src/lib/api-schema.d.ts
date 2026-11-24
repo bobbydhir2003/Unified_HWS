@@ -1459,6 +1459,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/care-plans/{plan_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Plan Progress */
+        post: operations["plan_progress_api_v1_care_plans__plan_id__progress_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/care-team/{mid}": {
         parameters: {
             query?: never;
@@ -2715,6 +2732,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/flowsheet/{obs_id}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct */
+        post: operations["correct_api_v1_flowsheet__obs_id__correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/forecasts": {
         parameters: {
             query?: never;
@@ -3388,6 +3422,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mar/administrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Administer */
+        post: operations["administer_api_v1_mar_administrations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mar/administrations/{aid}/witness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Witness */
+        post: operations["witness_api_v1_mar_administrations__aid__witness_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mar/orders/{oid}/dose-labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dose Labels
+         * @description Pharmacy dispensing labels for this order (used by the simulated scanner).
+         */
+        get: operations["dose_labels_api_v1_mar_orders__oid__dose_labels_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mar/patients/{patient_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Patient Mar */
+        get: operations["patient_mar_api_v1_mar_patients__patient_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/medications/{item_id}": {
         parameters: {
             query?: never;
@@ -3663,6 +3768,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/nursing-assessments/{aid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save Draft */
+        put: operations["save_draft_api_v1_nursing_assessments__aid__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/nursing-assessments/{aid}/amend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Amend */
+        post: operations["amend_api_v1_nursing_assessments__aid__amend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/nursing-assessments/{aid}/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign Assessment */
+        post: operations["sign_assessment_api_v1_nursing_assessments__aid__sign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/nursing/definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Definitions */
+        get: operations["definitions_api_v1_nursing_definitions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/nursing/patients": {
         parameters: {
             query?: never;
@@ -3725,6 +3898,93 @@ export interface paths {
         get: operations["or_schedule_api_v1_or_schedule_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/order-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sets */
+        get: operations["list_sets_api_v1_order_sets_get"];
+        put?: never;
+        /** Create Set */
+        post: operations["create_set_api_v1_order_sets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/order-sets/{sid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Set */
+        get: operations["get_set_api_v1_order_sets__sid__get"];
+        /** Update Set */
+        put: operations["update_set_api_v1_order_sets__sid__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/order-sets/{sid}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply */
+        post: operations["apply_api_v1_order_sets__sid__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/order-sets/{sid}/new-version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** New Version */
+        post: operations["new_version_api_v1_order_sets__sid__new_version_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/order-sets/{sid}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish */
+        post: operations["publish_api_v1_order_sets__sid__publish_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3801,6 +4061,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders/{oid}/discontinue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Discontinue */
+        post: operations["discontinue_api_v1_orders__oid__discontinue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{oid}/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hold */
+        post: operations["hold_api_v1_orders__oid__hold_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{oid}/pharmacy-decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pharmacy Decision */
+        post: operations["pharmacy_decision_api_v1_orders__oid__pharmacy_decision_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders/{oid}/referral-status": {
         parameters: {
             query?: never;
@@ -3829,6 +4140,23 @@ export interface paths {
         put?: never;
         /** Release Results */
         post: operations["release_results_api_v1_orders__oid__release_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{oid}/resubmit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resubmit */
+        post: operations["resubmit_api_v1_orders__oid__resubmit_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4081,6 +4409,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patients/{patient_id}/care-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plans */
+        get: operations["list_plans_api_v1_patients__patient_id__care_plans_get"];
+        put?: never;
+        /** Create Plan */
+        post: operations["create_plan_api_v1_patients__patient_id__care_plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/patients/{patient_id}/coverage": {
         parameters: {
             query?: never;
@@ -4129,6 +4475,24 @@ export interface paths {
         get: operations["list_encounters_api_v1_patients__patient_id__encounters_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{patient_id}/flowsheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Flowsheet */
+        get: operations["flowsheet_api_v1_patients__patient_id__flowsheet_get"];
+        put?: never;
+        /** Record */
+        post: operations["record_api_v1_patients__patient_id__flowsheet_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4314,6 +4678,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patients/{patient_id}/nursing-assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Assessments */
+        get: operations["list_assessments_api_v1_patients__patient_id__nursing_assessments_get"];
+        put?: never;
+        /** Create Assessment */
+        post: operations["create_assessment_api_v1_patients__patient_id__nursing_assessments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/patients/{patient_id}/orders": {
         parameters: {
             query?: never;
@@ -4455,6 +4837,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pharmacy/medication-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Medication Queue */
+        get: operations["medication_queue_api_v1_pharmacy_medication_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pharmacy/verifications": {
         parameters: {
             query?: never;
@@ -4464,11 +4863,14 @@ export interface paths {
         };
         /**
          * Verification Queue
-         * @description Signed medication orders for patients currently admitted, awaiting a pharmacist decision.
+         * @description Inpatient medication orders awaiting a pharmacist decision (compatibility alias of /pharmacy/medication-queue).
          */
         get: operations["verification_queue_api_v1_pharmacy_verifications_get"];
         put?: never;
-        /** Verify */
+        /**
+         * Verify
+         * @description Compatibility alias of POST /orders/{id}/pharmacy-decision (same rules).
+         */
         post: operations["verify_api_v1_pharmacy_verifications_post"];
         delete?: never;
         options?: never;
@@ -5732,6 +6134,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/terminology/systems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Terminology Systems */
+        get: operations["terminology_systems_api_v1_terminology_systems_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/terminology/{system}/codes/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Terminology Lookup */
+        get: operations["terminology_lookup_api_v1_terminology__system__codes__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/terminology/{system}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Terminology Search */
+        get: operations["terminology_search_api_v1_terminology__system__search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/worklist": {
         parameters: {
             query?: never;
@@ -5807,6 +6260,33 @@ export interface components {
             quantity: number;
             /** Reason */
             reason: string;
+        };
+        /** AdministerIn */
+        AdministerIn: {
+            /** Dose */
+            dose?: string | null;
+            /** Medication Barcode */
+            medication_barcode?: string | null;
+            /**
+             * Order Id
+             * Format: uuid
+             */
+            order_id: string;
+            /** Patient Barcode */
+            patient_barcode?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Route */
+            route?: string | null;
+            /** Scheduled For */
+            scheduled_for?: string | null;
+            /** Site */
+            site?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "given" | "held" | "refused" | "omitted";
         };
         /** AdmitIn */
         AdmitIn: {
@@ -5929,22 +6409,29 @@ export interface components {
             /** Substance */
             substance: string;
         };
+        /** AmendIn */
+        AmendIn: {
+            /** Reason */
+            reason: string;
+        };
         /** AppealIn */
         AppealIn: {
             /** Text */
             text: string;
         };
-        /** ApplyIn */
-        ApplyIn: {
-            /** Expected Version */
-            expected_version?: number | null;
+        /** ApplyItem */
+        ApplyItem: {
+            /** Details */
+            details?: {
+                [key: string]: unknown;
+            } | null;
             /**
-             * Mode
-             * @default replace
-             * @enum {string}
+             * Item Id
+             * Format: uuid
              */
-            mode: "replace" | "append";
-            sections?: components["schemas"]["NoteContent"] | null;
+            item_id: string;
+            /** Priority */
+            priority?: ("routine" | "urgent" | "stat") | null;
         };
         /** AppointmentIn */
         AppointmentIn: {
@@ -6211,6 +6698,15 @@ export interface components {
             }[];
             /** Question */
             question: string;
+        };
+        /** AssessmentIn */
+        AssessmentIn: {
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+            /** Template Key */
+            template_key: string;
         };
         /** AuditOut */
         AuditOut: {
@@ -6780,17 +7276,20 @@ export interface components {
             /** Termination Date */
             termination_date?: string | null;
         };
-        /** CorrectIn */
-        CorrectIn: {
+        /** DecisionIn */
+        DecisionIn: {
             /**
-             * Flag
+             * Decision
              * @enum {string}
              */
-            flag: "normal" | "high" | "low" | "abnormal" | "critical_high" | "critical_low";
-            /** Reason */
-            reason: string;
-            /** Value */
-            value: string;
+            decision: "verified" | "rejected" | "clarify";
+            /**
+             * Manual Interaction Review
+             * @default false
+             */
+            manual_interaction_review: boolean;
+            /** Note */
+            note?: string | null;
         };
         /** DeliveryOut */
         DeliveryOut: {
@@ -7102,6 +7601,13 @@ export interface components {
             summary?: string | null;
             /** Title */
             title?: string | null;
+        };
+        /** DraftIn */
+        DraftIn: {
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
         };
         /** DuplicateCandidate */
         DuplicateCandidate: {
@@ -7492,6 +7998,13 @@ export interface components {
             occurred_on?: string | null;
             /** Relation */
             relation?: string | null;
+        };
+        /** HoldIn */
+        HoldIn: {
+            /** Hold */
+            hold: boolean;
+            /** Reason */
+            reason?: string | null;
         };
         /** InsuranceIn */
         InsuranceIn: {
@@ -8030,6 +8543,11 @@ export interface components {
              */
             title: string;
         };
+        /** NoteIn */
+        NoteIn: {
+            /** Note */
+            note: string;
+        };
         /** NoteOut */
         NoteOut: {
             /** Addenda */
@@ -8115,6 +8633,15 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** ObservationsIn */
+        ObservationsIn: {
+            /** Observed At */
+            observed_at?: string | null;
+            /** Values */
+            values: {
+                [key: string]: string | number;
+            };
+        };
         /** OrderIn */
         OrderIn: {
             /** Details */
@@ -8131,7 +8658,7 @@ export interface components {
              * Order Type
              * @enum {string}
              */
-            order_type: "medication" | "lab" | "imaging" | "referral";
+            order_type: "medication" | "lab" | "imaging" | "referral" | "procedure" | "nursing";
             /**
              * Patient Id
              * Format: uuid
@@ -8213,6 +8740,17 @@ export interface components {
             } | null;
             /** Transmitted At */
             transmitted_at: string | null;
+        };
+        /** OrderSetIn */
+        OrderSetIn: {
+            /** Category */
+            category?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Items */
+            items: components["schemas"]["app__api__routers__ordersets__ItemIn"][];
+            /** Name */
+            name: string;
         };
         /** OrderUpdate */
         OrderUpdate: {
@@ -8747,6 +9285,25 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** PlanIn */
+        PlanIn: {
+            /** Goal */
+            goal: string;
+            /** Interventions */
+            interventions: string[];
+            /** Problem */
+            problem: string;
+            /**
+             * Responsible Role
+             * @default nurse
+             */
+            responsible_role: string | null;
+            /**
+             * Review In Hours
+             * @default 24
+             */
+            review_in_hours: number;
+        };
         /** PlatformSwitchIn */
         PlatformSwitchIn: {
             /** Ai Disabled */
@@ -8827,6 +9384,22 @@ export interface components {
             preferences?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** ProgressIn */
+        ProgressIn: {
+            /** Note */
+            note: string;
+            /**
+             * Review In Hours
+             * @default 24
+             */
+            review_in_hours: number | null;
+            /**
+             * Status
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "met" | "not_met" | "discontinued";
         };
         /** ProviderIn */
         ProviderIn: {
@@ -9628,6 +10201,11 @@ export interface components {
         };
         /** VerifyIn */
         VerifyIn: {
+            /**
+             * Manual Interaction Review
+             * @default false
+             */
+            manual_interaction_review: boolean;
             /** Note */
             note?: string | null;
             /**
@@ -9794,10 +10372,29 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** CorrectIn */
+        app__api__routers__lab__CorrectIn: {
+            /**
+             * Flag
+             * @enum {string}
+             */
+            flag: "normal" | "high" | "low" | "abnormal" | "critical_high" | "critical_low";
+            /** Reason */
+            reason: string;
+            /** Value */
+            value: string;
+        };
         /** RejectIn */
         app__api__routers__lab__RejectIn: {
             /** Reason */
             reason: string;
+        };
+        /** CorrectIn */
+        app__api__routers__nursing_docs__CorrectIn: {
+            /** Reason */
+            reason: string;
+            /** Value */
+            value: string | number;
         };
         /** AssignIn */
         app__api__routers__operations__AssignIn: {
@@ -9927,6 +10524,45 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** ApplyIn */
+        app__api__routers__ordersets__ApplyIn: {
+            /** Encounter Id */
+            encounter_id?: string | null;
+            /** Indication Codes */
+            indication_codes?: string[];
+            /** Items */
+            items: components["schemas"]["ApplyItem"][];
+            /**
+             * Patient Id
+             * Format: uuid
+             */
+            patient_id: string;
+        };
+        /** ItemIn */
+        app__api__routers__ordersets__ItemIn: {
+            /**
+             * Default Selected
+             * @default true
+             */
+            default_selected: boolean;
+            /** Details */
+            details: {
+                [key: string]: unknown;
+            };
+            /** Note */
+            note?: string | null;
+            /**
+             * Order Type
+             * @enum {string}
+             */
+            order_type: "medication" | "lab" | "imaging" | "referral" | "procedure" | "nursing";
+            /**
+             * Priority
+             * @default routine
+             * @enum {string}
+             */
+            priority: "routine" | "urgent" | "stat";
+        };
         /** DecideIn */
         app__api__routers__pharmacy__DecideIn: {
             /** Approve */
@@ -10018,6 +10654,18 @@ export interface components {
              * @enum {string}
              */
             to: "arrived" | "in_progress" | "completed" | "cancelled";
+        };
+        /** ApplyIn */
+        app__api__routers__scribe__ApplyIn: {
+            /** Expected Version */
+            expected_version?: number | null;
+            /**
+             * Mode
+             * @default replace
+             * @enum {string}
+             */
+            mode: "replace" | "append";
+            sections?: components["schemas"]["NoteContent"] | null;
         };
         /** AddendumIn */
         app__schemas__clinical__AddendumIn: {
@@ -13152,6 +13800,43 @@ export interface operations {
             };
         };
     };
+    plan_progress_api_v1_care_plans__plan_id__progress_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     remove_care_team_api_v1_care_team__mid__delete: {
         parameters: {
             query?: never;
@@ -16082,6 +16767,43 @@ export interface operations {
             };
         };
     };
+    correct_api_v1_flowsheet__obs_id__correct_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                obs_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__routers__nursing_docs__CorrectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     forecasts_api_v1_forecasts_get: {
         parameters: {
             query?: {
@@ -17198,7 +17920,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CorrectIn"];
+                "application/json": components["schemas"]["app__api__routers__lab__CorrectIn"];
             };
         };
         responses: {
@@ -17524,6 +18246,147 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocationOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    administer_api_v1_mar_administrations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdministerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    witness_api_v1_mar_administrations__aid__witness_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["NoteIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dose_labels_api_v1_mar_orders__oid__dose_labels_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                oid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patient_mar_api_v1_mar_patients__patient_id__get: {
+        parameters: {
+            query?: {
+                hours_back?: number;
+                hours_ahead?: number;
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -18194,6 +19057,144 @@ export interface operations {
             };
         };
     };
+    save_draft_api_v1_nursing_assessments__aid__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    amend_api_v1_nursing_assessments__aid__amend_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmendIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sign_assessment_api_v1_nursing_assessments__aid__sign_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    definitions_api_v1_nursing_definitions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     nursing_patients_api_v1_nursing_patients_get: {
         parameters: {
             query?: {
@@ -18309,6 +19310,247 @@ export interface operations {
                 "x-organization-id"?: string | null;
             };
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sets_api_v1_order_sets_get: {
+        parameters: {
+            query?: {
+                status?: "published" | "all";
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_set_api_v1_order_sets_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderSetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_set_api_v1_order_sets__sid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_set_api_v1_order_sets__sid__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderSetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_api_v1_order_sets__sid__apply_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__routers__ordersets__ApplyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    new_version_api_v1_order_sets__sid__new_version_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_api_v1_order_sets__sid__publish_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                sid: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -18542,6 +19784,117 @@ export interface operations {
             };
         };
     };
+    discontinue_api_v1_orders__oid__discontinue_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                oid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hold_api_v1_orders__oid__hold_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                oid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pharmacy_decision_api_v1_orders__oid__pharmacy_decision_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                oid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     referral_status_api_v1_orders__oid__referral_status_post: {
         parameters: {
             query?: never;
@@ -18599,6 +19952,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resubmit_api_v1_orders__oid__resubmit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                oid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -19258,6 +20648,76 @@ export interface operations {
             };
         };
     };
+    list_plans_api_v1_patients__patient_id__care_plans_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_plan_api_v1_patients__patient_id__care_plans_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     patient_coverage_api_v1_patients__patient_id__coverage_get: {
         parameters: {
             query?: never;
@@ -19344,6 +20804,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EncounterOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flowsheet_api_v1_patients__patient_id__flowsheet_get: {
+        parameters: {
+            query?: {
+                hours?: number;
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_api_v1_patients__patient_id__flowsheet_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObservationsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -19818,6 +21350,76 @@ export interface operations {
             };
         };
     };
+    list_assessments_api_v1_patients__patient_id__nursing_assessments_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_assessment_api_v1_patients__patient_id__nursing_assessments_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     patient_orders_api_v1_patients__patient_id__orders_get: {
         parameters: {
             query?: {
@@ -20152,6 +21754,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VitalsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    medication_queue_api_v1_pharmacy_medication_queue_get: {
+        parameters: {
+            query?: {
+                status?: "pending_verification" | "clarification_needed" | "active";
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -22284,7 +23919,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ApplyIn"];
+                "application/json": components["schemas"]["app__api__routers__scribe__ApplyIn"];
             };
         };
         responses: {
@@ -23040,6 +24675,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    terminology_systems_api_v1_terminology_systems_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    terminology_lookup_api_v1_terminology__system__codes__code__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                system: "ICD-10-CM";
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    terminology_search_api_v1_terminology__system__search_get: {
+        parameters: {
+            query: {
+                q: string;
+                include_retired?: boolean;
+                limit?: number;
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                system: "ICD-10-CM";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

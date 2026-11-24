@@ -72,6 +72,7 @@ from app.models.inventory import (
 )
 from app.models.lab import CriticalResultAlert, Specimen
 from app.models.medication import MedicationAdministration, MedicationAdministrationWitness
+from app.models.nursing import NursingAssessment, NursingCarePlan, NursingObservation
 from app.models.orders import LabResult, Order
 from app.models.patients import Patient, PatientAccessGrant, PatientInsurance, PatientNote
 from app.models.portal import (
@@ -111,6 +112,9 @@ __all__ = [
     "InventoryItem",
     "InventoryLot",
     "MedicationAdministration",
+    "NursingAssessment",
+    "NursingCarePlan",
+    "NursingObservation",
     "OrderSet",
     "OrderSetItem",
     "TerminologyConcept",
