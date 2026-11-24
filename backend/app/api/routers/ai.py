@@ -16,7 +16,16 @@ from app.core.db import get_db
 from app.core.errors import bad_request, not_found
 from app.core.permissions import P
 from app.core.security import now
-from app.models import AIJob, AutomationRun, AutomationWorkflow, Organization, Patient, Task, User, VoiceCall
+from app.models import (
+    AIJob,
+    AutomationRun,
+    AutomationWorkflow,
+    Membership,
+    Organization,
+    Patient,
+    Task,
+    VoiceCall,
+)
 from app.services import receptionist
 from app.services.automation import ACTIONS, TEMPLATES, execute
 from app.services.patients import get_patient
@@ -221,8 +230,9 @@ def list_tasks(scope: Literal["mine", "all"] = "mine", status: Literal["open", "
 def create_task(body: TaskIn, ctx: TenantContext = Depends(require(P.PATIENTS_READ))):
     if body.patient_id:
         get_patient(ctx, body.patient_id)
-    if body.assigned_user_id and not ctx.db.scalar(select(User.id).where(User.id == body.assigned_user_id)):
-        raise bad_request("Unknown user")
+    if body.assigned_user_id and not ctx.db.scalar(select(Membership.user_id).where(
+            Membership.user_id == body.assigned_user_id, Membership.organization_id == ctx.org_id, Membership.is_active.is_(True))):
+        raise bad_request("Unknown user")  # only people in this organization can be assigned
     t = Task(organization_id=ctx.org_id, **body.model_dump(), source="manual")
     if not t.assigned_role and not t.assigned_user_id:
         t.assigned_user_id = ctx.user.id

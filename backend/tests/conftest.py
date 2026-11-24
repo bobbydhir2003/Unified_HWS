@@ -66,3 +66,89 @@ def as_user(app):
         return cache[key]
 
     return get
+
+
+# ---------------------------------------------------------------------------------------------- private demo hospitals
+
+@pytest.fixture
+def demo(monkeypatch):
+    """DEMO_MODE with private demo hospitals; every hospital created by the test is removed afterwards."""
+    from sqlalchemy import select
+
+    from app.core.config import settings
+    from app.core.db import SessionLocal
+    from app.demo import sandbox
+    from app.models import DemoSandbox
+
+    monkeypatch.setattr(settings, "demo_mode", True)
+    monkeypatch.setattr(settings, "demo_sandbox_enabled", True)
+    monkeypatch.setattr(settings, "demo_sandbox_pool_size", 0)  # tests build on demand; no background pool
+    monkeypatch.setattr(settings, "demo_sandbox_per_visitor", 5)
+    sandbox.invalidate_cache()
+    yield
+    db = SessionLocal()
+    for sb in db.scalars(select(DemoSandbox).where(DemoSandbox.status.in_(("leased", "ready", "building", "failed")))):
+        sandbox.release(db, sb, "test")
+    db.commit()
+    ids = list(db.scalars(select(DemoSandbox.id).where(DemoSandbox.status.in_(("releasing", "purging", "failed")))))
+    db.close()
+    for i in ids:
+        sandbox.purge(i)
+    sandbox.invalidate_cache()
+
+
+class Visitor:
+    """A demo visitor's browser: its own cookie jar and client address; switches roles inside one demo hospital."""
+
+    def __init__(self, app, ip: str):
+        self.c = TestClient(app, client=(ip, 50000))
+        self.h: dict = {}
+        self.me: dict = {}
+
+    def enter(self, key: str):
+        r = self.c.post("/api/v1/auth/demo-login", json={"key": key})
+        assert r.status_code == 200, r.text
+        self._accept(r.json())
+        return self
+
+    def _accept(self, data):
+        self.me = data["me"]
+        self.h = {"Authorization": f"Bearer {data['access_token']}", "X-Organization-Id": self.me["memberships"][0]["organization_id"]}
+
+    @property
+    def org(self) -> str:
+        return self.h["X-Organization-Id"]
+
+    @property
+    def membership(self) -> dict:
+        return self.me["memberships"][0]
+
+    def switch(self, **body):
+        r = self.c.post("/api/v1/auth/demo/switch", headers=self.h, json=body)
+        assert r.status_code == 200, r.text
+        old = dict(self.h)
+        self._accept(r.json())
+        return old
+
+    def as_person(self, name: str):
+        """Switch to a specific staff member of this hospital (e.g. a second lab technologist)."""
+        people = self.get("/auth/demo/session").json()["people"]
+        return self.switch(user_id=next(p["user_id"] for p in people if p["name"] == name))
+
+    def _call(self, method, path, **kw):
+        return getattr(self.c, method)(f"/api/v1{path}", headers={**self.h, **kw.pop("headers", {})}, **kw)
+
+    def get(self, path, **kw):
+        return self._call("get", path, **kw)
+
+    def post(self, path, **kw):
+        return self._call("post", path, **kw)
+
+    def patch(self, path, **kw):
+        return self._call("patch", path, **kw)
+
+    def put(self, path, **kw):
+        return self._call("put", path, **kw)
+
+    def delete(self, path, **kw):
+        return self._call("delete", path, **kw)

@@ -42,12 +42,23 @@ from app.models import (
 # Demo accounts share one password. Locally it's the documented dev default; any shared/deployed environment must set
 # SEED_DEMO_PASSWORD (the default is public in the repository) — seeding refuses otherwise.
 DEV_PASSWORD = os.environ.get("SEED_DEMO_PASSWORD") or "Undeclared!2026"
-rng = random.Random(20261119)
+RNG_SEED = 20261119
+rng = random.Random(RNG_SEED)
+
+# Who the builder creates. Harborview: <local>@harborview.dev with the demo password. A private demo hospital
+# (app.demo.sandbox): <local>@<tag>.demo.example.com, NO password hash (cannot sign in with a password) and
+# users.sandbox_org_id set, so the identity only exists inside that hospital and is removed with it.
+_IDENTITY: dict = {"domain": "harborview.dev", "sandbox_org_id": None}
 
 
-def _webhook_secret(kind: str) -> str:
-    """Known values locally (tests/E2E post to these webhooks); random per deployment when a demo password is set."""
-    if os.environ.get("SEED_DEMO_PASSWORD"):
+def em(local: str) -> str:
+    return f"{local}@{_IDENTITY['domain']}"
+
+
+def _webhook_secret(kind: str, sandbox: bool = False) -> str:
+    """Known values locally (tests/E2E post to these webhooks); random per deployment when a demo password is set,
+    and always random for private demo hospitals."""
+    if sandbox or os.environ.get("SEED_DEMO_PASSWORD"):
         import secrets
 
         return secrets.token_urlsafe(32)
@@ -82,8 +93,9 @@ ACUTE = [("J06.9", "Acute upper respiratory infection, unspecified", "Cough and 
 
 
 def user(db, email, first, last, title=None, superadmin=False) -> User:
-    u = User(email=email, first_name=first, last_name=last, title=title, is_superadmin=superadmin,
-             password_hash=hash_password(DEV_PASSWORD))
+    sandbox_org = _IDENTITY["sandbox_org_id"]
+    u = User(email=email, first_name=first, last_name=last, title=title, is_superadmin=superadmin and not sandbox_org,
+             password_hash=None if sandbox_org else hash_password(DEV_PASSWORD), sandbox_org_id=sandbox_org)
     db.add(u)
     db.flush()
     return u
@@ -306,6 +318,188 @@ def _lab(db, org, pat, prov, user, code, title, comps, when):
                          flag=flag, resulted_at=when, source="simulated"))
 
 
+def build_hospital(db, *, name: str = "Harborview Health", slug: str = "harborview", sandbox: bool = False) -> Organization:
+    """Builds one complete synthetic hospital organization (clinics, staff, patients, schedule, hospital, inpatients,
+    ED, insurance scenarios). Harborview at first seed; private demo hospitals (sandbox=True) reuse exactly the same
+    builder with their own sign-in-less identities (see app.demo.sandbox)."""
+    # ---- Org 1: Harborview Family Medicine ----
+    org = Organization(name=name, slug=slug,
+                       settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": _webhook_secret("fax", sandbox),
+                                 "voice_webhook_secret": _webhook_secret("voice", sandbox)})
+    db.add(org)
+    db.flush()
+    if sandbox:
+        _IDENTITY["sandbox_org_id"] = org.id  # every user created from here on is a sign-in-less identity of this hospital
+    tz = "America/New_York"
+    downtown = Clinic(organization_id=org.id, name="Harborview Downtown", code="HDT", timezone=tz, phone="(555) 201-4400",
+                      address_line1="120 Beacon Rd", city="Port Harbor", state="MA", postal_code="02110",
+                      rooms=["Exam 1", "Exam 2", "Exam 3", "Procedure"])
+    north = Clinic(organization_id=org.id, name="Harborview Northside", code="HNS", timezone=tz, phone="(555) 201-4500",
+                   address_line1="88 Orchard Way", city="Port Harbor", state="MA", postal_code="02128", rooms=["Exam A", "Exam B"])
+    db.add_all([downtown, north])
+    db.flush()
+
+    admin_u = user(db, em("clinicadmin"), "Jordan", "Blake")
+    chen_u = user(db, em("dr.chen"), "Maya", "Chen", "MD")
+    okafor_u = user(db, em("dr.okafor"), "Daniel", "Okafor", "DO")
+    nurse_u = user(db, em("nurse.rivera"), "Lucia", "Rivera", "RN")
+    front_u = user(db, em("frontdesk"), "Sam", "Patel")
+    billing_u = user(db, em("billing"), "Morgan", "Lee")
+    member(db, admin_u, org, "clinic_admin")
+    member(db, chen_u, org, "doctor")
+    member(db, okafor_u, org, "doctor", "clinic_admin")  # multi-role example
+    member(db, nurse_u, org, "nurse")
+    member(db, front_u, org, "receptionist")
+    member(db, billing_u, org, "billing")
+    chen = provider(db, chen_u, org, "Family Medicine", "MD", "blue", "1234567893")
+    okafor = provider(db, okafor_u, org, "Internal Medicine", "DO", "violet", "1245319599")
+    availability(db, org, chen, downtown, range(0, 5))
+    availability(db, org, okafor, downtown, (0, 2, 4))
+    availability(db, org, okafor, north, (1, 3))
+
+    types = {name: AppointmentType(organization_id=org.id, name=name, duration_minutes=d, color=c, is_telehealth=t)
+             for name, d, c, t in [("New patient", 40, "emerald", False), ("Follow-up", 20, "blue", False),
+                                   ("Annual physical", 40, "amber", False), ("Sick visit", 20, "rose", False),
+                                   ("Telehealth follow-up", 20, "cyan", True)]}
+    db.add_all(types.values())
+    from app.data.cpt_common import CPT_DEFAULTS
+    from app.models import FeeScheduleItem
+
+    for code, desc, cents in CPT_DEFAULTS:
+        db.add(FeeScheduleItem(organization_id=org.id, code=code, description=desc, price_cents=cents))
+    from app.services.automation import install_all
+
+    install_all(db, org.id, enabled=True)
+    for name, spec, content in TEMPLATES:
+        db.add(ClinicalTemplate(organization_id=org.id, name=name, specialty=spec, content=content))
+    db.flush()
+
+    patients = []
+    seq = 100000
+    for i in range(44):
+        seq += 1
+        prov = chen if i % 3 else okafor
+        p = make_patient(db, org, downtown if i % 4 else north, prov, seq)
+        chart(db, org, p, nurse_u)
+        patients.append(p)
+    # Portal patient with a known login
+    seq += 1
+    portal_u = user(db, em("patient"), "Elena", "Moreau")
+    member(db, portal_u, org, "patient")
+    portal_p = make_patient(db, org, downtown, chen, seq, first="Elena", last="Moreau", sex="female", dob=date(1986, 4, 12))
+    portal_p.email, portal_p.portal_user_id = em("patient"), portal_u.id
+    chart(db, org, portal_p, nurse_u)
+    patients.append(portal_p)
+    # Restricted (VIP) chart example
+    seq += 1
+    vip = make_patient(db, org, downtown, okafor, seq, first="Victor", last="Ashford", sex="male", dob=date(1971, 9, 3))
+    vip.is_restricted = True
+    patients.append(vip)
+    # Near-duplicate pair for duplicate detection demo
+    seq += 1
+    make_patient(db, org, downtown, chen, seq, first="Jonathan", last="Brennan", sex="male", dob=date(1990, 2, 14))
+    org.settings = {**org.settings, "mrn_seq": seq}
+    db.flush()
+
+    # Past visits (signed notes)
+    zone = ZoneInfo(tz)
+    today = now().astimezone(zone).date()
+    for p in rng.sample(patients[:-1], 30):
+        for _ in range(rng.randint(1, 3)):
+            d = today - timedelta(days=rng.randint(3, 120))
+            while d.weekday() > 4:
+                d -= timedelta(days=1)
+            when = datetime.combine(d, time(rng.choice([8, 9, 10, 11, 13, 14, 15, 16]), rng.choice([0, 20, 40])), zone)
+            prov = chen if p.primary_provider_id == chen.id else okafor
+            clash = db.scalar(select(Appointment.id).where(
+                Appointment.provider_id == prov.id, Appointment.start_at < when + timedelta(minutes=20),
+                Appointment.end_at > when))
+            if not clash:
+                past_visit(db, org, downtown, prov, p, types["Sick visit"], when, nurse_u)
+
+    # Today + next 10 business days
+    slots_today = [(8, 0), (8, 20), (8, 40), (9, 0), (9, 40), (10, 20), (11, 0), (13, 0), (13, 40), (14, 20), (15, 0), (15, 40), (16, 20)]
+    pool = [p for p in patients if p is not vip]
+    for day_off in range(0, 15):
+        d = today + timedelta(days=day_off)
+        if d.weekday() > 4:
+            continue
+        for prov, clinic in ((chen, downtown), (okafor, downtown if d.weekday() in (0, 2, 4) else north)):
+            chosen = slots_today if day_off == 0 else rng.sample(slots_today, rng.randint(4, 8))
+            for (h, m) in sorted(chosen):
+                t = rng.choice([types["Follow-up"], types["Sick visit"], types["Annual physical"], types["New patient"],
+                                types["Telehealth follow-up"]])
+                start = datetime.combine(d, time(h, m), zone)
+                end = start + timedelta(minutes=t.duration_minutes)
+                if db.scalar(select(Appointment.id).where(Appointment.provider_id == prov.id, Appointment.start_at < end,
+                                                          Appointment.end_at > start, Appointment.status != "cancelled")):
+                    continue
+                p = rng.choice(pool)
+                if db.scalar(select(Appointment.id).where(Appointment.patient_id == p.id, Appointment.start_at < end,
+                                                          Appointment.end_at > start)):
+                    continue
+                status = "scheduled"
+                if day_off == 0:
+                    local_now = now().astimezone(zone)
+                    if start < local_now - timedelta(minutes=40):
+                        status = rng.choice(["checked_out", "checked_out", "no_show"])
+                    elif start < local_now + timedelta(minutes=30):
+                        status = rng.choice(["checked_in", "roomed"])
+                    else:
+                        status = rng.choice(["scheduled", "confirmed"])
+                elif rng.random() < 0.4:
+                    status = "confirmed"
+                a = Appointment(organization_id=org.id, clinic_id=clinic.id, patient_id=p.id, provider_id=prov.id,
+                                appointment_type_id=t.id, start_at=start, end_at=end, status=status,
+                                mode="telehealth" if t.is_telehealth else "in_person",
+                                reason=rng.choice([c for _, _, c in ACUTE] + ["Medication review", "Blood pressure check", "Annual exam"]),
+                                booked_by_id=front_u.id)
+                if status in ("checked_in", "roomed", "checked_out"):
+                    a.checked_in_at = start - timedelta(minutes=12)
+                if status in ("roomed",):
+                    a.roomed_at, a.room = start - timedelta(minutes=4), rng.choice(clinic.rooms)
+                if status == "checked_out":
+                    # Earlier today: a completed, signed visit.
+                    past_visit(db, org, clinic, prov, p, t, start, nurse_u)
+                    continue
+                db.add(a)
+                db.flush()
+
+    seed_history(db, org, {chen.id: chen, okafor.id: okafor}, nurse_u)
+
+    # ---- Hospital (Milestone A/B): structure + department-scoped staff ----
+    from app.seed_hospital import seed_hospital
+
+    hstaff = {
+        "hospitaladmin": member(db, user(db, em("hospitaladmin"), "Avery", "Grant"), org, "hospital_admin"),
+        "pharmacist": member(db, user(db, em("pharmacist"), "Noah", "Fischer", "PharmD"), org, "pharmacist"),
+        "lab": member(db, user(db, em("lab"), "Imani", "Brooks", "MLS"), org, "lab_tech"),
+        "radiology": member(db, user(db, em("radiology"), "Elena", "Sato", "MD"), org, "radiologist", "radiology_tech"),
+        "bedmanager": member(db, user(db, em("bedmanager"), "Chris", "Morgan", "RN"), org, "bed_manager"),
+        "insurance": member(db, user(db, em("insurance"), "Riley", "Nguyen"), org, "insurance_specialist"),
+        "nurse_ms": member(db, user(db, em("nurse.kim"), "Grace", "Kim", "RN"), org, "nurse"),
+    }
+    ed_doc_u = user(db, em("dr.santos"), "Rafael", "Santos", "MD")
+    hstaff["ed_doc"] = member(db, ed_doc_u, org, "doctor")
+    provider(db, ed_doc_u, org, "Emergency Medicine", "MD", "rose", "1356432980")
+    hospital = seed_hospital(db, org, [downtown, north], hstaff)
+    from app.seed_hospital import seed_inpatients
+
+    ed_doc = db.scalar(select(ProviderProfile).where(ProviderProfile.user_id == ed_doc_u.id))
+    seed_inpatients(db, org, hospital["hospital"], [ed_doc, okafor], [x for x in patients[5:] if not x.is_restricted])
+    from app.models import InpatientStay
+    from app.seed_hospital import seed_ed
+
+    in_house = set(db.scalars(select(InpatientStay.patient_id)))
+    seed_ed(db, org, hospital["hospital"], ed_doc, hstaff["nurse_ms"].user_id, [x for x in reversed(patients) if not x.is_restricted
+                                                                                and x.id not in in_house and x.portal_user_id is None])
+    from app.seed_hospital import seed_insurance_scenarios
+
+    seed_insurance_scenarios(db, org, downtown, chen, types["Follow-up"], portal_p, patients)
+
+    return org
+
+
 def seed(reset: bool = False) -> None:
     if reset:
         with engine.begin() as c:
@@ -319,178 +513,8 @@ def seed(reset: bool = False) -> None:
 
         superadmin = user(db, "admin@undeclared.dev", "Platform", "Admin", superadmin=True)
 
-        # ---- Org 1: Harborview Family Medicine ----
-        org = Organization(name="Harborview Health", slug="harborview",
-                           settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": _webhook_secret("fax"), "voice_webhook_secret": _webhook_secret("voice")})
-        db.add(org)
-        db.flush()
-        tz = "America/New_York"
-        downtown = Clinic(organization_id=org.id, name="Harborview Downtown", code="HDT", timezone=tz, phone="(555) 201-4400",
-                          address_line1="120 Beacon Rd", city="Port Harbor", state="MA", postal_code="02110",
-                          rooms=["Exam 1", "Exam 2", "Exam 3", "Procedure"])
-        north = Clinic(organization_id=org.id, name="Harborview Northside", code="HNS", timezone=tz, phone="(555) 201-4500",
-                       address_line1="88 Orchard Way", city="Port Harbor", state="MA", postal_code="02128", rooms=["Exam A", "Exam B"])
-        db.add_all([downtown, north])
-        db.flush()
-
-        admin_u = user(db, "clinicadmin@harborview.dev", "Jordan", "Blake")
-        chen_u = user(db, "dr.chen@harborview.dev", "Maya", "Chen", "MD")
-        okafor_u = user(db, "dr.okafor@harborview.dev", "Daniel", "Okafor", "DO")
-        nurse_u = user(db, "nurse.rivera@harborview.dev", "Lucia", "Rivera", "RN")
-        front_u = user(db, "frontdesk@harborview.dev", "Sam", "Patel")
-        billing_u = user(db, "billing@harborview.dev", "Morgan", "Lee")
+        org = build_hospital(db)
         member(db, superadmin, org, "super_admin")
-        member(db, admin_u, org, "clinic_admin")
-        member(db, chen_u, org, "doctor")
-        member(db, okafor_u, org, "doctor", "clinic_admin")  # multi-role example
-        member(db, nurse_u, org, "nurse")
-        member(db, front_u, org, "receptionist")
-        member(db, billing_u, org, "billing")
-        chen = provider(db, chen_u, org, "Family Medicine", "MD", "blue", "1234567893")
-        okafor = provider(db, okafor_u, org, "Internal Medicine", "DO", "violet", "1245319599")
-        availability(db, org, chen, downtown, range(0, 5))
-        availability(db, org, okafor, downtown, (0, 2, 4))
-        availability(db, org, okafor, north, (1, 3))
-
-        types = {name: AppointmentType(organization_id=org.id, name=name, duration_minutes=d, color=c, is_telehealth=t)
-                 for name, d, c, t in [("New patient", 40, "emerald", False), ("Follow-up", 20, "blue", False),
-                                       ("Annual physical", 40, "amber", False), ("Sick visit", 20, "rose", False),
-                                       ("Telehealth follow-up", 20, "cyan", True)]}
-        db.add_all(types.values())
-        from app.data.cpt_common import CPT_DEFAULTS
-        from app.models import FeeScheduleItem
-
-        for code, desc, cents in CPT_DEFAULTS:
-            db.add(FeeScheduleItem(organization_id=org.id, code=code, description=desc, price_cents=cents))
-        from app.services.automation import install_all
-
-        install_all(db, org.id, enabled=True)
-        for name, spec, content in TEMPLATES:
-            db.add(ClinicalTemplate(organization_id=org.id, name=name, specialty=spec, content=content))
-        db.flush()
-
-        patients = []
-        seq = 100000
-        for i in range(44):
-            seq += 1
-            prov = chen if i % 3 else okafor
-            p = make_patient(db, org, downtown if i % 4 else north, prov, seq)
-            chart(db, org, p, nurse_u)
-            patients.append(p)
-        # Portal patient with a known login
-        seq += 1
-        portal_u = user(db, "patient@harborview.dev", "Elena", "Moreau")
-        member(db, portal_u, org, "patient")
-        portal_p = make_patient(db, org, downtown, chen, seq, first="Elena", last="Moreau", sex="female", dob=date(1986, 4, 12))
-        portal_p.email, portal_p.portal_user_id = "patient@harborview.dev", portal_u.id
-        chart(db, org, portal_p, nurse_u)
-        patients.append(portal_p)
-        # Restricted (VIP) chart example
-        seq += 1
-        vip = make_patient(db, org, downtown, okafor, seq, first="Victor", last="Ashford", sex="male", dob=date(1971, 9, 3))
-        vip.is_restricted = True
-        patients.append(vip)
-        # Near-duplicate pair for duplicate detection demo
-        seq += 1
-        make_patient(db, org, downtown, chen, seq, first="Jonathan", last="Brennan", sex="male", dob=date(1990, 2, 14))
-        org.settings = {**org.settings, "mrn_seq": seq}
-        db.flush()
-
-        # Past visits (signed notes)
-        zone = ZoneInfo(tz)
-        today = now().astimezone(zone).date()
-        for p in rng.sample(patients[:-1], 30):
-            for _ in range(rng.randint(1, 3)):
-                d = today - timedelta(days=rng.randint(3, 120))
-                while d.weekday() > 4:
-                    d -= timedelta(days=1)
-                when = datetime.combine(d, time(rng.choice([8, 9, 10, 11, 13, 14, 15, 16]), rng.choice([0, 20, 40])), zone)
-                prov = chen if p.primary_provider_id == chen.id else okafor
-                clash = db.scalar(select(Appointment.id).where(
-                    Appointment.provider_id == prov.id, Appointment.start_at < when + timedelta(minutes=20),
-                    Appointment.end_at > when))
-                if not clash:
-                    past_visit(db, org, downtown, prov, p, types["Sick visit"], when, nurse_u)
-
-        # Today + next 10 business days
-        slots_today = [(8, 0), (8, 20), (8, 40), (9, 0), (9, 40), (10, 20), (11, 0), (13, 0), (13, 40), (14, 20), (15, 0), (15, 40), (16, 20)]
-        pool = [p for p in patients if p is not vip]
-        for day_off in range(0, 15):
-            d = today + timedelta(days=day_off)
-            if d.weekday() > 4:
-                continue
-            for prov, clinic in ((chen, downtown), (okafor, downtown if d.weekday() in (0, 2, 4) else north)):
-                chosen = slots_today if day_off == 0 else rng.sample(slots_today, rng.randint(4, 8))
-                for (h, m) in sorted(chosen):
-                    t = rng.choice([types["Follow-up"], types["Sick visit"], types["Annual physical"], types["New patient"],
-                                    types["Telehealth follow-up"]])
-                    start = datetime.combine(d, time(h, m), zone)
-                    end = start + timedelta(minutes=t.duration_minutes)
-                    if db.scalar(select(Appointment.id).where(Appointment.provider_id == prov.id, Appointment.start_at < end,
-                                                              Appointment.end_at > start, Appointment.status != "cancelled")):
-                        continue
-                    p = rng.choice(pool)
-                    if db.scalar(select(Appointment.id).where(Appointment.patient_id == p.id, Appointment.start_at < end,
-                                                              Appointment.end_at > start)):
-                        continue
-                    status = "scheduled"
-                    if day_off == 0:
-                        local_now = now().astimezone(zone)
-                        if start < local_now - timedelta(minutes=40):
-                            status = rng.choice(["checked_out", "checked_out", "no_show"])
-                        elif start < local_now + timedelta(minutes=30):
-                            status = rng.choice(["checked_in", "roomed"])
-                        else:
-                            status = rng.choice(["scheduled", "confirmed"])
-                    elif rng.random() < 0.4:
-                        status = "confirmed"
-                    a = Appointment(organization_id=org.id, clinic_id=clinic.id, patient_id=p.id, provider_id=prov.id,
-                                    appointment_type_id=t.id, start_at=start, end_at=end, status=status,
-                                    mode="telehealth" if t.is_telehealth else "in_person",
-                                    reason=rng.choice([c for _, _, c in ACUTE] + ["Medication review", "Blood pressure check", "Annual exam"]),
-                                    booked_by_id=front_u.id)
-                    if status in ("checked_in", "roomed", "checked_out"):
-                        a.checked_in_at = start - timedelta(minutes=12)
-                    if status in ("roomed",):
-                        a.roomed_at, a.room = start - timedelta(minutes=4), rng.choice(clinic.rooms)
-                    if status == "checked_out":
-                        # Earlier today: a completed, signed visit.
-                        past_visit(db, org, clinic, prov, p, t, start, nurse_u)
-                        continue
-                    db.add(a)
-                    db.flush()
-
-        seed_history(db, org, {chen.id: chen, okafor.id: okafor}, nurse_u)
-
-        # ---- Hospital (Milestone A/B): structure + department-scoped staff ----
-        from app.seed_hospital import seed_hospital
-
-        hstaff = {
-            "hospitaladmin": member(db, user(db, "hospitaladmin@harborview.dev", "Avery", "Grant"), org, "hospital_admin"),
-            "pharmacist": member(db, user(db, "pharmacist@harborview.dev", "Noah", "Fischer", "PharmD"), org, "pharmacist"),
-            "lab": member(db, user(db, "lab@harborview.dev", "Imani", "Brooks", "MLS"), org, "lab_tech"),
-            "radiology": member(db, user(db, "radiology@harborview.dev", "Elena", "Sato", "MD"), org, "radiologist", "radiology_tech"),
-            "bedmanager": member(db, user(db, "bedmanager@harborview.dev", "Chris", "Morgan", "RN"), org, "bed_manager"),
-            "insurance": member(db, user(db, "insurance@harborview.dev", "Riley", "Nguyen"), org, "insurance_specialist"),
-            "nurse_ms": member(db, user(db, "nurse.kim@harborview.dev", "Grace", "Kim", "RN"), org, "nurse"),
-        }
-        ed_doc_u = user(db, "dr.santos@harborview.dev", "Rafael", "Santos", "MD")
-        hstaff["ed_doc"] = member(db, ed_doc_u, org, "doctor")
-        provider(db, ed_doc_u, org, "Emergency Medicine", "MD", "rose", "1356432980")
-        hospital = seed_hospital(db, org, [downtown, north], hstaff)
-        from app.seed_hospital import seed_inpatients
-
-        ed_doc = db.scalar(select(ProviderProfile).where(ProviderProfile.user_id == ed_doc_u.id))
-        seed_inpatients(db, org, hospital["hospital"], [ed_doc, okafor], [x for x in patients[5:] if not x.is_restricted])
-        from app.models import InpatientStay
-        from app.seed_hospital import seed_ed
-
-        in_house = set(db.scalars(select(InpatientStay.patient_id)))
-        seed_ed(db, org, hospital["hospital"], ed_doc, hstaff["nurse_ms"].user_id, [x for x in reversed(patients) if not x.is_restricted
-                                                                                    and x.id not in in_house and x.portal_user_id is None])
-        from app.seed_hospital import seed_insurance_scenarios
-
-        seed_insurance_scenarios(db, org, downtown, chen, types["Follow-up"], portal_p, patients)
 
         # ---- Org 2: Lakeside Pediatrics (tenant isolation) ----
         org2 = Organization(name="Lakeside Pediatrics", slug="lakeside", settings={"synthetic_data": True, "mrn_seq": 500000})

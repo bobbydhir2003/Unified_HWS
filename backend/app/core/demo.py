@@ -1,12 +1,15 @@
-"""Demo mode: one-click role sign-in for a synthetic-data demonstration deployment (e.g. a product pitch).
+"""Demo mode: one-click sign-in for a synthetic-data demonstration deployment (e.g. a product pitch).
 
 Off unless DEMO_MODE=true, and refused in production (see hardening.production_problems). When on:
-* POST /auth/demo-login signs in ONLY the server-side allowlisted accounts below, and only if every one of the
-  account's organizations is flagged `synthetic_data`. The platform super administrator is never on the list — the
-  "Super Admin" button uses a dedicated demo account with the super_admin role inside the demo organization.
-* Demo accounts can browse everything their role allows and run normal hospital workflows on synthetic data, but
-  administrative configuration, credential/MFA changes and AI-key management are blocked for them (DEMO_BLOCKED),
-  and the message outbox (which can contain password-reset links) is hidden from them.
+* POST /auth/demo-login gives each visitor a PRIVATE demo hospital (app/demo/sandbox.py): its own synthetic
+  organization with an identity for each of the 14 application roles, switchable in the app. Inside their hospital a
+  visitor can do everything the chosen role may do — including the Super Admin's configuration of facilities, staff,
+  scheduling, fee schedule, monitors and workflows — because nothing they change is visible to anyone else.
+  What stays blocked for hospital identities is platform-level only (SANDBOX_BLOCKED): creating organizations, the
+  platform owner's AI controls, and credential/email/MFA changes.
+* The seven legacy shared accounts (DEMO_ACCOUNTS, all in the Harborview organization) are no longer used by the demo
+  buttons. If someone signs into them with a password while demo mode is on, the original restrictions still apply
+  (DEMO_BLOCKED): administrative configuration, credential/MFA changes and the outbox stay blocked for them.
 """
 
 from __future__ import annotations
@@ -39,19 +42,48 @@ DEMO_BLOCKED: list[tuple[set[str], str]] = [
 ]
 
 
+# Identities of a private demo hospital: only platform-level actions are blocked (everything else is governed by the
+# identity's ordinary role permissions inside its own organization). Matched on whole path segments.
+SANDBOX_BLOCKED: list[tuple[set[str], str]] = [
+    (_WRITES, "/auth/password"), (_WRITES, "/auth/email"), (_WRITES, "/auth/mfa"),
+    (_WRITES, "/organizations"),                 # creating organizations is a platform operation
+    ({"GET", "POST", "PUT", "PATCH", "DELETE"}, "/admin/ai-owner"),  # the platform owner's AI controls
+]
+
+
 def enabled() -> bool:
     return bool(settings.demo_mode) and not settings.is_production
 
 
+def is_sandbox_user(user) -> bool:
+    """An identity that exists only inside one private demo hospital."""
+    return user is not None and getattr(user, "sandbox_org_id", None) is not None
+
+
 def is_demo_user(user) -> bool:
-    return enabled() and user is not None and user.email in DEMO_EMAILS and not user.is_superadmin
+    """Any demo identity (private hospital or legacy shared account): gets demo-scoped AI, never the platform key."""
+    if user is None or user.is_superadmin:
+        return False
+    if is_sandbox_user(user):
+        return True  # even if demo mode were switched off: these identities must never see platform AI settings
+    return enabled() and user.email in DEMO_EMAILS
 
 
-def blocked(method: str, path: str) -> bool:
+def _strip(path: str) -> str:
     for prefix in ("/api/v1", "/api"):
         if path.startswith(prefix + "/"):
-            path = path[len(prefix):]
-            break
+            return path[len(prefix):]
+    return path
+
+
+def _match(path: str, prefix: str) -> bool:
+    return path == prefix or path.startswith(prefix + "/")
+
+
+def blocked(method: str, path: str, user=None) -> bool:
+    path = _strip(path)
+    if user is not None and is_sandbox_user(user):
+        return any(method in methods and _match(path, p) for methods, p in SANDBOX_BLOCKED)
     if path.startswith("/admin/ai-settings"):  # demo accounts edit their own session-scoped AI settings
         return False
     return any(method in methods and path.startswith(p) for methods, p in DEMO_BLOCKED)
@@ -92,9 +124,14 @@ def request_ai_scope(authorization: str | None):
     from app.core.security import decode_token
 
     data = decode_token(authorization[7:].strip(), "access")
-    if not data or data.get("sub") not in demo_user_ids():
+    if not data:
         return None
     from app.ai import demo_scope
 
+    if data.get("sbx"):  # demo hospital: one AI scope per visitor lease (stable across role switches)
+        token = f"sess:{data.get('air') or data['sid']}"
+        return token, demo_scope.resolve(token)
+    if data.get("sub") not in demo_user_ids():
+        return None
     token = f"sess:{data['sid']}"
     return token, demo_scope.resolve(token)

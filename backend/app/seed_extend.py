@@ -132,8 +132,9 @@ def seed_med_orders(db, org: Organization) -> int:
 
 def seed_second_pharmacist(db, org: Organization, hosp: Clinic) -> bool:
     """Two-person rule demo (waste/negative adjustments need a second pharmacist; lab results a second technologist)."""
-    _staff(db, org, hosp, "lab2@harborview.dev", "Marcus", "Bell", "MLS", "lab_tech", "LAB")
-    from app.core.security import hash_password
+    from app.seed import em, user
+
+    _staff(db, org, hosp, em("lab2"), "Marcus", "Bell", "MLS", "lab_tech", "LAB")
     from app.models import (
         Department,
         Membership,
@@ -142,13 +143,10 @@ def seed_second_pharmacist(db, org: Organization, hosp: Clinic) -> bool:
         MembershipRole,
         User,
     )
-    from app.seed import DEV_PASSWORD
 
-    if db.scalar(select(User.id).where(User.email == "pharmacist2@harborview.dev")):
+    if db.scalar(select(User.id).where(User.email == em("pharmacist2"))):
         return False
-    u = User(email="pharmacist2@harborview.dev", first_name="Priya", last_name="Raman", title="PharmD", password_hash=hash_password(DEV_PASSWORD))
-    db.add(u)
-    db.flush()
+    u = user(db, em("pharmacist2"), "Priya", "Raman", "PharmD")
     m = Membership(user_id=u.id, organization_id=org.id, all_clinics=False)
     db.add(m)
     db.flush()
@@ -184,7 +182,6 @@ def seed_lab_orders(db, org: Organization) -> int:
 
 
 def _staff(db, org, hosp, email, first, last, title, role, dept_code) -> bool:
-    from app.core.security import hash_password
     from app.models import (
         Department,
         Membership,
@@ -193,13 +190,11 @@ def _staff(db, org, hosp, email, first, last, title, role, dept_code) -> bool:
         MembershipRole,
         User,
     )
-    from app.seed import DEV_PASSWORD
+    from app.seed import user
 
     if db.scalar(select(User.id).where(User.email == email)):
         return False
-    u = User(email=email, first_name=first, last_name=last, title=title, password_hash=hash_password(DEV_PASSWORD))
-    db.add(u)
-    db.flush()
+    u = user(db, email, first, last, title)
     m = Membership(user_id=u.id, organization_id=org.id, all_clinics=False)
     db.add(m)
     db.flush()
@@ -236,6 +231,7 @@ def seed_imaging_orders(db, org: Organization) -> int:
 def seed_roster(db, org: Organization, hosp: Clinic) -> int:
     """Synthetic staff + 3 days of shifts meeting minimums (one deliberate gap), skills, and OR cases tomorrow."""
     from app.models import Department, Patient, Shift, StaffSkill, SurgicalCase, User
+    from app.seed import em
     from app.services import rostering as RS
 
     if db.scalar(select(Shift.id).where(Shift.organization_id == org.id).limit(1)):
@@ -245,9 +241,9 @@ def seed_roster(db, org: Organization, hosp: Clinic) -> int:
               "ED": [("Mia", "Dorsey"), ("Nils", "Berg"), ("Oona", "Pike"), ("Pia", "Ruiz"), ("Quinn", "Shaw")]}
     for code, names in people.items():
         for first, last in names:
-            _staff(db, org, hosp, f"rn.{first.lower()}.{last.lower()}@harborview.dev", first, last, "RN", "nurse", code)
+            _staff(db, org, hosp, em(f"rn.{first.lower()}.{last.lower()}"), first, last, "RN", "nurse", code)
     db.flush()
-    for u in db.scalars(select(User).where(User.email.like("rn.%@harborview.dev"))):
+    for u in db.scalars(select(User).where(User.email.like(em("rn.%")))):
         db.add(StaffSkill(organization_id=org.id, user_id=u.id, skill="BLS", expires_on=date.today() + timedelta(days=400)))
         if u.last_name in ("Ito", "Petrov", "Kerr", "Lund", "Voss", "Dorsey", "Berg"):
             db.add(StaffSkill(organization_id=org.id, user_id=u.id, skill="ACLS", expires_on=date.today() + timedelta(days=300)))
@@ -267,7 +263,7 @@ def seed_roster(db, org: Organization, hosp: Clinic) -> int:
                     db.flush()
                     n += 1
     # ED physician coverage (day/night) with the two ED-capable doctors
-    docs = [u for u in db.scalars(select(User).where(User.email.in_(("dr.santos@harborview.dev", "dr.okafor@harborview.dev"))))]
+    docs = [u for u in db.scalars(select(User).where(User.email.in_((em("dr.santos"), em("dr.okafor")))))]
     for d in range(0, 3):
         for i, name in enumerate(("day", "night")):
             start, end = RS.window(hosp, today + timedelta(days=d), name)
@@ -279,7 +275,7 @@ def seed_roster(db, org: Organization, hosp: Clinic) -> int:
                 n += 1
     # OR cases tomorrow
     rooms = db.scalars(select(Location).where(Location.facility_id == hosp.id, Location.kind == "or_room").order_by(Location.sort_order)).all()
-    surgeon = db.scalar(select(ProviderProfile).join(User).where(User.email == "dr.okafor@harborview.dev"))
+    surgeon = db.scalar(select(ProviderProfile).join(User).where(User.email == em("dr.okafor")))
     pts = db.scalars(select(Patient).where(Patient.organization_id == org.id, Patient.is_temporary.is_(False), Patient.is_restricted.is_(False)).limit(3)).all()
     base = datetime.combine(today + timedelta(days=1), time(7, 30), __import__("zoneinfo").ZoneInfo(hosp.timezone))
     for i, (proc, code, mins) in enumerate([("Laparoscopic cholecystectomy", "47562", 90), ("Total knee arthroplasty", "27447", 150),
@@ -288,7 +284,7 @@ def seed_roster(db, org: Organization, hosp: Clinic) -> int:
             break
         start = base + timedelta(minutes=(mins + 30) * i) if i < 2 else base
         room = rooms[0] if i < 2 else rooms[1]
-        sur = surgeon if i < 2 else db.scalar(select(ProviderProfile).join(User).where(User.email == "dr.chen@harborview.dev"))
+        sur = surgeon if i < 2 else db.scalar(select(ProviderProfile).join(User).where(User.email == em("dr.chen")))
         db.add(SurgicalCase(organization_id=org.id, facility_id=hosp.id, or_room_id=room.id, patient_id=pts[i].id, surgeon_provider_id=sur.id, procedure=proc,
                             procedure_code=code, start_at=start, end_at=start + timedelta(minutes=mins), blocked_until=start + timedelta(minutes=mins + 30)))
         db.flush()
@@ -339,26 +335,33 @@ def seed_demo_superadmin(db, org: Organization) -> bool:
     return True
 
 
+def extend_org(db, org: Organization) -> list[str]:
+    """All additive hospital modules for one organization (Harborview, or a private demo hospital being built)."""
+    done: list[str] = []
+    hosp = db.scalar(select(Clinic).where(Clinic.organization_id == org.id, Clinic.facility_type == "hospital"))
+    if not hosp:
+        return done
+    if seed_second_pharmacist(db, org, hosp):
+        done.append("second pharmacist")
+    if seed_inventory(db, org, hosp):
+        done.append("inventory")
+    if seed_med_orders(db, org):
+        done.append("medication orders")
+    if seed_lab_orders(db, org):
+        done.append("lab orders")
+    if seed_imaging_orders(db, org):
+        done.append("imaging orders")
+    if seed_roster(db, org, hosp):
+        done.append("roster + OR cases")
+    if seed_equipment(db, org, hosp):
+        done.append("equipment + par levels")
+    return done
+
+
 def extend(db) -> list[str]:
     done = []
     for org in db.scalars(select(Organization).where(Organization.slug == "harborview")):
-        hosp = db.scalar(select(Clinic).where(Clinic.organization_id == org.id, Clinic.facility_type == "hospital"))
-        if not hosp:
-            continue
-        if seed_second_pharmacist(db, org, hosp):
-            done.append("second pharmacist")
-        if seed_inventory(db, org, hosp):
-            done.append("inventory")
-        if seed_med_orders(db, org):
-            done.append("medication orders")
-        if seed_lab_orders(db, org):
-            done.append("lab orders")
-        if seed_imaging_orders(db, org):
-            done.append("imaging orders")
-        if seed_roster(db, org, hosp):
-            done.append("roster + OR cases")
-        if seed_equipment(db, org, hosp):
-            done.append("equipment + par levels")
+        done += extend_org(db, org)
         if seed_demo_superadmin(db, org):
             done.append("demo super admin account")
     return done

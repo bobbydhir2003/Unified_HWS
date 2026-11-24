@@ -21,7 +21,9 @@ DEMO_KEY = "sk-test-SYNTHETIC-DEMO-000000000000abcd"
 
 @pytest.fixture
 def demo_on(monkeypatch):
+    """Legacy shared-account demo (DEMO_SANDBOX_ENABLED=false). Private demo hospitals: tests/test_demo_sandbox.py."""
     monkeypatch.setattr(settings, "demo_mode", True)
+    monkeypatch.setattr(settings, "demo_sandbox_enabled", False)
     monkeypatch.setattr(settings, "demo_openai_api_key", None)
     from app.api.routers import ai_admin
     monkeypatch.setattr(ai_admin, "_validate_key", lambda key: None)  # no network

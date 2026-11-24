@@ -49,7 +49,17 @@ def get_auth_user(
         raise unauthorized
     from app.core import demo
 
-    if demo.is_demo_user(user) and demo.blocked(request.method, request.url.path):
+    if demo.is_sandbox_user(user):
+        # Identity of a private demo hospital: only valid through its active lease (expired/reset/reassigned → 401).
+        from app.demo import sandbox
+
+        sandbox.check_session(db, user, sess)
+        if demo.blocked(request.method, request.url.path, user):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, {
+                "code": "demo_platform_action",
+                "message": "This is a platform-level action (organizations, the owner's AI controls, or sign-in credentials). "
+                           "Demo hospitals can't change it; everything inside your hospital can be changed."})
+    elif demo.is_demo_user(user) and demo.blocked(request.method, request.url.path):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This action is disabled in the demonstration environment.")
     return AuthUser(user=user, session_id=sess.id)
 
@@ -149,6 +159,8 @@ def get_ctx(
         org_id = memberships[0].organization_id
     if org_id is None:
         raise HTTPException(400, "X-Organization-Id header required")
+    if user.sandbox_org_id is not None and org_id != user.sandbox_org_id:
+        raise forbidden("You are not a member of this organization")  # a demo identity never leaves its own hospital
 
     membership = next((m for m in memberships if m.organization_id == org_id), None)
     if membership:

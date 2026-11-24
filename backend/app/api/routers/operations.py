@@ -22,6 +22,7 @@ from app.models import (
     CaseEvent,
     DomainEvent,
     EventHandling,
+    Membership,
     MonitorConfig,
     MonitorRun,
     NotificationDelivery,
@@ -319,8 +320,9 @@ def assign_case(cid: uuid.UUID, body: AssignIn, ctx: TenantContext = Depends(req
     c = _case(ctx, cid)
     if not body.role and not body.user_id:
         body.user_id = ctx.user.id  # "assign to me"
-    if body.user_id and not ctx.db.scalar(select(User.id).where(User.id == body.user_id)):
-        raise bad_request("Unknown user")
+    if body.user_id and not ctx.db.scalar(select(Membership.user_id).where(
+            Membership.user_id == body.user_id, Membership.organization_id == ctx.org_id, Membership.is_active.is_(True))):
+        raise bad_request("Unknown user")  # only people in this organization can be assigned
     C.assign(ctx.db, c, role=body.role, user_id=body.user_id, actor_id=ctx.user.id, note=body.note)
     ctx.audit("case.assigned", resource_type="case", resource_id=c.id, patient_id=c.patient_id,
               details={"role": body.role, "user_id": str(body.user_id) if body.user_id else None})

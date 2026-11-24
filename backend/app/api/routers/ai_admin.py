@@ -78,8 +78,14 @@ def _demo_row(ctx: TenantContext, token: str, create: bool = False):
     if stale:
         ctx.db.delete(stale)
         ctx.db.flush()
+    expires = demo_scope.expiry(sess.expires_at if sess else None)
+    if sess is not None and sess.sandbox_lease_id:  # demo hospital: settings last as long as the visitor's hospital
+        from app.demo.sandbox import for_lease
+
+        sb = for_lease(ctx.db, sess.sandbox_lease_id)
+        expires = sb.expires_at if sb and sb.expires_at else expires
     row = DemoAISettings(session_id=sid, user_id=ctx.user.id, provider="simulated", agent_models={}, agent_overrides={},
-                         created_at=now(), updated_at=now(), expires_at=demo_scope.expiry(sess.expires_at if sess else None))
+                         created_at=now(), updated_at=now(), expires_at=expires)
     ctx.db.add(row)
     ctx.db.flush()
     return row

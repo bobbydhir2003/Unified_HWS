@@ -88,6 +88,15 @@ def current_org(ctx: TenantContext = Depends(get_ctx)):
 def update_org(body: OrgUpdate, ctx: TenantContext = Depends(require(P.CLINIC_MANAGE))):
     org = ctx.db.get(Organization, ctx.org_id)
     data = body.model_dump(exclude_unset=True)
+    if ctx.user.sandbox_org_id is not None:
+        # Demo hospital: everything is editable except what keeps it a demo hospital.
+        from app.demo.sandbox import PROTECTED_ORG_SETTINGS
+
+        if "status" in data:
+            raise forbidden("A demo hospital's status is managed by the demo itself")
+        if set(data.get("settings") or {}) & PROTECTED_ORG_SETTINGS:
+            raise forbidden("These settings identify the demo hospital and can't be changed: "
+                            + ", ".join(sorted(set(data["settings"]) & PROTECTED_ORG_SETTINGS)))
     if "status" in data and not ctx.can(P.ORG_MANAGE):
         raise forbidden("Only platform administrators can change organization status")
     if "settings" in data:
@@ -251,7 +260,18 @@ def create_invitation(body: InvitationIn, ctx: TenantContext = Depends(require(P
         Membership.organization_id == ctx.org_id, User.email == body.email.lower(), Membership.is_active.is_(True)))
     if existing:
         raise conflict("That person is already an active member of this organization")
+    from app.demo import sandbox
+
+    in_demo = sandbox.is_sandbox_org(ctx.org_id, ctx.db)
+    if in_demo and ctx.db.scalar(select(Invitation.id).where(Invitation.organization_id == ctx.org_id,
+                                                             Invitation.email == body.email.lower(), Invitation.accepted_at.is_not(None))):
+        raise conflict("That person was already added to this demo hospital")
     inv, link = _create_invitation(ctx, ctx.org_id, body)
+    if in_demo:
+        # Demo hospital: nobody can accept an emailed invitation (it would create a real password account), so the new
+        # staff member is added directly as a sign-in-less identity the visitor can switch to.
+        u = sandbox.add_staff(ctx.db, ctx.org_id, inv)
+        ctx.audit("user.demo_staff_added", resource_type="user", resource_id=u.id, details={"roles": inv.roles})
     ctx.db.commit()
     return InvitationCreated(**InvitationOut.model_validate(inv).model_dump(), invite_link=link)
 

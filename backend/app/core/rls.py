@@ -9,7 +9,9 @@ APP_ROLE = "undeclared_app"
 
 # Tables with organization_id that intentionally stay outside RLS: a user's memberships across organizations are
 # needed to switch orgs, and are only ever read through the authenticated user.
-RLS_EXEMPT = {"memberships"}
+# demo_sandboxes is the platform's registry of private demo hospitals (lifecycle only, no tenant data); it is read by
+# system code and to recognise the caller's own hospital, and must stay readable while a hospital is being purged.
+RLS_EXEMPT = {"memberships", "demo_sandboxes"}
 
 POLICY = "tenant_isolation"
 

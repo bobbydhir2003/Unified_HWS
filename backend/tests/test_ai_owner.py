@@ -71,6 +71,7 @@ def test_operator_env_kill_switch(as_user, no_validate, monkeypatch):
 def test_only_real_superadmin_can_reach_owner_controls(as_user, app, monkeypatch):
     assert as_user("hospitaladmin@harborview.dev").get("/admin/ai-owner").status_code == 403
     monkeypatch.setattr(settings, "demo_mode", True)
+    monkeypatch.setattr(settings, "demo_sandbox_enabled", False)  # legacy shared account; demo hospitals: test_demo_sandbox
     c = TestClient(app)
     r = c.post("/api/v1/auth/demo-login", json={"key": "super_admin"})
     h = {"Authorization": f"Bearer {r.json()['access_token']}", "X-Organization-Id": r.json()["me"]["memberships"][0]["organization_id"]}

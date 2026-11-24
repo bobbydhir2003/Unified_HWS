@@ -111,7 +111,10 @@ def run_all(db: Session, org_ids: list[uuid.UUID] | None = None) -> list[Monitor
     import app.monitors  # noqa: F401 — registers built-in monitors
 
     if org_ids is None:
-        org_ids = list(db.scalars(select(Organization.id).where(Organization.status == "active")))
+        from app.demo.sandbox import inactive_sandbox_org_ids
+
+        idle = inactive_sandbox_org_ids(db)  # demo hospitals waiting in the pool (or being removed) aren't monitored
+        org_ids = [o for o in db.scalars(select(Organization.id).where(Organization.status == "active")) if o not in idle]
     runs = []
     for org_id in org_ids:
         for key in REGISTRY:

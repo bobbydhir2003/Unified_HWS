@@ -17,11 +17,17 @@ def _loop(stop: threading.Event) -> None:
     from app.engine.events import dispatch_pending
     from app.engine.monitors import run_all
 
-    last = {"esc": 0.0, "mon": 0.0}
+    last = {"esc": 0.0, "mon": 0.0, "demo": 0.0}
     while not stop.wait(10):
         try:
             dispatch_pending()
             t = time.monotonic()
+            if t - last["demo"] >= 60:
+                from app.demo import sandbox
+
+                last["demo"] = t
+                if sandbox.enabled():
+                    sandbox.maintain()
             if t - last["esc"] >= 60:
                 db = SessionLocal()
                 try:

@@ -51,6 +51,7 @@ class MeOut(BaseModel):
     user: UserOut
     memberships: list[MembershipOut]
     mfa_enrollment_required: bool = False
+    demo_hospital: bool = False  # an identity of a private demo hospital (GET /auth/demo/session for the details)
 
 
 class TokenOut(BaseModel):

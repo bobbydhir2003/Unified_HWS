@@ -16,6 +16,7 @@ from app.models.clinical import (
     Problem,
     VitalSigns,
 )
+from app.models.demo import DemoSandbox
 from app.models.documents import AIJob, Document
 from app.models.ed import EdVisit, TriageAssessment
 from app.models.engine import (
@@ -115,6 +116,7 @@ __all__ = [
     "AIProviderSettings",
     "AIUsageCounter",
     "DemoAISettings",
+    "DemoSandbox",
     "EdVisit",
     "TriageAssessment",
     "DischargePlan",

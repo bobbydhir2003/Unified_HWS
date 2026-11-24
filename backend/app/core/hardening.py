@@ -59,7 +59,7 @@ class RateLimiter:
 
 LIMITED_PREFIXES = {
     "/api/auth/login": "auth", "/api/auth/mfa/verify": "auth", "/api/auth/password/forgot": "auth", "/api/auth/password/reset": "auth",
-    "/api/auth/invitations/accept": "auth", "/api/auth/demo-login": "auth", "/api/integrations/": "webhook",
+    "/api/auth/invitations/accept": "auth", "/api/auth/demo-login": "auth", "/api/auth/demo/reset": "auth", "/api/integrations/": "webhook",
 }
 
 

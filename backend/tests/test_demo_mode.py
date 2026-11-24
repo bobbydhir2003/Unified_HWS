@@ -14,7 +14,9 @@ from app.models import PasswordResetToken
 
 @pytest.fixture
 def demo_on(monkeypatch):
+    """Legacy shared-account demo (DEMO_SANDBOX_ENABLED=false). Private demo hospitals: tests/test_demo_sandbox.py."""
     monkeypatch.setattr(settings, "demo_mode", True)
+    monkeypatch.setattr(settings, "demo_sandbox_enabled", False)
 
 
 def _demo(app, key):
