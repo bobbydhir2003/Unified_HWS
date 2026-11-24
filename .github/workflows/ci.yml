@@ -92,16 +92,10 @@ jobs:
       - name: E2E flows
         run: |
           mkdir -p shots
-          for f in insurance_guardian_flow clinical_flow documents_flow scribe_flow orders_flow portal_telehealth_flow billing_flow ai_flow analytics_flow command_center_flow adt_flow ed_flow pharmacy_flow lab_flow radiology_flow insights_flow help_flow public_site_flow; do
+          for f in insurance_guardian_flow clinical_flow documents_flow scribe_flow orders_flow portal_telehealth_flow billing_flow ai_flow analytics_flow command_center_flow adt_flow ed_flow pharmacy_flow lab_flow radiology_flow insights_flow help_flow public_site_flow workspace_flow; do
             echo "== $f"; e2e/.venv/bin/python e2e/$f.py shots
           done
           e2e/.venv/bin/python e2e/api_smoke.py
-      - name: Private demo hospitals (second API with DEMO_MODE on, same database)
-        run: |
-          (cd backend && DEMO_MODE=true DEMO_SANDBOX_POOL_SIZE=1 DEMO_SANDBOX_PER_VISITOR=20 nohup uv run uvicorn app.main:app --port 8013 > ../api-demo.log 2>&1 &)
-          (cd frontend && API_PROXY_TARGET=http://localhost:8013 nohup npx vite --port 5176 --strictPort > ../web-demo.log 2>&1 &)
-          for i in $(seq 1 60); do curl -sf localhost:5176/api/health/ready && break; sleep 2; done
-          WEB=http://localhost:5176 e2e/.venv/bin/python e2e/demo_hospital_flow.py shots
       - if: failure()
         uses: actions/upload-artifact@v4
-        with: { name: e2e-artifacts, path: "shots\napi.log\nweb.log\napi-demo.log\nweb-demo.log" }
+        with: { name: e2e-artifacts, path: "shots\napi.log\nweb.log" }

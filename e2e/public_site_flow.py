@@ -1,6 +1,5 @@
 """Public website (product-first): homepage explains the product without a sign-in form, navigation works, legacy
-/modules links redirect to /platform, /login keeps the form, the demo section lists roles, and pages fit a 390 px phone.
-Works with or without server demo mode (one-click buttons are enabled only where DEMO_MODE is on)."""
+/modules links redirect to /platform, /login keeps the form, there is no Demo Mode anywhere, and pages fit a 390 px phone."""
 import os
 import re
 import sys
@@ -24,8 +23,8 @@ with sync_playwright() as p:
     expect(pg.get_by_text("Hospital work crosses departments")).to_be_visible()
     expect(pg.get_by_test_id("journey").locator("li").filter(has=pg.get_by_role("heading"))).to_have_count(8)
     expect(pg.locator("img[src*='/images/product/command-center']").first).to_be_visible()
-    roles = pg.get_by_test_id("demo-roles").locator(":scope > li")
-    expect(roles).to_have_count(7)
+    expect(pg.get_by_test_id("demo-roles")).to_have_count(0)                     # Demo Mode was retired
+    expect(pg.get_by_role("link", name=re.compile("Explore the demo", re.I))).to_have_count(0)
     expect(pg.get_by_test_id("public-copyright")).to_have_text(NOTICE)
     pg.screenshot(path=f"{SHOTS}/public-01-home.png")
 
@@ -45,6 +44,7 @@ with sync_playwright() as p:
     pg.wait_for_url("**/login")
     expect(pg.locator("input[type=password]")).to_be_visible()
     expect(pg.get_by_role("link", name="Forgot password?")).to_be_visible()
+    expect(pg.get_by_test_id("demo-access")).to_have_count(0)
 
     m = b.new_page(viewport={"width": 390, "height": 844})
     m.on("pageerror", lambda e: errors.append(f"mobile: {e}"))

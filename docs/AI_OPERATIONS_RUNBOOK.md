@@ -21,27 +21,24 @@ Super Admin → AI settings: provider, encrypted key (write-only), models per ca
 - Model slots are validated by family. A realtime model can't be saved as the transcription model.
 - **Emergency: switch off all AI** (owner card) makes every AI feature show its labelled simulation immediately. Rules, tasks, notifications and approvals keep working.
 
-## Public demo AI (owner-managed)
+## Workspaces (header role switcher)
 
-It is off by default. To turn it on:
+A platform Super Admin can work in any of the 14 hospital roles from the header ("Workspace: …"); someone with several
+roles can switch between their own. See `docs/WORKSPACES.md`. AI settings and the emergency switch above are available
+only to a platform Super Admin, in the Super Admin workspace.
 
-1. Create a separate OpenAI project for the demo.
-2. Set a monthly spending limit on that project in the OpenAI dashboard. The in-app budget is an estimate, not a billing cap.
-3. In AI settings → Public demo AI, enter the project key and models, choose the assistants, and review the limits.
-   - Defaults: 25 requests per visitor per day, 200 per day overall, $10 estimated per month, 2 concurrent requests per visitor, voice off.
-4. Click **Test demo provider**, then **Turn on**.
+## Former Demo Mode (retired)
 
-Visitors never receive the key. A visitor who enters their own temporary key uses only that key, for their session only.
+Demo Mode, its one-click demo logins, private demo hospitals and the owner-managed public demo AI were removed. On a
+server that ran it, run once:
 
-Enforcement:
+```
+docker compose exec api python -m app.cli retire-demo
+```
 
-- Request counts and estimated spend are atomic and durable, in the `ai_usage_counters` table.
-- Concurrency is limited through Redis. In staging and production, the request is refused if Redis is unreachable.
-
-To stop demo AI:
-
-- From the app: **Turn off now**.
-- From the server, without the app: set `DEMO_AI_DISABLED=true` and restart the api and worker.
+It asks for the phrase `RETIRE DEMO`, removes only demo-owned data (registered demo hospitals and their identities and
+files), ends demo sessions, and deactivates the demo-only `superadmin.demo@harborview.dev` account. Real organizations,
+accounts, AI settings and audit history are untouched.
 
 ## Automatic case assistance
 
