@@ -1,79 +1,54 @@
-import { ArrowRight, Check, Info, KeyRound, Lock, ScrollText, ShieldAlert, UsersRound } from "lucide-react";
+import {
+  ArrowRight, Bot, ClipboardCheck, FlaskConical, HeartPulse, Info, KeyRound, Lock, Pill, Receipt, ScanLine, ScrollText,
+  ShieldAlert, Siren, Sparkles, Stethoscope, UserPlus, UsersRound, BedDouble, Hospital,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProvenanceChip } from "@/components/common/Status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoginForm } from "@/features/auth/LoginForm";
-import { CODE_SET_NOTICES, COPYRIGHT_NOTICE, THIRD_PARTY } from "@/lib/legal";
+import { CODE_SET_NOTICES, COPYRIGHT_NOTICE, PRODUCT_TAGLINE, THIRD_PARTY } from "@/lib/legal";
 import { cn } from "@/lib/utils";
 import {
-  AI_TIERS, APPROACH, AREAS, AUDIENCES, DEFINITION, JOURNEY, PRINCIPLES, PROBLEMS, PRODUCT_STATUS, SHOTS,
-  type ShotKey, TAG_LABEL,
+  AccessButton, AnchorChips, AutomationFlow, CheckList, ConnectedHospitalDiagram, Eyebrow, H2, PageHero, PathwayExplorer,
+  ProductShot, Section, SectionIntro, StatusList,
+} from "./components";
+import {
+  APPROACH, ASSISTANTS, BLOCKS, DEFINITION, GUARDIAN_STEPS, LAYERS, MONITOR_COUNT, MONITOR_GROUPS, PHILOSOPHY, PILLARS,
+  PROBLEMS, RESPONSIBLE, TEAMS, type Team, WHY,
 } from "./content";
-import { PublicLayout } from "./PublicLayout";
+import { BrandMark, PublicLayout } from "./PublicLayout";
 
 const VERSION = import.meta.env.VITE_APP_VERSION ?? "development";
 
-// ---------------------------------------------------------------------------------------------- building blocks
+const QUESTIONS = [
+  "What is happening with this patient?", "Which department is responsible?", "What needs to happen next?", "Is anything delayed or missing?",
+  "Who should resolve the problem?", "Can automation detect it?", "Can AI help staff understand and act?", "Has the problem actually been resolved?",
+];
 
-function Section({ id, tone = "plain", className, children, labelledBy }: { id?: string; tone?: "plain" | "subtle"; className?: string; children: React.ReactNode; labelledBy?: string }) {
+const DEPARTMENTS = [
+  { name: "Front desk", icon: UserPlus }, { name: "Doctors", icon: Stethoscope }, { name: "Nursing", icon: HeartPulse }, { name: "Emergency", icon: Siren },
+  { name: "Beds", icon: BedDouble }, { name: "Laboratory", icon: FlaskConical }, { name: "Radiology", icon: ScanLine }, { name: "Pharmacy", icon: Pill },
+  { name: "Insurance", icon: ClipboardCheck }, { name: "Billing", icon: Receipt }, { name: "Administration", icon: Hospital }, { name: "Patients", icon: UsersRound },
+];
+
+/** Closing call to action shared by every page: the tagline, Sign in, and one secondary link. */
+function FinalCta({ secondary = { to: "/platform", label: "See how it works" } }: { secondary?: { to: string; label: string } }) {
   return (
-    <section id={id} aria-labelledby={labelledBy} className={cn("scroll-mt-20 px-4 py-14 sm:px-6 lg:py-20", tone === "subtle" ? "border-y bg-subtle" : "bg-card", className)}>
-      <div className="mx-auto max-w-6xl">{children}</div>
-    </section>
-  );
-}
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="mb-3 text-label font-semibold uppercase tracking-wider text-primary">{children}</p>;
-}
-
-function H2({ id, children, className }: { id?: string; children: React.ReactNode; className?: string }) {
-  return <h2 id={id} className={cn("text-3xl font-semibold tracking-tight text-balance text-heading sm:text-4xl", className)}>{children}</h2>;
-}
-
-function Lead({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cn("mt-4 max-w-2xl text-section leading-relaxed text-muted-foreground text-pretty sm:text-lead", className)}>{children}</p>;
-}
-
-/** A real screenshot of the application (synthetic data), WebP at 720/1440 widths. */
-function ProductShot({ shot, className, priority, caption = true, sizes = "(min-width: 1024px) 60vw, 100vw", crop }: {
-  shot: ShotKey; className?: string; priority?: boolean; caption?: boolean | string; sizes?: string; crop?: string;
-}) {
-  const s = SHOTS[shot];
-  return (
-    <figure className={cn("overflow-hidden rounded-xl border bg-card shadow-[0_8px_30px_rgba(16,24,40,0.08)]", className)}>
-      <img src={`/images/product/${s.src}.webp`} srcSet={`/images/product/${s.src}-720.webp 720w, /images/product/${s.src}.webp 1440w`} sizes={sizes}
-        width={s.w} height={s.h} alt={s.alt} loading={priority ? "eager" : "lazy"} decoding="async" fetchPriority={priority ? "high" : undefined}
-        className={cn("block h-auto w-full", crop && "object-cover", crop)} />
-      {caption && <figcaption className="border-t bg-subtle px-4 py-2 text-label text-muted-foreground">{typeof caption === "string" ? caption : "Screenshot of HMS Workflows with synthetic demonstration data."}</figcaption>}
-    </figure>
-  );
-}
-
-function PageHero({ eyebrow, title, text, children }: { eyebrow: string; title: string; text: string; children?: React.ReactNode }) {
-  return (
-    <section className="border-b bg-card px-4 pb-14 pt-14 sm:px-6 lg:pb-20 lg:pt-20">
-      <div className="mx-auto max-w-6xl">
-        <Eyebrow>{eyebrow}</Eyebrow>
-        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance text-heading sm:text-5xl">{title}</h1>
-        <Lead>{text}</Lead>
-        {children}
+    <Section tone="brand" labelledBy="cta-title" className="text-center">
+      <div className="mx-auto max-w-3xl">
+        <BrandMark className="mx-auto size-12" />
+        <h2 id="cta-title" className="mt-6 text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">{PRODUCT_TAGLINE}</h2>
+        <p className="mx-auto mt-4 max-w-2xl text-section leading-relaxed text-white/80 sm:text-lead">{PHILOSOPHY}</p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <AccessButton className="bg-white text-brand-navy hover:bg-white/90" />
+          <Button asChild size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white">
+            <Link to={secondary.to}>{secondary.label}<ArrowRight /></Link>
+          </Button>
+        </div>
+        <p className="mt-6 text-table text-white/70">HMS Workflows is in development and tested with synthetic data. Accounts are issued by a hospital administrator.</p>
       </div>
-    </section>
-  );
-}
-
-function StatusList({ id }: { id?: string }) {
-  return (
-    <ul id={id} className="divide-y rounded-xl border bg-card">
-      {PRODUCT_STATUS.map((s) => (
-        <li key={s.label} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-5">
-          <Badge variant={s.tone} className="w-fit shrink-0 sm:w-36 sm:justify-center">{s.label}</Badge>
-          <p className="text-body leading-relaxed text-muted-foreground">{s.text}</p>
-        </li>
-      ))}
-    </ul>
+    </Section>
   );
 }
 
@@ -82,269 +57,295 @@ function StatusList({ id }: { id?: string }) {
 export function HomePage() {
   return (
     <PublicLayout>
-      {/* 1. Hero — product first. */}
-      <section className="overflow-hidden border-b bg-card px-4 pb-16 pt-12 sm:px-6 lg:pb-24 lg:pt-20" aria-labelledby="home-title">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
+      {/* A. Hero */}
+      <section className="overflow-hidden border-b bg-gradient-to-b from-accent/50 via-card to-card px-4 pb-16 pt-12 sm:px-6 lg:pb-24 lg:pt-20" aria-labelledby="home-title">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[minmax(0,6fr)_minmax(0,6fr)] lg:gap-14">
           <div>
-            <Eyebrow>Hospital management platform</Eyebrow>
-            <h1 id="home-title" className="text-4xl font-semibold tracking-tight text-balance text-heading sm:text-5xl lg:text-6xl">
-              Your Entire Hospital. <span className="text-primary">Working as One.</span>
+            <Eyebrow>HMS Workflows — Connected hospital operations</Eyebrow>
+            <h1 id="home-title" className="text-4xl font-semibold tracking-tight text-balance text-heading sm:text-5xl lg:leading-[1.1]">
+              One Patient. One Connected Hospital. <span className="text-primary">Every Task Accounted For.</span>
             </h1>
-            <p className="mt-6 text-lead leading-relaxed text-foreground text-pretty">
-              One connected platform for patient care, hospital operations and coordinated workflows. HMS Workflows brings clinical teams, departments and administrators together around a shared patient record.
-            </p>
-            <p className="mt-3 text-body leading-relaxed text-muted-foreground">For hospital leadership, clinical teams and the departments that keep patients moving.</p>
+            <p className="mt-6 text-lead leading-relaxed text-foreground text-pretty">{DEFINITION}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg"><Link to="/login">Sign in<ArrowRight /></Link></Button>
-              <Button asChild size="lg" variant="outline"><Link to="/platform">Explore the Platform</Link></Button>
+              <AccessButton />
+              <Button asChild size="lg" variant="outline"><Link to="/platform">See how it works<ArrowRight /></Link></Button>
             </div>
-            <p className="mt-4 text-table text-muted-foreground">One account, every hospital workspace · synthetic data only</p>
+            <p className="mt-6 flex items-center gap-2 text-body font-medium text-heading" data-testid="hero-tagline">
+              <BrandMark className="size-6" />{PRODUCT_TAGLINE}
+            </p>
           </div>
-          <ProductShot shot="commandCenter" priority caption="The Command Center, with synthetic demonstration data." sizes="(min-width: 1024px) 58vw, 100vw" />
+          <div className="relative lg:pb-12">
+            <ProductShot shot="commandCenter" priority caption="Command Center — synthetic data." sizes="(min-width: 1024px) 58vw, 100vw" />
+            <ProductShot shot="myWork" caption={false} sizes="320px" className="absolute -bottom-2 -left-8 hidden w-[44%] lg:block" />
+          </div>
         </div>
       </section>
 
-      {/* 2. The problem → how HMS Workflows addresses it. */}
+      {/* Questions band */}
+      <section aria-labelledby="questions-title" className="border-b bg-card px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <h2 id="questions-title" className="text-center text-label font-semibold uppercase tracking-[0.12em] text-muted-foreground">Built to help every team answer</h2>
+          <ul className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {QUESTIONS.map((q) => <li key={q} className="rounded-lg border bg-subtle px-3 py-2.5 text-body font-medium text-heading">{q}</li>)}
+          </ul>
+        </div>
+      </section>
+
+      {/* B. The coordination problem */}
       <Section tone="subtle" labelledBy="problem-title">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
-          <div>
-            <Eyebrow>The problem</Eyebrow>
-            <H2 id="problem-title">Hospital work crosses departments. Most hospital software doesn't.</H2>
-            <Lead>A single stay involves registration, doctors, nurses, the laboratory, pharmacy, bed management and billing. When each works in its own system, coordination falls back on people.</Lead>
-          </div>
-          <ol className="divide-y rounded-xl border bg-card">
-            {PROBLEMS.map((p, i) => (
-              <li key={p.title} className="flex gap-4 p-5">
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-table font-semibold tabular text-muted-foreground" aria-hidden>{i + 1}</span>
-                <span><span className="block text-section font-semibold text-heading">{p.title}</span><span className="mt-1 block text-body leading-relaxed text-muted-foreground">{p.text}</span></span>
-              </li>
-            ))}
-          </ol>
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
+          <SectionIntro eyebrow="The coordination problem" id="problem-title" title="A hospital has many teams. The patient journey is one connected process.">
+            A single stay can involve registration, doctors, nurses, the laboratory, pharmacy, bed management, insurance and billing. Each team has its own
+            responsibilities — but every one of them depends on what the others have done, and on knowing what is still left to do.
+          </SectionIntro>
+          <ConnectedHospitalDiagram departments={DEPARTMENTS} />
         </div>
-        <div className="mt-16">
-          <h3 className="text-2xl font-semibold tracking-tight text-heading">How HMS Workflows addresses it</h3>
-          <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {APPROACH.map((a, i) => (
-              <li key={a.title} className="flex flex-col rounded-xl border bg-card">
-                <div className="p-5">
-                  <p className="flex items-center gap-2 text-label font-semibold text-primary"><a.icon className="size-4" aria-hidden />Step {i + 1}</p>
-                  <p className="mt-1.5 text-section font-semibold text-heading">{a.title}</p>
-                  <p className="mt-1.5 text-body leading-relaxed text-muted-foreground">{a.text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </Section>
-
-      {/* 3. How the hospital connects — the five capability areas on one shared foundation. */}
-      <Section labelledBy="areas-title">
-        <div className="max-w-3xl">
-          <Eyebrow>The platform</Eyebrow>
-          <H2 id="areas-title">Five capability areas. One shared foundation.</H2>
-          <Lead>Each area serves its own teams, and all of them read and write the same patient record and the same list of owned work.</Lead>
-        </div>
-        <div className="mt-10">
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {AREAS.map((a) => (
-              <li key={a.id}>
-                <Link to={`/platform#${a.id}`} className="group flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
-                  <a.icon className="size-5 text-primary" aria-hidden />
-                  <span className="mt-3 text-section font-semibold text-heading">{a.title}</span>
-                  <span className="mt-1.5 flex-1 text-table leading-relaxed text-muted-foreground">{a.short}</span>
-                  <span className="mt-3 inline-flex items-center gap-1 text-table font-medium text-primary">Details<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" /></span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 rounded-xl border border-primary/25 bg-accent/50 p-5" aria-label="Shared foundation">
-            <p className="text-label font-semibold uppercase tracking-wider text-accent-foreground">Shared by every area</p>
-            <ul className="mt-2 grid gap-x-6 gap-y-1.5 text-body text-heading sm:grid-cols-2 lg:grid-cols-4">
-              {["One patient record and timeline", "Cases and tasks with owners and deadlines", "Role-based permissions, enforced on the server", "An audit log of user actions"].map((t) => (
-                <li key={t} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />{t}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </Section>
-
-      {/* 4. Patient journey. */}
-      <Section tone="subtle" labelledBy="journey-title">
-        <div className="max-w-3xl">
-          <Eyebrow>Patient journey</Eyebrow>
-          <H2 id="journey-title">Follow one patient through the hospital.</H2>
-          <Lead>At each stage the next team sees what it needs on the same record, and anything left undone becomes someone's task.</Lead>
-        </div>
-        <ul className="mt-6 flex flex-wrap gap-2" aria-label="Legend">
-          {Object.entries(TAG_LABEL).map(([k, v]) => <li key={k}><JourneyTag tag={k as keyof typeof TAG_LABEL} label={v} /></li>)}
-        </ul>
-        <ol className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4" data-testid="journey">
-          {JOURNEY.map((s, i) => (
-            <li key={s.title} className="flex flex-col rounded-xl border bg-card p-5">
-              <div className="flex items-center gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-table font-semibold tabular text-primary-foreground" aria-hidden>{i + 1}</span>
-                <h3 className="flex items-center gap-2 text-section font-semibold text-heading"><s.icon className="size-4 text-muted-foreground" aria-hidden />{s.title}</h3>
+        <ul className="mt-14 grid gap-4 md:grid-cols-2" data-testid="problems">
+          {PROBLEMS.map((p) => (
+            <li key={p.title} className="flex flex-col overflow-hidden rounded-xl border bg-card">
+              <div className="flex-1 p-5">
+                <p className="flex items-center gap-2.5 text-section font-semibold text-heading"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted"><p.icon className="size-5 text-muted-foreground" aria-hidden /></span>{p.title}</p>
+                <p className="mt-3 text-body leading-relaxed text-muted-foreground">{p.problem}</p>
               </div>
-              <p className="mt-3 text-body leading-relaxed text-foreground">{s.happens}</p>
-              <p className="mt-2 flex-1 text-table leading-relaxed text-muted-foreground"><span className="font-medium text-heading">Then: </span>{s.next}</p>
-              <ul className="mt-4 flex flex-wrap gap-1.5">{s.tags.map((t) => <li key={t}><JourneyTag tag={t} label={TAG_LABEL[t]} /></li>)}</ul>
+              <div className="border-t border-primary/15 bg-accent/40 px-5 py-4">
+                <p className="text-label font-semibold uppercase tracking-wider text-accent-foreground">How HMS Workflows helps</p>
+                <p className="mt-1 text-body leading-relaxed text-heading">{p.helps}</p>
+              </div>
             </li>
           ))}
-        </ol>
+        </ul>
       </Section>
 
-      {/* 5. Command Center showcase. */}
-      <Section labelledBy="command-title">
-        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-12">
+      {/* C. Solution: four pillars */}
+      <Section labelledBy="pillars-title">
+        <SectionIntro eyebrow="Our solution" id="pillars-title" title="Four connected parts of one platform.">
+          HMS Workflows is not only a place to store records. It connects the information employees need with the work they must do — and keeps track of that work until it is done.
+        </SectionIntro>
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="pillars">
+          {PILLARS.map((p) => (
+            <li key={p.id}>
+              <Link to={p.to} className="group flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+                <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground"><p.icon className="size-5" aria-hidden /></span>
+                <span className="mt-4 text-lg font-semibold text-heading">{p.title}</span>
+                <span className="mt-1.5 text-body leading-relaxed text-muted-foreground">{p.text}</span>
+                <CheckList items={p.includes} className="mt-4 flex-1 text-table" />
+                <span className="mt-5 inline-flex items-center gap-1 text-table font-medium text-primary">Learn more<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" /></span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      {/* D. One patient journey */}
+      <Section tone="subtle" labelledBy="journey-title">
+        <SectionIntro eyebrow="One patient journey" id="journey-title" title="Follow a patient through the hospital.">
+          Choose a pathway. At each step the next team works from the same record, and where something can stall, a monitor watches for it.
+        </SectionIntro>
+        <PathwayExplorer />
+      </Section>
+
+      {/* E. When something goes wrong */}
+      <Section labelledBy="guardian-title">
+        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
           <div>
-            <Eyebrow>Hospital Command Center</Eyebrow>
-            <H2 id="command-title">See where the hospital is waiting.</H2>
-            <Lead>Administrators see capacity, emergency pressure, discharges, staffing and unresolved work in one place.</Lead>
-            <ol className="mt-8 space-y-5">
-              {[["Hospital status", "Occupancy, available beds, emergency activity, patients waiting for a bed, discharges and staffing gaps."],
-                ["Problems requiring attention", "Open problems grouped by area, clinical risk first, each with an owner and how overdue it is."],
-                ["Department details", "Capacity by unit, department queues and automation health."]].map(([t, d], i) => (
-                <li key={t} className="flex gap-4">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full border-2 border-primary text-table font-semibold text-primary" aria-hidden>{i + 1}</span>
-                  <span><span className="block text-section font-semibold text-heading">{t}</span><span className="mt-1 block text-body leading-relaxed text-muted-foreground">{d}</span></span>
+            <SectionIntro eyebrow="When something goes wrong" id="guardian-title" title="An insurance problem, from detection to resolution.">
+              A worked example using Insurance Guardian. It shows how a monitor, a case, an AI assistant and a person each play their part.
+            </SectionIntro>
+            <ol className="mt-8 space-y-0" data-testid="guardian-steps">
+              {GUARDIAN_STEPS.map((s, i) => (
+                <li key={s.title} className="relative flex gap-4 pb-6 last:pb-0">
+                  {i < GUARDIAN_STEPS.length - 1 && <span className="absolute left-4 top-9 h-[calc(100%-2.25rem)] w-px bg-border" aria-hidden />}
+                  <span className={cn("relative grid size-8 shrink-0 place-items-center rounded-full text-table font-semibold tabular",
+                    s.who === "AI (optional)" ? "border-2 border-dashed border-ai/50 bg-ai-soft text-ai" : s.who === "Person" ? "bg-success text-white" : "bg-primary text-primary-foreground")} aria-hidden>{i + 1}</span>
+                  <div className="min-w-0 pt-0.5">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className="text-section font-semibold text-heading">{s.title}</span>
+                      <span className={cn("rounded-full border px-2 py-0.5 text-label font-medium",
+                        s.who === "AI (optional)" ? "border-ai/30 bg-ai-soft text-ai" : s.who === "Person" ? "border-success/30 bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{s.who}</span>
+                    </p>
+                    <p className="mt-1 text-body leading-relaxed text-muted-foreground">{s.text}</p>
+                  </div>
                 </li>
               ))}
             </ol>
-            <p className="mt-6 flex gap-2 rounded-lg border bg-subtle p-4 text-table leading-relaxed text-muted-foreground"><Info className="mt-0.5 size-4 shrink-0" aria-hidden />Figures are calculated from the application's own records, and every number opens the cases or patients behind it.</p>
           </div>
-          <ProductShot shot="commandCenter" sizes="(min-width: 1024px) 66vw, 100vw" crop="object-[center_58%] aspect-[16/11]"
-            caption="Problems requiring attention, grouped by area with owners and overdue times. Synthetic demonstration data." />
+          <div className="lg:sticky lg:top-24">
+            <ProductShot shot="insuranceGuardian" caption="Insurance Guardian: coverage of upcoming visits and open insurance cases. The payer connection is simulated." sizes="(min-width: 1024px) 45vw, 100vw" />
+            <p className="mt-4 flex gap-2 rounded-lg border bg-subtle p-4 text-table leading-relaxed text-muted-foreground">
+              <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>This is supported workflow coordination, not autonomous resolution. AI steps run only when an administrator has enabled an AI provider; otherwise the case, tasks and reminders continue without them. Payer eligibility checks are simulated.</span>
+            </p>
+          </div>
         </div>
       </Section>
 
-      {/* 6. Automation and AI, explained. */}
-      <Section tone="subtle" labelledBy="ai-title">
-        <div className="max-w-3xl">
-          <Eyebrow>AI & automation</Eyebrow>
-          <H2 id="ai-title">Automation finds the problem. AI helps with the work. People decide.</H2>
-          <Lead>HMS Workflows uses deterministic rules and AI for different jobs, and keeps people responsible for consequential actions.</Lead>
-        </div>
-        <div className="mt-10 overflow-hidden rounded-xl border bg-card">
-          <div className="hidden grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.5fr)] gap-6 border-b bg-subtle px-5 py-3 text-label font-semibold text-muted-foreground md:grid">
-            <span>Kind</span><span>What it does</span><span>Who stays in control</span>
-          </div>
-          <ul className="divide-y">
-            {AI_TIERS.map((t) => (
-              <li key={t.id} className="grid gap-2 px-5 py-5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.5fr)] md:gap-6">
-                <div className="flex items-start gap-3"><t.icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-                  <div><p className="text-section font-semibold text-heading">{t.title}</p><p className="text-label text-muted-foreground">{t.kind}</p></div></div>
-                <p className="text-body leading-relaxed text-foreground">{t.does} <span className="text-muted-foreground">Example: {t.examples[0]}.</span></p>
-                <p className="text-body leading-relaxed text-muted-foreground">{t.control}</p>
+      {/* F. Departments working together */}
+      <Section tone="subtle" labelledBy="teams-title">
+        <SectionIntro eyebrow="Departments working together" id="teams-title" title="A workspace for each team, connected to all the others." />
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="team-cards">
+          {TEAMS.map((t) => (
+            <li key={t.id}>
+              <Link to={`/solutions#${t.id}`} className="group flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+                <p className="flex items-center gap-2.5 text-section font-semibold text-heading"><t.icon className="size-5 text-primary" aria-hidden />{t.title}</p>
+                <p className="mt-2 text-body leading-relaxed text-muted-foreground">{t.short}</p>
+                <p className="mt-3 flex-1 text-table leading-relaxed text-muted-foreground"><span className="font-medium text-heading">Hands off: </span>{t.handsOff}</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-table font-medium text-primary">How it helps<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" /></span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      {/* G. Why our approach matters */}
+      <Section labelledBy="why-title">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+          <SectionIntro eyebrow="Why our approach matters" id="why-title" title="Built for coordination, not only record-keeping.">
+            {PHILOSOPHY} Our aim is a hospital where the right information reaches the right team, pending work has a clear owner, and technology helps employees coordinate care.
+          </SectionIntro>
+          <ul className="grid gap-x-8 gap-y-7 sm:grid-cols-2">
+            {WHY.map((w) => (
+              <li key={w.title} className="flex gap-3">
+                <w.icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                <span><span className="block text-section font-semibold text-heading">{w.title}</span><span className="mt-1 block text-body leading-relaxed text-muted-foreground">{w.text}</span></span>
               </li>
             ))}
           </ul>
         </div>
-        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="max-w-2xl text-table text-muted-foreground">AI features use a configured AI provider, such as OpenAI, when an administrator enables one, and otherwise run in a clearly labelled simulation. Every answer shows which.</p>
-          <Button asChild variant="outline"><Link to="/ai-automation">How AI & automation work<ArrowRight /></Link></Button>
-        </div>
       </Section>
+
+      {/* H. Final CTA */}
+      <FinalCta />
     </PublicLayout>
   );
 }
 
-const TAG_STYLE: Record<string, string> = {
-  record: "border-primary/25 bg-accent text-accent-foreground", task: "border-warning/35 bg-warning-soft text-warning-foreground",
-  review: "border-success/30 bg-success-soft text-success", visibility: "border-border bg-muted text-muted-foreground",
-};
-function JourneyTag({ tag, label }: { tag: keyof typeof TAG_LABEL; label: string }) {
-  return <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-label font-medium", TAG_STYLE[tag])}>{label}</span>;
-}
-
-// ---------------------------------------------------------------------------------------------- Platform
+// ---------------------------------------------------------------------------------------------- Platform / How it works
 
 export function PlatformPage() {
   return (
     <PublicLayout>
-      <PageHero eyebrow="Platform" title="One platform for clinical, operational and financial work." text={DEFINITION}>
-        <nav aria-label="Capability areas" className="mt-8 flex flex-wrap gap-2">
-          {AREAS.map((a) => (
-            <Link key={a.id} to={`#${a.id}`} className="inline-flex items-center gap-2 rounded-full border bg-card px-3.5 py-2 text-table font-medium text-foreground hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
-              <a.icon className="size-4 text-primary" aria-hidden />{a.title}
-            </Link>
-          ))}
-        </nav>
-      </PageHero>
-      {AREAS.map((a, i) => (
-        <Section key={a.id} id={a.id} tone={i % 2 ? "subtle" : "plain"} labelledBy={`${a.id}-title`}>
-          <div className={cn("grid items-start gap-10", a.shot && "lg:grid-cols-2 lg:gap-12")}>
-            <div className={cn(a.shot && i % 2 && "lg:order-2")}>
-              <p className="flex items-center gap-2 text-label font-semibold uppercase tracking-wider text-primary"><a.icon className="size-4" aria-hidden />Capability area {i + 1} of 5</p>
-              <H2 id={`${a.id}-title`} className="mt-3">{a.title}</H2>
-              <p className="mt-4 text-lead leading-relaxed text-foreground">{a.what}</p>
-              <dl className="mt-6 grid gap-4 text-body">
-                {[["Used by", a.teams], ["Connects with", a.connects], ["Why it matters", a.why]].map(([t, d]) => (
-                  <div key={t} className="grid gap-1 sm:grid-cols-[9rem_1fr]"><dt className="font-semibold text-heading">{t}</dt><dd className="leading-relaxed text-muted-foreground">{d}</dd></div>
-                ))}
-              </dl>
-              <ul className="mt-6 grid gap-2 text-body sm:grid-cols-2">
-                {a.includes.map((c) => <li key={c} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />{c}</li>)}
-              </ul>
-              {a.status && <p className="mt-6 flex gap-2 rounded-lg border border-dashed bg-card p-4 text-table leading-relaxed text-muted-foreground"><Info className="mt-0.5 size-4 shrink-0" aria-hidden /><span><strong className="font-semibold text-heading">Integration status: </strong>{a.status}</span></p>}
+      <PageHero eyebrow="How it works" title="Five connected layers, from the patient record to the whole hospital."
+        text="HMS Workflows is built in layers. Each one depends on the layer below it: shared records make department workspaces possible, workspaces feed coordinated workflows, automation watches those workflows, and visibility shows the result."
+        aside={
+          <ol className="grid gap-2" aria-label="Platform layers" data-testid="layer-stack">
+            {[...LAYERS].reverse().map((l) => (
+              <li key={l.id}>
+                <Link to={`#${l.id}`} className="group flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                  style={{ marginInline: `${(l.n - 1) * 0.6}rem` }}>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><l.icon className="size-4" aria-hidden /></span>
+                  <span className="min-w-0"><span className="block text-label font-semibold text-primary">Layer {l.n}</span><span className="block text-body font-semibold text-heading">{l.title}</span></span>
+                  <ArrowRight className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        }
+      />
+      {LAYERS.map((l, i) => (
+        <Section key={l.id} id={l.id} tone={i % 2 ? "subtle" : "plain"} labelledBy={`${l.id}-title`}>
+          <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
+            <div className={cn(i % 2 && "lg:order-2")}>
+              <p className="flex items-center gap-2 text-label font-semibold uppercase tracking-[0.12em] text-primary"><l.icon className="size-4" aria-hidden />Layer {l.n} of 5</p>
+              <H2 id={`${l.id}-title`} className="mt-3">{l.title}</H2>
+              <p className="mt-3 text-lead font-medium leading-relaxed text-heading">{l.summary}</p>
+              <p className="mt-4 text-body leading-relaxed text-muted-foreground">{l.body}</p>
+              <CheckList items={l.points} className="mt-6 grid gap-2 space-y-0 sm:grid-cols-2" />
+              <div className="mt-6 rounded-lg border-l-4 border-primary bg-accent/40 px-4 py-3">
+                <p className="text-label font-semibold uppercase tracking-wider text-accent-foreground">In practice</p>
+                <p className="mt-1 text-body leading-relaxed text-heading">{l.example}</p>
+              </div>
+              {l.status && <p className="mt-4 flex gap-2 text-table leading-relaxed text-muted-foreground"><Info className="mt-0.5 size-4 shrink-0" aria-hidden />{l.status}</p>}
+              {l.id === "automation" && <Button asChild variant="outline" className="mt-6"><Link to="/ai-automation">Explore AI & Automation<ArrowRight /></Link></Button>}
             </div>
-            {a.shot && <ProductShot shot={a.shot} className={cn(i % 2 && "lg:order-1")} sizes="(min-width: 1024px) 50vw, 100vw" />}
+            {l.shot && <ProductShot shot={l.shot} className={cn(i % 2 && "lg:order-1")} caption={l.shotCaption ?? true} sizes="(min-width: 1024px) 50vw, 100vw" />}
           </div>
         </Section>
       ))}
-      <Section tone="subtle" labelledBy="admin-title">
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+      <Section tone="subtle" labelledBy="security-title">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
           <div>
-            <Eyebrow>Administration & security</Eyebrow>
-            <H2 id="admin-title">Secure by role, recorded by default.</H2>
-            <ul className="mt-6 space-y-3 text-body">
-              {[[UsersRound, "Facilities, departments and staff invitations with role-based access, enforced again on the server."],
-                [ScrollText, "An audit log of user actions, including AI-related actions."],
+            <Eyebrow>Underneath every layer</Eyebrow>
+            <H2 id="security-title">Access by role. Actions on the record.</H2>
+            <ul className="mt-6 space-y-4 text-body">
+              {([[UsersRound, "Facilities, departments and staff invitations with role-based access, enforced again on the server."],
+                [ScrollText, "An audit log of user actions, including AI runs and approvals."],
                 [KeyRound, "AI provider keys are stored encrypted on the server and never shown in the browser."],
-                [Lock, "Sending patient information to an external AI provider is off unless an administrator enables it."]].map(([I, t]) => {
-                const Icon = I as React.ElementType;
-                return <li key={t as string} className="flex gap-3"><Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden /><span className="leading-relaxed text-muted-foreground">{t as string}</span></li>;
-              })}
+                [Lock, "Sending patient information to an external AI provider is off unless an administrator enables it."]] as const).map(([Icon, t]) => (
+                <li key={t} className="flex gap-3"><Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden /><span className="leading-relaxed text-muted-foreground">{t}</span></li>
+              ))}
             </ul>
           </div>
-          <div>
-            <h3 className="text-2xl font-semibold tracking-tight text-heading">Product status</h3>
-            <p className="mt-2 text-body text-muted-foreground">What works today, what is simulated, and what still needs an external connection.</p>
-            <div className="mt-5"><StatusList /></div>
+          <div className="rounded-xl border bg-card p-6">
+            <h3 className="text-xl font-semibold tracking-tight text-heading">Integration status</h3>
+            <p className="mt-2 text-body leading-relaxed text-muted-foreground">External connections sit behind adapters. Until a real, contracted partner is connected, each one is simulated and labelled <em>Simulated</em> in the application:</p>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {["Payer eligibility", "Claims clearinghouse", "Card payments", "e-Prescribing", "Lab & imaging interfaces", "Imaging archive (PACS)", "Supplier orders", "Email & text delivery"].map((t) => (
+                <li key={t}><Badge variant="neutral">{t}</Badge></li>
+              ))}
+            </ul>
+            <Link to="/about#status" className="mt-5 inline-flex items-center gap-1 text-body font-medium text-primary hover:underline">Full development status<ArrowRight className="size-4" /></Link>
           </div>
         </div>
       </Section>
+      <FinalCta secondary={{ to: "/solutions", label: "Solutions by team" }} />
     </PublicLayout>
   );
 }
 
 // ---------------------------------------------------------------------------------------------- Solutions
 
+function TeamExample({ t }: { t: Team }) {
+  if (!t.example) return null;
+  return (
+    <figure className="rounded-xl border bg-card p-6 shadow-[0_12px_40px_rgba(16,24,40,0.06)]">
+      <figcaption className="text-section font-semibold text-heading">{t.example.title}</figcaption>
+      <ol className="mt-5 space-y-0">
+        {t.example.steps.map((s, i) => (
+          <li key={s} className="relative flex items-center gap-3 pb-4 last:pb-0">
+            {i < t.example!.steps.length - 1 && <span className="absolute left-4 top-8 h-[calc(100%-1.5rem)] w-px bg-border" aria-hidden />}
+            <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-accent text-table font-semibold text-accent-foreground" aria-hidden>{i + 1}</span>
+            <span className="text-body text-heading">{s}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-5 border-t pt-4 text-table text-muted-foreground">Workflow as implemented. Laboratory interface transmission is simulated.</p>
+    </figure>
+  );
+}
+
 export function SolutionsPage() {
   return (
     <PublicLayout>
-      <PageHero eyebrow="Solutions" title="A workspace for every team in the hospital." text="Each role lands on the screens and actions it needs, on the same shared record as everyone else.">
-        <nav aria-label="Teams" className="mt-8 flex flex-wrap gap-2">
-          {AUDIENCES.map((a) => (
-            <Link key={a.id} to={`#${a.id}`} className="inline-flex items-center gap-2 rounded-full border bg-card px-3.5 py-2 text-table font-medium hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
-              <a.icon className="size-4 text-primary" aria-hidden />{a.title.replace(/^For /, "")}
-            </Link>
-          ))}
-        </nav>
+      <PageHero eyebrow="Solutions" title="Built around the work each hospital team does."
+        text="Every team has its own pressures. HMS Workflows gives each one a workspace for its responsibilities — and connects it to the teams it receives work from and hands work to.">
+        <AnchorChips label="Teams" items={TEAMS} />
       </PageHero>
-      {AUDIENCES.map((a, i) => (
-        <Section key={a.id} id={a.id} tone={i % 2 ? "subtle" : "plain"} labelledBy={`${a.id}-title`}>
-          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
+      {TEAMS.map((t, i) => (
+        <Section key={t.id} id={t.id} tone={i % 2 ? "subtle" : "plain"} labelledBy={`${t.id}-title`}>
+          <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
             <div className={cn(i % 2 && "lg:order-2")}>
-              <p className="flex items-center gap-2 text-label font-semibold uppercase tracking-wider text-primary"><a.icon className="size-4" aria-hidden />{a.title}</p>
-              <H2 id={`${a.id}-title`} className="mt-3">{a.need}</H2>
-              <ul className="mt-6 space-y-2.5 text-body">
-                {a.points.map((p) => <li key={p} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />{p}</li>)}
-              </ul>
+              <p className="flex items-center gap-2 text-label font-semibold uppercase tracking-[0.12em] text-primary"><t.icon className="size-4" aria-hidden />{t.title}</p>
+              <H2 id={`${t.id}-title`} className="mt-3">{t.short}</H2>
+              <div className="mt-6">
+                <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground">The challenge</p>
+                <p className="mt-1.5 text-body leading-relaxed text-foreground">{t.struggle}</p>
+              </div>
+              <div className="mt-6">
+                <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground">How HMS Workflows supports it</p>
+                <CheckList items={t.support} className="mt-2" />
+              </div>
+              <dl className="mt-6 grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2">
+                <div><dt className="text-label font-semibold text-accent-foreground">Receives</dt><dd className="mt-1 text-table leading-relaxed text-muted-foreground">{t.receives}</dd></div>
+                <div><dt className="text-label font-semibold text-accent-foreground">Hands off</dt><dd className="mt-1 text-table leading-relaxed text-muted-foreground">{t.handsOff}</dd></div>
+              </dl>
             </div>
-            <ProductShot shot={a.shot} className={cn(i % 2 && "lg:order-1")} sizes="(min-width: 1024px) 50vw, 100vw" />
+            <div className={cn(i % 2 && "lg:order-1")}>
+              {t.shot ? <ProductShot shot={t.shot} caption={t.shotCaption ?? true} sizes="(min-width: 1024px) 50vw, 100vw" /> : <TeamExample t={t} />}
+            </div>
           </div>
         </Section>
       ))}
+      <FinalCta secondary={{ to: "/ai-automation", label: "AI & Automation" }} />
     </PublicLayout>
   );
 }
@@ -352,60 +353,131 @@ export function SolutionsPage() {
 // ---------------------------------------------------------------------------------------------- AI & Automation
 
 export function AiAutomationPage() {
+  const launched = ASSISTANTS.filter((a) => a.start === "Launched by staff");
+  const embedded = ASSISTANTS.filter((a) => a.start === "Runs inside a workflow");
   return (
     <PublicLayout>
-      <PageHero eyebrow="AI & Automation" title="Automation finds the problem. AI helps with the work. People decide."
-        text="HMS Workflows separates deterministic rules from AI-generated content, labels every AI answer as live or simulated, and keeps consequential actions with the people responsible for them." />
-      <Section labelledBy="kinds-title">
-        <H2 id="kinds-title">Five kinds of help, and who stays in control</H2>
-        <div className="mt-10 space-y-5">
-          {AI_TIERS.map((t, i) => (
-            <article key={t.id} id={t.id} className="scroll-mt-20 grid gap-6 rounded-xl border bg-card p-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,4fr)_minmax(0,4fr)] lg:gap-8">
-              <div>
-                <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground">{i + 1} · {t.kind}</p>
-                <h3 className="mt-2 flex items-center gap-2 text-2xl font-semibold tracking-tight text-heading"><t.icon className="size-5 text-primary" aria-hidden />{t.title}</h3>
-                <p className="mt-3 text-body leading-relaxed text-foreground">{t.does}</p>
-              </div>
-              <div>
-                <p className="text-label font-semibold text-muted-foreground">Examples in HMS Workflows</p>
-                <ul className="mt-2 space-y-1.5 text-body">{t.examples.map((e) => <li key={e} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />{e}</li>)}</ul>
-              </div>
-              <div className="rounded-lg bg-subtle p-4">
-                <p className="text-label font-semibold text-muted-foreground">Who stays in control</p>
-                <p className="mt-2 text-body leading-relaxed text-foreground">{t.control}</p>
-              </div>
-            </article>
+      <PageHero eyebrow="AI & Automation" title="Rules find the problem. AI helps with the work. People decide."
+        text={`HMS Workflows uses ${MONITOR_COUNT} rule-based automation monitors, ${ASSISTANTS.length} specialized AI assistants, tracked cases and tasks, and human approvals. Each does a different job, and each is labelled so nobody mistakes a rule for AI or a draft for a decision.`}>
+        <AnchorChips label="On this page" items={[{ id: "building-blocks", title: "Building blocks", icon: ClipboardCheck }, { id: "monitors", title: `${MONITOR_COUNT} monitors`, icon: Siren },
+          { id: "assistants", title: `${ASSISTANTS.length} AI assistants`, icon: Bot }, { id: "responsible-ai", title: "Responsible AI", icon: ShieldAlert }]} />
+      </PageHero>
+
+      <Section id="building-blocks" labelledBy="blocks-title">
+        <SectionIntro eyebrow="Building blocks" id="blocks-title" title="Five parts that work together." />
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" data-testid="building-blocks">
+          {BLOCKS.map((b) => (
+            <li key={b.id} className="flex flex-col rounded-xl border bg-card p-5">
+              <b.icon className={cn("size-6", b.kind === "AI" ? "text-ai" : "text-primary")} aria-hidden />
+              <p className="mt-3 text-section font-semibold text-heading">{b.title}</p>
+              <p className="text-label font-medium text-muted-foreground">{b.kind}</p>
+              <p className="mt-2 text-table leading-relaxed text-muted-foreground">{b.text}</p>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section tone="brand" labelledBy="flow-title">
+        <Eyebrow className="text-white/70">How a problem is handled</Eyebrow>
+        <h2 id="flow-title" className="max-w-3xl text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">From detection to a verified outcome.</h2>
+        <p className="mt-4 max-w-3xl text-section leading-relaxed text-white/80 sm:text-lead">Dashed steps are optional. AI assistance runs only for selected case types, only when an administrator has enabled an AI provider, and within a daily limit. Without it, the case and its tasks continue normally.</p>
+        <AutomationFlow dark className="mt-10" />
+        <div className="mt-8 grid gap-4 text-body text-white/85 md:grid-cols-3">
+          <p><strong className="text-white">Detection is rule-based.</strong> Monitors evaluate the current state of records on a schedule — they are not AI models.</p>
+          <p><strong className="text-white">Execution waits for a person.</strong> AI never executes anything itself; the backend carries out an action only after approval.</p>
+          <p><strong className="text-white">Resolution is checked.</strong> When the monitor no longer detects the condition, the case closes automatically.</p>
+        </div>
+      </Section>
+
+      <Section id="monitors" labelledBy="monitors-title">
+        <SectionIntro eyebrow="Automation monitors" id="monitors-title" title={`${MONITOR_COUNT} monitors watching for known problems.`}>
+          Each monitor is a predefined, rule-based check with thresholds an administrator can adjust. When its condition is true, it opens one case for the owning team.
+          Results appear in that team's <strong className="font-semibold text-heading">My work</strong> and on the <strong className="font-semibold text-heading">Command Center</strong>; administrators configure monitors under Automation.
+        </SectionIntro>
+        <p className="mt-5 flex flex-wrap items-center gap-2 text-table text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded-full border border-ai/30 bg-ai-soft px-2 py-0.5 text-label font-medium text-ai"><Sparkles className="size-3" aria-hidden />AI may assist</span>
+          New cases from these monitors can receive optional AI assistance when AI is enabled.
+        </p>
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="monitor-groups">
+          {MONITOR_GROUPS.map((g) => (
+            <section key={g.id} aria-labelledby={`mg-${g.id}`} className="rounded-xl border bg-card">
+              <h3 id={`mg-${g.id}`} className="flex items-center gap-2 border-b bg-subtle px-4 py-3 text-section font-semibold text-heading">
+                <g.icon className="size-4 text-primary" aria-hidden />{g.title}<span className="ml-auto text-table font-medium text-muted-foreground">{g.monitors.length}</span>
+              </h3>
+              <ul className="divide-y">
+                {g.monitors.map((m) => (
+                  <li key={m.key} className="px-4 py-3" data-monitor={m.key}>
+                    <p className="flex flex-wrap items-center gap-2 text-body font-semibold text-heading">{m.name}
+                      {m.aiAssist && <span className="inline-flex items-center gap-1 rounded-full border border-ai/30 bg-ai-soft px-1.5 py-0.5 text-label font-medium text-ai"><Sparkles className="size-3" aria-hidden />AI may assist</span>}</p>
+                    <p className="mt-1 text-table leading-relaxed text-muted-foreground">{m.checks}</p>
+                    <p className="mt-1 text-label text-muted-foreground"><span className="font-medium text-heading">Goes to:</span> {m.owner}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
         </div>
       </Section>
-      <Section tone="subtle" labelledBy="labels-title">
-        <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-12">
+
+      <Section id="assistants" tone="subtle" labelledBy="assistants-title">
+        <SectionIntro eyebrow="AI assistants" id="assistants-title" title={`${ASSISTANTS.length} specialized assistants, each with a narrow job.`}>
+          Assistants are not interchangeable and do not all run continuously. Each has its own permitted tools, the permission a user needs to use it, and a short list of actions it may propose.
+        </SectionIntro>
+        {([["Launched by staff", launched, "Staff open these from the Ask AI panel in their workspace or from Agent Studio. Some also assist automatically on selected new cases."],
+          ["Runs inside a workflow", embedded, "These work only inside a specific screen, as part of that task."]] as const).map(([title, list, note]) => (
+          <div key={title} className="mt-10">
+            <h3 className="text-xl font-semibold tracking-tight text-heading">{title} <span className="font-normal text-muted-foreground">({list.length})</span></h3>
+            <p className="mt-1 text-body text-muted-foreground">{note}</p>
+            <ul className="mt-5 grid gap-4 md:grid-cols-2" data-testid={title === "Launched by staff" ? "assistants-launched" : "assistants-embedded"}>
+              {list.map((a) => (
+                <li key={a.key} className="flex flex-col rounded-xl border bg-card p-5" data-assistant={a.key}>
+                  <p className="flex items-center gap-2.5 text-section font-semibold text-heading"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-ai-soft"><a.icon className="size-5 text-ai" aria-hidden /></span>{a.name}</p>
+                  <p className="mt-3 text-body leading-relaxed text-foreground">{a.does}</p>
+                  <dl className="mt-3 grid gap-1.5 text-table">
+                    <div className="grid gap-x-3 sm:grid-cols-[7.5rem_1fr]"><dt className="font-medium text-heading">Where</dt><dd className="text-muted-foreground">{a.where}</dd></div>
+                    <div className="grid gap-x-3 sm:grid-cols-[7.5rem_1fr]"><dt className="font-medium text-heading">May propose</dt><dd className="text-muted-foreground">{a.proposes}</dd></div>
+                    {a.auto && <div className="grid gap-x-3 sm:grid-cols-[7.5rem_1fr]"><dt className="font-medium text-heading">Also assists on</dt><dd className="text-muted-foreground">{a.auto}</dd></div>}
+                  </dl>
+                  <p className="mt-3 border-t pt-3 text-table text-muted-foreground"><ShieldAlert className="mr-1.5 inline size-3.5 -translate-y-px text-warning" aria-hidden />{a.never}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        <p className="mt-8 text-table text-muted-foreground">A separate realtime voice receptionist is available for practising administrative calls. It has no tools: it cannot look up or change hospital records or book real appointments.</p>
+      </Section>
+
+      <Section id="responsible-ai" labelledBy="responsible-title">
+        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
           <div>
-            <H2 id="labels-title">Every result says where it came from</H2>
-            <Lead>The same labels appear throughout the application, so nobody mistakes a rule for AI, a simulation for a live model, or a draft for a decision.</Lead>
-            <ul className="mt-6 space-y-3">
-              {([["live", "A real AI provider produced this answer; the model is named."], ["simulated", "No AI provider was used; a rule-based summary was produced instead."],
-                ["draft", "AI-generated text that a person has not yet reviewed."], ["rule", "Found by a deterministic monitor, not by AI."],
-                ["pending", "A proposal that waits for a person with permission."], ["completed", "Approved by a named person and carried out."]] as const).map(([k, d]) => (
-                <li key={k} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4"><ProvenanceChip kind={k} className="w-fit sm:w-52 sm:justify-center" /><span className="text-body text-muted-foreground">{d}</span></li>
+            <SectionIntro eyebrow="Responsible AI" id="responsible-title" title="Controls built into how AI is used." />
+            <ul className="mt-8 grid gap-6 sm:grid-cols-2">
+              {RESPONSIBLE.map((r) => (
+                <li key={r.title} className="flex gap-3">
+                  <r.icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                  <span><span className="block text-section font-semibold text-heading">{r.title}</span><span className="mt-1 block text-body leading-relaxed text-muted-foreground">{r.text}</span></span>
+                </li>
               ))}
             </ul>
           </div>
           <div>
-            <ProductShot shot="agentStudio" caption="AI Agent Studio: what each assistant reads, what it may propose for approval, and its limits. Synthetic demonstration data." sizes="(min-width: 1024px) 50vw, 100vw" />
-            <ul className="mt-6 space-y-3 text-body text-muted-foreground">
-              <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />Provider keys are encrypted on the server and never sent to the browser.</li>
-              <li className="flex gap-3"><Lock className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />Sending patient information to an external AI provider is off unless an administrator enables it.</li>
-              <li className="flex gap-3"><UsersRound className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />Assistants act within the signed-in person's current workspace permissions; proposals need human approval.</li>
+            <ProductShot shot="agentStudio" caption="Agent Studio: what each assistant reads, what it may propose for approval, and its limits. Synthetic data." sizes="(min-width: 1024px) 45vw, 100vw" />
+            <h3 className="mt-8 text-section font-semibold text-heading">Every result says where it came from</h3>
+            <ul className="mt-3 space-y-2.5">
+              {([["live", "A live AI provider produced this; the model is named."], ["simulated", "No AI provider was used; a rule-based summary instead."],
+                ["draft", "AI-generated text a person has not yet reviewed."], ["rule", "Found by a rule-based monitor, not by AI."],
+                ["pending", "A proposal waiting for a person with permission."], ["completed", "Approved by a named person and carried out."]] as const).map(([k, d]) => (
+                <li key={k} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4"><ProvenanceChip kind={k} className="w-fit sm:w-48 sm:justify-center" /><span className="text-table text-muted-foreground">{d}</span></li>
+              ))}
             </ul>
           </div>
         </div>
+        <p className="mt-12 rounded-xl border border-dashed bg-subtle p-5 text-body leading-relaxed text-muted-foreground">
+          <strong className="font-semibold text-heading">What we do not claim.</strong> HMS Workflows is not certified for clinical use and is not represented as HIPAA-compliant.
+          AI output is assistance that requires human review. Live-provider verification is still in progress for several AI features — see the <Link to="/about#status" className="font-medium text-primary hover:underline">development status</Link>.
+        </p>
       </Section>
-      <Section labelledBy="status-title">
-        <H2 id="status-title">Product status</H2>
-        <Lead>What has been built and tested, what has been verified with a live AI provider, and what is simulated.</Lead>
-        <div className="mt-8"><StatusList /></div>
-      </Section>
+      <FinalCta secondary={{ to: "/platform#automation", label: "Where automation fits" }} />
     </PublicLayout>
   );
 }
@@ -415,39 +487,42 @@ export function AiAutomationPage() {
 export function PublicAboutPage() {
   return (
     <PublicLayout>
-      <PageHero eyebrow="About" title="Why HMS Workflows exists" text="Hospital work crosses departments, but hospital software usually doesn't. HMS Workflows was built to show what a hospital looks like when every team works from one record and every problem has an owner." />
-      <Section labelledBy="aim-title">
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+      <PageHero eyebrow="About" title="Why HMS Workflows exists"
+        text="Hospitals depend on coordinated work across clinical and operational departments. HMS Workflows explores how one unified platform can make that work more visible, organized and actionable." />
+      <Section labelledBy="why-created-title">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
           <div>
-            <H2 id="aim-title">The problem we set out to solve</H2>
+            <H2 id="why-created-title">Why it was created</H2>
             <div className="mt-5 space-y-4 text-lead leading-relaxed text-muted-foreground">
-              <p>A patient's stay touches registration, doctors, nurses, the laboratory, pharmacy, bed management and billing. When each keeps its own system, information is re-entered, hand-offs depend on phone calls, and leaders find bottlenecks after patients have already waited.</p>
-              <p>HMS Workflows puts these teams on one platform: one shared patient record, problems turned into owned and tracked work, and one live view of the hospital.</p>
+              <p>A patient's care moves across registration, doctors, nurses, the laboratory, pharmacy, bed management, insurance and billing. Each team has different responsibilities, but the work is connected.</p>
+              <p>When those teams rely on separate tools and manual hand-offs, it becomes hard to see what is unfinished, who owns it, and what should happen next. HMS Workflows was created to bring that work into one environment.</p>
             </div>
           </div>
-          <div>
-            <h3 className="text-2xl font-semibold tracking-tight text-heading">Principles</h3>
-            <ul className="mt-5 divide-y rounded-xl border bg-card">
-              {PRINCIPLES.map(([t, d]) => (
-                <li key={t} className="p-5"><p className="text-section font-semibold text-heading">{t}</p><p className="mt-1 text-body leading-relaxed text-muted-foreground">{d}</p></li>
-              ))}
-            </ul>
-          </div>
+          <figure className="flex flex-col justify-center rounded-2xl bg-brand-navy p-8 text-white sm:p-10">
+            <Eyebrow className="text-white/70">Our vision</Eyebrow>
+            <blockquote className="text-2xl font-semibold leading-snug tracking-tight text-balance sm:text-3xl">
+              A hospital where the right information reaches the right team, pending work has clear ownership, and technology helps employees coordinate care.
+            </blockquote>
+            <figcaption className="mt-6 text-body text-white/75">{PHILOSOPHY}</figcaption>
+          </figure>
         </div>
       </Section>
-      <Section tone="subtle" labelledBy="oversight-title">
-        <div className="max-w-3xl">
-          <H2 id="oversight-title">Automation and AI, with people responsible</H2>
-          <div className="mt-5 space-y-4 text-lead leading-relaxed text-muted-foreground">
-            <p>Deterministic rules watch for problems — expiring stock, unconfirmed insurance, missing discharge steps — and assign them to the right team. AI drafts notes, summarizes charts and explains operational issues within the user's permissions.</p>
-            <p><strong className="font-semibold text-heading">Clinicians and authorized staff remain responsible for consequential decisions.</strong> AI does not diagnose, prescribe, sign notes, change claims or message patients on its own. Anything an AI agent proposes waits for a person's approval, and every step is recorded.</p>
-          </div>
-          <Button asChild variant="outline" className="mt-6"><Link to="/ai-automation">How AI & automation work<ArrowRight /></Link></Button>
-        </div>
+      <Section tone="subtle" labelledBy="approach-title">
+        <SectionIntro eyebrow="Our approach" id="approach-title" title="Six principles behind the platform." />
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="approach">
+          {APPROACH.map(([t, d], i) => (
+            <li key={t} className="rounded-xl border bg-card p-5">
+              <span className="text-label font-semibold tabular text-primary">0{i + 1}</span>
+              <p className="mt-1 text-section font-semibold text-heading">{t}</p>
+              <p className="mt-1.5 text-body leading-relaxed text-muted-foreground">{d}</p>
+            </li>
+          ))}
+        </ul>
       </Section>
       <Section id="status" labelledBy="status-title">
-        <H2 id="status-title">Current status</H2>
-        <Lead>HMS Workflows is a working demonstration platform, not a deployed hospital product.</Lead>
+        <SectionIntro eyebrow="Development status" id="status-title" title="Where HMS Workflows stands today.">
+          HMS Workflows is a developing healthcare software system with implemented workflows, tested with synthetic data. It is not a certified or deployed hospital product.
+        </SectionIntro>
         <div className="mt-8"><StatusList /></div>
         <p className="mt-3 text-table text-muted-foreground">Version {VERSION}</p>
       </Section>
@@ -456,11 +531,11 @@ export function PublicAboutPage() {
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           <div className="rounded-xl border bg-card p-5">
             <p className="text-section font-semibold text-heading" data-testid="about-copyright">{COPYRIGHT_NOTICE}</p>
-            <p className="mt-1.5 text-body text-muted-foreground">This application's original source code, design and documentation are protected by copyright. No license is granted except as agreed in writing with the copyright holder.</p>
+            <p className="mt-1.5 text-body text-muted-foreground">HMS Workflows' original source code, design and documentation are protected by copyright. No license is granted except as agreed in writing with the copyright holder.</p>
           </div>
           <div className="rounded-xl border bg-card p-5">
             <p className="flex items-center gap-2 text-body font-semibold text-heading"><ShieldAlert className="size-4 text-warning" aria-hidden />Use limitations</p>
-            <p className="mt-1.5 text-body text-muted-foreground">Demonstration build for synthetic data only. It is not HIPAA-certified, not ONC-certified and not validated for clinical use. AI output is a draft that requires human review.</p>
+            <p className="mt-1.5 text-body text-muted-foreground">For use with synthetic data only. Not HIPAA-certified, not ONC-certified and not validated for clinical use. AI output is a draft that requires human review.</p>
           </div>
           <div className="rounded-xl border bg-card p-5">
             <p className="text-body font-semibold text-heading">Third-party software</p>
@@ -488,7 +563,7 @@ export function PublicLoginPage() {
             <Eyebrow>HMS Workflows</Eyebrow>
             <h1 className="text-4xl font-semibold tracking-tight text-heading">Sign in to your hospital workspace.</h1>
             <p className="mt-4 text-lead leading-relaxed text-muted-foreground">Your role decides what you see: your priorities, your department's worklists and the patients in your care.</p>
-            <p className="mt-6 text-body text-muted-foreground">New here? Read about the <Link to="/platform" className="font-medium text-primary hover:underline">platform</Link>.</p>
+            <p className="mt-6 text-body text-muted-foreground">New to HMS Workflows? See <Link to="/platform" className="font-medium text-primary hover:underline">how it works</Link> or read <Link to="/about" className="font-medium text-primary hover:underline">why it exists</Link>.</p>
           </div>
           <div className="rounded-2xl border bg-card p-6 shadow-[0_8px_30px_rgba(16,24,40,0.08)] sm:p-8">
             <LoginForm autoFocus emailId="login-email" />
