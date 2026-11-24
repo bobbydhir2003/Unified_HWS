@@ -1,6 +1,7 @@
 """FHIR R4 read-only API (foundation for interoperability).
 
-Implements read + patient-scoped search for Patient, Encounter, Condition, AllergyIntolerance, MedicationStatement and
+Implements read + patient-scoped search for Patient, Encounter, Condition, AllergyIntolerance, MedicationStatement,
+MedicationRequest, MedicationAdministration and
 Observation (vital signs + laboratory). Uses the same authentication, tenancy and patient-access rules as the rest of
 the API. Not yet: write operations, SMART on FHIR launch/scopes, US Core profile conformance testing, bulk export.
 """
@@ -115,6 +116,36 @@ VITAL_CODES = [("systolic", "8480-6", "Systolic blood pressure", "mm[Hg]"), ("di
                ("height_cm", "8302-2", "Body height", "cm"), ("weight_kg", "29463-7", "Body weight", "kg")]
 
 
+MED_REQUEST_STATUS = {"pending_verification": "draft", "clarification_needed": "on-hold", "active": "active", "on_hold": "on-hold",
+                      "completed": "completed", "discontinued": "stopped", "rejected": "cancelled", "cancelled": "cancelled",
+                      "transmitted": "active", "signed": "active", "draft": "draft"}
+
+
+def med_request_res(o) -> dict:
+    """FHIR MedicationRequest (R4) from an HMS medication order. Medication is text-coded (no RxNorm mapping yet)."""
+    d = o.details or {}
+    return {
+        "resourceType": "MedicationRequest", "id": str(o.id), "status": MED_REQUEST_STATUS.get(o.status, "unknown"), "intent": "order",
+        "category": [{"coding": [{"system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+                                  "code": "inpatient" if d.get("setting") == "inpatient" else "outpatient"}]}],
+        "medicationCodeableConcept": {"text": f"{d.get('name', o.title)} {d.get('dose') or d.get('strength') or ''}".strip()},
+        "subject": _ref("Patient", o.patient_id), "authoredOn": _iso(o.signed_at or o.created_at),
+        "dosageInstruction": [{"text": d.get("sig"), "route": {"text": d.get("route")}, "asNeededBoolean": d.get("frequency") == "prn"}],
+        "extension": [{"url": "https://hmsworkflows.example/fhir/StructureDefinition/hms-order-status", "valueCode": o.status}],
+    }
+
+
+def med_admin_res(m) -> dict:
+    return {
+        "resourceType": "MedicationAdministration", "id": str(m.id),
+        "status": {"given": "completed", "held": "on-hold", "refused": "not-done", "omitted": "not-done"}[m.status],
+        "subject": _ref("Patient", m.patient_id), "request": _ref("MedicationRequest", m.order_id),
+        "medicationReference": _ref("MedicationRequest", m.order_id), "effectiveDateTime": _iso(m.administered_at),
+        **({"statusReason": [{"text": m.reason}]} if m.status != "given" and m.reason else {}),
+        **({"dosage": {"text": m.dose, "route": {"text": m.route}}} if m.status == "given" else {}),
+    }
+
+
 def vitals_res(v: VitalSigns) -> dict:
     comps = [{"code": {"coding": [{"system": LOINC, "code": c, "display": d}]}, "valueQuantity": {"value": float(getattr(v, f)), "unit": u}}
              for f, c, d, u in VITAL_CODES if getattr(v, f) is not None]
@@ -162,7 +193,7 @@ def _pid(ref: str | None) -> uuid.UUID | None:
 
 @router.get("/metadata")
 def capability(request: Request):
-    types = ["Patient", "Encounter", "Condition", "AllergyIntolerance", "MedicationStatement", "Observation"]
+    types = ["Patient", "Encounter", "Condition", "AllergyIntolerance", "MedicationStatement", "MedicationRequest", "MedicationAdministration", "Observation"]
     return _resp({
         "resourceType": "CapabilityStatement", "status": "active", "date": _iso(now()), "kind": "instance", "fhirVersion": "4.0.1",
         "format": ["json"], "software": {"name": "HMS Workflows", "version": "0.1.0"},
@@ -220,6 +251,16 @@ def _clinical_search(request: Request, ctx: TenantContext, patient: str | None, 
         res = [allergy_res(a) for a in db.scalars(select(Allergy).where(Allergy.patient_id == p.id, Allergy.status != "entered_in_error")).all()]
     elif rtype == "MedicationStatement":
         res = [medication_res(m) for m in db.scalars(select(PatientMedication).where(PatientMedication.patient_id == p.id)).all()]
+    elif rtype == "MedicationRequest":
+        from app.models import Order
+
+        res = [med_request_res(o) for o in db.scalars(select(Order).where(Order.patient_id == p.id, Order.order_type == "medication",
+                                                                          Order.status != "draft").order_by(Order.created_at.desc())).all()]
+    elif rtype == "MedicationAdministration":
+        from app.models import MedicationAdministration
+
+        res = [med_admin_res(m) for m in db.scalars(select(MedicationAdministration).where(MedicationAdministration.patient_id == p.id)
+                                                    .order_by(MedicationAdministration.administered_at.desc())).all()]
     else:
         cat = request.query_params.get("category")
         res = []
@@ -232,7 +273,7 @@ def _clinical_search(request: Request, ctx: TenantContext, patient: str | None, 
     return _bundle(request, res)
 
 
-for _rtype in ("Encounter", "Condition", "AllergyIntolerance", "MedicationStatement", "Observation"):
+for _rtype in ("Encounter", "Condition", "AllergyIntolerance", "MedicationStatement", "MedicationRequest", "MedicationAdministration", "Observation"):
     def _handler(request: Request, patient: str | None = None, ctx: TenantContext = Depends(get_ctx), _t=_rtype):
         return _clinical_search(request, ctx, patient, _t)
     router.add_api_route(f"/{_rtype}", _handler, methods=["GET"], name=f"fhir_search_{_rtype}")

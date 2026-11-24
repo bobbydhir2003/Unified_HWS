@@ -15,6 +15,8 @@ import { fmtDateTime, fromNow } from "@/lib/format";
 import { titleCase } from "@/lib/utils";
 import { CATEGORY_LABEL } from "./ops";
 
+/** Case kinds that may receive optional AI assistance (backend/app/agents/case_assist.py RULES). */
+const AI_ASSISTED = new Set(["inventory.low_stock", "pharmacy.expiring", "insurance.visit_readiness", "discharge.not_departed", "billing.claims_on_hold", "staffing.coverage_gap"]);
 type MonitorT = { key: string; name: string; description: string; category: string; is_enabled: boolean; config: Record<string, unknown>; config_help: Record<string, string>; version: number; open_cases: number; last_run: { at: string; status: string; found: number; opened: number; closed: number; duration_ms: number; error: string | null } | null };
 export type EngineHealth = { status: string; pending_events: number; retrying_events: number; oldest_pending_seconds: number; processed_24h: number; dead_events: { id: string; event_type: string; attempts: number; last_error: string; occurred_at: string }[]; monitor_failures_24h: number; last_monitor_run: string | null; notification_failures_24h: number };
 
@@ -85,7 +87,8 @@ function MonitorCard({ m }: { m: MonitorT }) {
         <Switch checked={m.is_enabled} disabled={!manage} onCheckedChange={(v) => save({ is_enabled: v })} aria-label={`Enable ${m.name}`} />
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex flex-wrap gap-2 text-xs"><Badge variant="outline">{CATEGORY_LABEL[m.category] ?? m.category}</Badge><Badge variant="neutral">Rule v{m.version}</Badge><Badge variant={m.open_cases ? "warning" : "success"}>{m.open_cases} open case{m.open_cases === 1 ? "" : "s"}</Badge>
+        <div className="flex flex-wrap gap-2 text-xs"><Badge variant="outline">{CATEGORY_LABEL[m.category] ?? m.category}</Badge><Badge variant="neutral">Rule v{m.version}</Badge><Badge variant="neutral">Trigger: scheduled check · rule-based</Badge>
+          {AI_ASSISTED.has(m.key) && <Badge variant="ai">AI may assist new cases (approval required)</Badge>}<Badge variant={m.open_cases ? "warning" : "success"}>{m.open_cases} open case{m.open_cases === 1 ? "" : "s"}</Badge>
           {m.last_run && <span className="text-muted-foreground">Last run {fmtDateTime(m.last_run.at)} · {m.last_run.status} · {m.last_run.found} found · {m.last_run.duration_ms} ms</span>}
         </div>
         {m.last_run?.error && <p className="text-xs text-destructive">{m.last_run.error}</p>}

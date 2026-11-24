@@ -1,5 +1,6 @@
 /** Shared operations UI: case types, severity/SLA badges, case list rows and the case drawer used by every department. */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { assistName } from "@/lib/assist";
 import { AlarmClock, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2, CircleDot, Clock, MessageSquare, ShieldCheck, UserCheck, UserRound, XCircle } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
@@ -382,7 +383,7 @@ export function ApprovalList({ items, empty }: { items: ApprovalT[]; empty?: Rea
         <li key={a.id} className="flex flex-wrap items-start gap-3 py-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2"><span className="text-body font-medium">{a.title}</span>
-              {a.requested_by_agent && <Badge variant="ai"><Bot />Proposed by {titleCase(a.requested_by_agent.replace(/_/g, " "))}</Badge>}
+              {a.requested_by_agent && <Badge variant="ai"><Bot />Proposed by {assistName(a.requested_by_agent)}</Badge>}
               {a.status !== "pending" && <Badge variant={a.status === "executed" ? "success" : a.status === "failed" ? "danger" : "neutral"}>{a.status}</Badge>}
             </div>
             {a.summary && <p className="mt-0.5 whitespace-pre-line text-table text-muted-foreground">{a.summary}</p>}

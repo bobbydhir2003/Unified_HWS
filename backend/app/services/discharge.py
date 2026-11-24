@@ -149,6 +149,14 @@ def complete_item(db: Session, stay: InpatientStay, key: str, *, actor_id: uuid.
         raise DischargeError("Explain why a required item doesn't apply")
     if it.owner_role not in actor_roles and not {"doctor", "hospital_admin", "super_admin"} & set(actor_roles):
         raise DischargeError(f"Only the owning role ({it.owner_role.replace('_', ' ')}) or the attending team can complete this item")
+    if key == "med_rec" and status == "done":
+        # Closed loop: reconciliation can't be signed off while inpatient medication orders are still unresolved.
+        from app.models import Order
+
+        pending = db.scalars(select(Order.title).where(Order.patient_id == stay.patient_id, Order.order_type == "medication",
+                                                       Order.status.in_(("pending_verification", "clarification_needed")))).all()
+        if pending:
+            raise DischargeError("Resolve medication orders still awaiting the pharmacist first: " + "; ".join(pending[:5]))
     it.status, it.note, it.completed_by_id, it.completed_at = status, note, actor_id, now() if status in ("done", "not_applicable") else None
     if status in ("done", "not_applicable"):
         _close_task(db, it, actor_id)

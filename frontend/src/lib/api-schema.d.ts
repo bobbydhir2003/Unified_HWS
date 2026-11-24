@@ -2647,6 +2647,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/fhir/R4/MedicationAdministration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fhir Search Medicationadministration */
+        get: operations["fhir_search_MedicationAdministration_api_v1_fhir_R4_MedicationAdministration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fhir/R4/MedicationRequest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fhir Search Medicationrequest */
+        get: operations["fhir_search_MedicationRequest_api_v1_fhir_R4_MedicationRequest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/fhir/R4/MedicationStatement": {
         parameters: {
             query?: never;
@@ -16577,6 +16611,74 @@ export interface operations {
         };
     };
     fhir_search_Encounter_api_v1_fhir_R4_Encounter_get: {
+        parameters: {
+            query?: {
+                patient?: string | null;
+                _t?: unknown;
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fhir_search_MedicationAdministration_api_v1_fhir_R4_MedicationAdministration_get: {
+        parameters: {
+            query?: {
+                patient?: string | null;
+                _t?: unknown;
+            };
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fhir_search_MedicationRequest_api_v1_fhir_R4_MedicationRequest_get: {
         parameters: {
             query?: {
                 patient?: string | null;

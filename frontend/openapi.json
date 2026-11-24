@@ -24985,6 +24985,160 @@
     ]
    }
   },
+  "/api/v1/fhir/R4/MedicationAdministration": {
+   "get": {
+    "operationId": "fhir_search_MedicationAdministration_api_v1_fhir_R4_MedicationAdministration_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "patient",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Patient"
+      }
+     },
+     {
+      "in": "query",
+      "name": "_t",
+      "required": false,
+      "schema": {
+       "default": "MedicationAdministration",
+       "title": " T"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Fhir Search Medicationadministration",
+    "tags": [
+     "fhir"
+    ]
+   }
+  },
+  "/api/v1/fhir/R4/MedicationRequest": {
+   "get": {
+    "operationId": "fhir_search_MedicationRequest_api_v1_fhir_R4_MedicationRequest_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "patient",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Patient"
+      }
+     },
+     {
+      "in": "query",
+      "name": "_t",
+      "required": false,
+      "schema": {
+       "default": "MedicationRequest",
+       "title": " T"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Fhir Search Medicationrequest",
+    "tags": [
+     "fhir"
+    ]
+   }
+  },
   "/api/v1/fhir/R4/MedicationStatement": {
    "get": {
     "operationId": "fhir_search_MedicationStatement_api_v1_fhir_R4_MedicationStatement_get",

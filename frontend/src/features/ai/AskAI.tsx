@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { assistName } from "@/lib/assist";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
@@ -84,7 +85,7 @@ export function AskAI({ agent, question, label, size = "sm", variant = "ai" }: {
       <Dialog open={open} onOpenChange={setOpen}>
         <SheetContent size="md" aria-describedby="ask-ai-question" data-testid="ai-panel">
           <div className="space-y-2 border-b px-5 py-4 pr-12">
-            <DialogTitle className="flex items-center gap-2"><Sparkles className="size-4 text-ai" aria-hidden />{a.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="size-4 text-ai" aria-hidden />{assistName(a.key, a.name)}</DialogTitle>
             <div className="flex flex-wrap gap-1.5">
               {run && <RunProvenance run={run} />}
               <ProvenanceChip kind="rule" label="Read-only · your permissions" />

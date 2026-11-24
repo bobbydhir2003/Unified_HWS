@@ -95,6 +95,11 @@ def test_closed_loop_verification_gates_dispense_and_administration(as_user):
     mar = rn.get(f"/mar/patients/{pid}").json()
     row = next(x for x in mar["orders"] if x["id"] == o["id"])
     assert row["status"] == "completed" and len(row["administrations"]) == 1
+    # Interoperability: the same lifecycle is exposed as FHIR R4 MedicationRequest / MedicationAdministration.
+    mr = doc.get("/fhir/R4/MedicationRequest", params={"patient": f"Patient/{pid}"}).json()
+    assert any(e["resource"]["id"] == o["id"] and e["resource"]["status"] == "completed" for e in mr["entry"])
+    ma = doc.get("/fhir/R4/MedicationAdministration", params={"patient": f"Patient/{pid}"}).json()
+    assert any(e["resource"]["request"]["reference"] == f"MedicationRequest/{o['id']}" for e in ma["entry"])
 
 
 def test_rejected_and_discontinued_orders_stop(as_user):
@@ -150,4 +155,24 @@ def test_emar_is_append_only():
             db.execute(text("DELETE FROM medication_administrations"))
         db.rollback()
     finally:
+        db.close()
+
+
+def test_discharge_med_rec_waits_for_unresolved_medication_orders():
+    """Unit-level: the discharge med-rec item can't be completed while an inpatient order awaits the pharmacist."""
+    from sqlalchemy import select
+
+    from app.models import InpatientStay, Order, User
+    from app.services import discharge as D
+
+    db = SessionLocal()
+    try:
+        o = db.scalars(select(Order).where(Order.order_type == "medication", Order.status == "pending_verification")).first()
+        stay = db.scalars(select(InpatientStay).where(InpatientStay.patient_id == o.patient_id, InpatientStay.status == "admitted")).first()
+        D.ensure_plan(db, stay)
+        admin = db.scalar(select(User.id).where(User.email == "pharmacist@harborview.dev"))
+        with pytest.raises(D.DischargeError, match="awaiting the pharmacist"):
+            D.complete_item(db, stay, "med_rec", actor_id=admin, status="done", note=None, actor_roles=["pharmacist"])
+    finally:
+        db.rollback()
         db.close()
