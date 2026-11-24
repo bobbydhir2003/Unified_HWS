@@ -62,8 +62,6 @@ class Settings(BaseSettings):
 
     # Abuse protection (per client IP, per process). Put a WAF/edge limiter in front in production.
     rate_limit_enabled: bool = True
-    # One-click role sign-in for a synthetic-data demonstration deployment (app/core/demo.py). Refused in production.
-    demo_mode: bool = False
     # Demo AI (DEMO_MODE only): per-session AI settings + limits. Demo sessions NEVER use the platform AI key.
     demo_openai_api_key: str | None = None  # optional dedicated demo project key (shared by demo sessions without their own key)
     demo_ai_text_model: str = "gpt-4.1-mini"
@@ -74,13 +72,6 @@ class Settings(BaseSettings):
     demo_ai_max_cost_usd: float = 1.0            # per demo session, when AI_PRICES lets cost be estimated
     demo_ai_shared_max_requests_per_hour: int = 300  # all sessions together, when using DEMO_OPENAI_API_KEY
     demo_ai_disabled: bool = False                   # operator kill switch for ALL shared demo AI (owner-managed + env key)
-    # Private demo hospitals (DEMO_MODE only; app/demo/sandbox.py). Each visitor gets an isolated synthetic hospital.
-    demo_sandbox_enabled: bool = True
-    demo_sandbox_pool_size: int = 3          # ready hospitals kept prebuilt (size to the server: each is a full hospital)
-    demo_sandbox_max_total: int = 8          # hard cap on hospitals that exist at once (ready + leased + building)
-    demo_sandbox_idle_hours: float = 4.0     # a visitor's hospital is removed after this long without activity
-    demo_sandbox_max_hours: float = 24.0     # ... and after this long regardless
-    demo_sandbox_per_visitor: int = 2        # open hospitals per client address (abuse limit)
     ai_auto_assist_daily_limit: int = 60             # automatic case-assist AI runs per organization per day
     ai_realtime_max_seconds: int = 300               # staff voice sessions end after this (client timer + short-lived secret)
     rls_enabled: bool = True

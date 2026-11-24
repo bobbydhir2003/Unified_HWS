@@ -21,7 +21,5 @@ celery_app.conf.update(
         "engine-dispatch": {"task": "app.tasks.dispatch_events", "schedule": 10.0},
         "engine-escalations": {"task": "app.tasks.escalate_cases", "schedule": 60.0},
         "engine-monitors": {"task": "app.tasks.run_monitors", "schedule": 300.0},
-        "demo-ai-cleanup": {"task": "app.tasks.demo_ai_cleanup", "schedule": 600.0},
-        "demo-sandbox-maintain": {"task": "app.tasks.demo_sandbox_maintain", "schedule": 60.0},  # no-op unless DEMO_MODE
     },
 )

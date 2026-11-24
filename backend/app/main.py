@@ -101,16 +101,6 @@ async def request_context(request: Request, call_next):
         if not ok:
             log.warning("rate limited", extra={"request_id": rid, "path": request.url.path, "status": 429})
             return too_many(retry)
-    # Demo accounts get their own session-scoped AI configuration (never the platform key) — see app/ai/demo_scope.py.
-    if settings.demo_mode and request.url.path.startswith("/api/"):
-        from starlette.concurrency import run_in_threadpool
-
-        from app.ai import demo_scope
-        from app.core import demo
-
-        scoped = await run_in_threadpool(demo.request_ai_scope, request.headers.get("authorization"))
-        if scoped:
-            demo_scope.set_for_request(*scoped)
     response = await call_next(request)
     metrics.observe(request.method, route_template(request), response.status_code, time.perf_counter() - start)
     response.headers["x-request-id"] = rid

@@ -6,6 +6,7 @@ hashes, and writes an audit event.
     uv run python -m app.cli create-superadmin --email owner@example.com --first Ada --last Owner [--org harborview]
     uv run python -m app.cli reset-password --email owner@example.com [--disable-mfa]
     uv run python -m app.cli set-email --email old@example.com --new-email new@example.com
+    uv run python -m app.cli retire-demo   (one time: remove the former Demo Mode's demo hospitals and sessions)
 
 In Docker: docker compose exec api python -m app.cli <command> …
 """
@@ -122,6 +123,14 @@ def set_email(email: str, new_email: str, *, ask: Prompt = input) -> None:
         db.commit()
 
 
+def retire_demo(*, ask: Prompt = input) -> dict:
+    """See app/demo_retirement.py. Only demo-owned data; real organizations and accounts are untouched."""
+    _confirm("RETIRE DEMO", ask)
+    from app.demo_retirement import retire
+
+    return retire()
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m app.cli", description="HMS Workflows server administration (Super Admin bootstrap/recovery).")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -137,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     e = sub.add_parser("set-email", help="Change an account's sign-in email (signs out all sessions)")
     e.add_argument("--email", required=True)
     e.add_argument("--new-email", required=True)
+    sub.add_parser("retire-demo", help="Remove former demo hospitals, end demo sessions, deactivate the demo-only Super Admin")
     a = p.parse_args(argv)
     try:
         if a.cmd == "list-superadmins":
@@ -150,6 +160,8 @@ def main(argv: list[str] | None = None) -> int:
         elif a.cmd == "set-email":
             set_email(a.email, a.new_email)
             print("Email updated; all sessions were signed out.")
+        elif a.cmd == "retire-demo":
+            print(retire_demo())
     except CLIError as ex:
         print(f"Error: {ex}", file=sys.stderr)
         return 1

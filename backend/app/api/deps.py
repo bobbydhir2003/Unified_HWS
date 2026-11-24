@@ -19,7 +19,7 @@ from app.core.permissions import Role, permissions_for
 from app.core.security import decode_token, now
 from app.models import Membership, ProviderProfile, User, UserSession
 from app.services import audit
-from app.services.identity import mfa_enrollment_required
+from app.services.identity import mfa_enrollment_required, workspace_roles
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -47,20 +47,9 @@ def get_auth_user(
     user = db.get(User, uuid.UUID(data["sub"]))
     if not user or not user.is_active:
         raise unauthorized
-    from app.core import demo
-
-    if demo.is_sandbox_user(user):
-        # Identity of a private demo hospital: only valid through its active lease (expired/reset/reassigned → 401).
-        from app.demo import sandbox
-
-        sandbox.check_session(db, user, sess)
-        if demo.blocked(request.method, request.url.path, user):
-            raise HTTPException(status.HTTP_403_FORBIDDEN, {
-                "code": "demo_platform_action",
-                "message": "This is a platform-level action (organizations, the owner's AI controls, or sign-in credentials). "
-                           "Demo hospitals can't change it; everything inside your hospital can be changed."})
-    elif demo.is_demo_user(user) and demo.blocked(request.method, request.url.path):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "This action is disabled in the demonstration environment.")
+    if user.sandbox_org_id is not None:
+        # Identity of a retired private demo hospital: never authenticates again.
+        raise unauthorized
     return AuthUser(user=user, session_id=sess.id)
 
 
@@ -159,9 +148,6 @@ def get_ctx(
         org_id = memberships[0].organization_id
     if org_id is None:
         raise HTTPException(400, "X-Organization-Id header required")
-    if user.sandbox_org_id is not None and org_id != user.sandbox_org_id:
-        raise forbidden("You are not a member of this organization")  # a demo identity never leaves its own hospital
-
     membership = next((m for m in memberships if m.organization_id == org_id), None)
     if membership:
         roles = membership.role_names
@@ -173,6 +159,20 @@ def get_ctx(
         raise forbidden("You are not a member of this organization")
     if user.is_superadmin and Role.SUPER_ADMIN.value not in roles:
         roles = sorted([*roles, Role.SUPER_ADMIN.value])
+
+    # Workspace (acting role): the header role switcher. The user stays the same person; only the permissions of the
+    # chosen role apply to this request. Platform Super Admins may act in any role; anyone else only in a role they hold.
+    acting = (request.headers.get("x-acting-role") or "").strip()
+    if acting:
+        if acting not in {r.value for r in Role}:
+            raise HTTPException(400, "Unknown workspace role")
+        if acting not in workspace_roles(user, roles):
+            audit.record(db, "access.denied", org_id=org_id, actor_id=user.id, outcome="denied", request=request,
+                         details={"acting_role": acting, "reason": "workspace not permitted"})
+            db.commit()
+            raise forbidden("You can't use that workspace")
+        roles = [acting]
+        request.state.acting_role = acting  # recorded on every audit event of this request
 
     bind_tenant(db, org_id)  # PostgreSQL RLS: every statement from here on is limited to this organization
     return TenantContext(

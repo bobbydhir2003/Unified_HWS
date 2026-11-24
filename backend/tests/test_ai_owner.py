@@ -1,35 +1,20 @@
-"""Phase 1: platform-owner AI controls, persistent owner-managed demo AI, durable limits, kill switches, model-family
-validation, Super Admin CLI, email change, and server-validated voice tools. OpenAI is never called (key validation and
-provider calls are mocked)."""
+"""Platform-owner AI controls: the emergency switch, platform-owner-only AI settings, model-family validation, durable
+limits, the Super Admin CLI, email change, and server-validated voice tools. OpenAI is never called."""
 import threading
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app.ai import demo_scope, owner_demo, usage
-from app.api.routers import ai_admin
-from app.core.config import settings
+from app.ai import usage
 from app.core.db import SessionLocal
-from app.models import AIProviderSettings, Task, User
-
-FAKE_KEY = "sk-owner-demo-" + "x" * 30
-
-
-@pytest.fixture
-def no_validate(monkeypatch):
-    monkeypatch.setattr(ai_admin, "_validate_key", lambda key: None)
+from app.models import AIProviderSettings, Membership, MembershipRole, Organization, Task, User
 
 
 @pytest.fixture(autouse=True)
 def _reset_owner_rows():
     yield
     db = SessionLocal()
-    for scope in ("demo",):
-        row = db.scalar(select(AIProviderSettings).where(AIProviderSettings.scope == scope))
-        if row:
-            db.delete(row)
     plat = db.scalar(select(AIProviderSettings).where(AIProviderSettings.scope == "platform"))
     if plat and (plat.policy or {}).get("ai_disabled"):
         plat.policy = {**plat.policy, "ai_disabled": False}
@@ -40,44 +25,36 @@ def _reset_owner_rows():
     invalidate()
 
 
-def test_owner_configures_demo_ai_and_key_is_never_returned(as_user, no_validate):
+def test_only_the_platform_owner_reaches_platform_ai_and_org_creation(as_user):
+    """An organization-level Super Admin role (or any acting workspace) is not the platform owner."""
+    from app.core.security import hash_password
+    from app.seed import DEV_PASSWORD
+
+    db = SessionLocal()
+    org = db.scalar(select(Organization).where(Organization.slug == "harborview"))
+    email = f"orgsuper.{uuid.uuid4().hex[:6]}@example.com"
+    u = User(email=email, first_name="Org", last_name="Super", password_hash=hash_password(DEV_PASSWORD))
+    db.add(u)
+    db.flush()
+    m = Membership(user_id=u.id, organization_id=org.id, all_clinics=True)
+    db.add(m)
+    db.flush()
+    m.roles.append(MembershipRole(role="super_admin"))
+    db.commit()
+    db.close()
+    org_super = as_user(email)
+    for api in (org_super, as_user("hospitaladmin@harborview.dev")):
+        assert api.get("/admin/ai-owner").status_code == 403
+        assert api.get("/admin/ai-settings").status_code == 403
+        assert api.put("/admin/ai-settings", json={"provider": "simulated"}).status_code == 403
+        assert api.put("/admin/ai-owner/platform", json={"ai_disabled": True}).status_code == 403
+    assert org_super.post("/organizations", json={"name": "Xx Org", "slug": f"x-{uuid.uuid4().hex[:5]}", "first_clinic_name": "Aa",
+                                                  "first_clinic_code": "AAA"}).status_code == 403
     owner = as_user("admin@undeclared.dev")
+    assert owner.get("/admin/ai-settings").status_code == 200
+    assert owner.act("doctor").get("/admin/ai-settings").status_code == 403  # only in the Super Admin workspace
     st = owner.get("/admin/ai-owner").json()
-    assert st["demo"]["enabled"] is False and st["demo"]["limits"]["visitor_daily_requests"] == 25
-    assert st["demo"]["limits"]["global_daily_requests"] == 200 and st["demo"]["limits"]["monthly_budget_usd"] == 10.0
-    # Enabling without a key is refused.
-    assert owner.put("/admin/ai-owner/demo", json={"enabled": True}).status_code == 400
-    r = owner.put("/admin/ai-owner/demo", json={"enabled": True, "api_key": FAKE_KEY, "text_model": "gpt-4.1-mini",
-                                                "allowed_agents": ["doctor_assistant", "insurance_guardian"]})
-    assert r.status_code == 200, r.text
-    assert FAKE_KEY not in r.text and FAKE_KEY[-6:] not in r.text.replace(r.json()["demo"]["dedicated_key"]["hint"] or "", "")
-    assert r.json()["demo"]["active"] is True
-    policy, eff = owner_demo.load()
-    assert eff.source == "owner-demo" and eff.api_key == FAKE_KEY and eff.allowed_agents == ["doctor_assistant", "insurance_guardian"]
-    assert demo_scope._default().source == "owner-demo"  # visitors without their own key use the owner provider
-    # Emergency disable takes effect immediately (no redeploy).
-    assert owner.post("/admin/ai-owner/demo/disable").json()["demo"]["active"] is False
-    assert owner_demo.load()[1] is None
-
-
-def test_operator_env_kill_switch(as_user, no_validate, monkeypatch):
-    owner = as_user("admin@undeclared.dev")
-    owner.put("/admin/ai-owner/demo", json={"enabled": True, "api_key": FAKE_KEY})
-    monkeypatch.setattr(settings, "demo_ai_disabled", True)
-    owner_demo.invalidate()
-    assert owner_demo.load()[1] is None
-
-
-def test_only_real_superadmin_can_reach_owner_controls(as_user, app, monkeypatch):
-    assert as_user("hospitaladmin@harborview.dev").get("/admin/ai-owner").status_code == 403
-    monkeypatch.setattr(settings, "demo_mode", True)
-    monkeypatch.setattr(settings, "demo_sandbox_enabled", False)  # legacy shared account; demo hospitals: test_demo_sandbox
-    c = TestClient(app)
-    r = c.post("/api/v1/auth/demo-login", json={"key": "super_admin"})
-    h = {"Authorization": f"Bearer {r.json()['access_token']}", "X-Organization-Id": r.json()["me"]["memberships"][0]["organization_id"]}
-    assert c.get("/api/v1/admin/ai-owner", headers=h).status_code == 403
-    assert c.put("/api/v1/admin/ai-owner/demo", headers=h, json={"enabled": True}).status_code == 403
-    assert c.put("/api/v1/admin/ai-owner/platform", headers=h, json={"ai_disabled": True}).status_code == 403
+    assert set(st) == {"platform", "note"} and "api_key" not in str(st)
 
 
 def test_platform_kill_switch_turns_ai_into_labelled_simulation(as_user):
@@ -112,26 +89,6 @@ def test_budget_reservation_never_exceeds_budget():
     key = f"test:budget:{uuid.uuid4()}"
     assert usage.reserve_cost(key, 0.06, 0.10) and not usage.reserve_cost(key, 0.06, 0.10)
     assert usage.read(key)["cost_usd"] == pytest.approx(0.06)
-
-
-def test_shared_demo_limits_per_visitor_and_refund_on_refusal():
-    from app.ai.config import EffectiveAI
-
-    eff = EffectiveAI(provider="openai", api_key="sk-x", text_model="gpt-4.1-mini", source="owner-demo", allowed_models=["gpt-4.1-mini"],
-                      limits={**owner_demo.DEFAULT_POLICY["limits"], "visitor_daily_requests": 1})
-    token = f"sess:{uuid.uuid4()}"
-    with demo_scope.use(token, eff):
-        with demo_scope.guard("gpt-4.1-mini") as t:
-            t.record("gpt-4.1-mini", 1000, 100)
-        with pytest.raises(demo_scope.DemoLimitError):
-            with demo_scope.guard("gpt-4.1-mini"):
-                pass
-        with pytest.raises(demo_scope.DemoLimitError):  # model not on the allow-list
-            with demo_scope.guard("gpt-5"):
-                pass
-        with pytest.raises(demo_scope.DemoLimitError):  # realtime off by default
-            with demo_scope.guard("gpt-realtime", kind="realtime"):
-                pass
 
 
 # ------------------------------------------------------------------------------------------------ CLI & account

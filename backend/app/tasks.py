@@ -48,10 +48,7 @@ def process_document_task(doc_id: str, ai_scope: str | None = None) -> None:
 
     db = SessionLocal()
     try:
-        from app.models import Document
-
-        scope = ai_scope or _hospital_scope(db, Document, doc_id)
-        with demo_scope.use(scope):  # demo uploads use the demo session's AI settings, never the platform key
+        with demo_scope.use(ai_scope):  # a caller-provided AI scope, if any (none in normal use)
             process_document(db, uuid.UUID(doc_id))
     finally:
         db.close()
@@ -66,9 +63,7 @@ def scribe_transcribe_task(session_id: str, ai_scope: str | None = None) -> None
 
     db = SessionLocal()
     try:
-        from app.models import ScribeSession
-
-        with demo_scope.use(ai_scope or _hospital_scope(db, ScribeSession, session_id)):
+        with demo_scope.use(ai_scope):
             transcribe(db, uuid.UUID(session_id))
     finally:
         db.close()
@@ -83,23 +78,10 @@ def scribe_draft_task(session_id: str, ai_scope: str | None = None) -> None:
 
     db = SessionLocal()
     try:
-        from app.models import ScribeSession
-
-        with demo_scope.use(ai_scope or _hospital_scope(db, ScribeSession, session_id)):
+        with demo_scope.use(ai_scope):
             draft(db, uuid.UUID(session_id))
     finally:
         db.close()
-
-
-def _hospital_scope(db, model, rid: str) -> str | None:
-    """Work for a private demo hospital that arrived without a visitor scope (e.g. a fax webhook) never uses the
-    platform AI key: it runs under the demo default (owner-managed demo AI or the labelled simulation)."""
-    import uuid
-
-    from app.demo import sandbox
-
-    row = db.get(model, uuid.UUID(rid))
-    return sandbox.default_ai_scope(db, row.organization_id) if row else None
 
 
 # ---------- Automation engine (Milestone A2) ----------
@@ -166,34 +148,3 @@ def escalate_cases_task() -> dict:
         return stats
     finally:
         db.close()
-
-
-@celery_app.task(name="app.tasks.demo_ai_cleanup")
-def demo_ai_cleanup_task() -> int:
-    """Delete expired demo-session AI settings (including any visitor-entered key)."""
-    from app.ai import demo_scope
-
-    db = SessionLocal()
-    try:
-        return demo_scope.cleanup(db)
-    finally:
-        db.close()
-
-
-# ---------- Private demo hospitals (DEMO_MODE only) ----------
-
-@celery_app.task(name="app.tasks.demo_sandbox_maintain")
-def demo_sandbox_maintain_task() -> dict:
-    """Expire idle/old demo hospitals, remove released ones, retire stale pool hospitals, keep the pool filled."""
-    from app.demo import sandbox
-
-    return sandbox.maintain()
-
-
-@celery_app.task(name="app.tasks.demo_sandbox_purge")
-def demo_sandbox_purge_task(sandbox_id: str) -> bool:
-    import uuid
-
-    from app.demo import sandbox
-
-    return sandbox.purge(uuid.UUID(sandbox_id))

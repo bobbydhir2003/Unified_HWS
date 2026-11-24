@@ -117,10 +117,7 @@ def sweep(db: Session, org_ids: list[uuid.UUID] | None = None) -> int:
     from app.models import Organization
 
     if org_ids is None:
-        from app.demo.sandbox import inactive_sandbox_org_ids
-
-        idle = inactive_sandbox_org_ids(db)  # pool demo hospitals nobody is using get no AI work
-        org_ids = [o for o in db.scalars(select(Organization.id).where(Organization.status == "active")) if o not in idle]
+        org_ids = list(db.scalars(select(Organization.id).where(Organization.status == "active")))
     queued = 0
     for org_id in org_ids:
         for cid, trig in candidates(db, org_id):
@@ -153,26 +150,12 @@ def _mark(db: Session, case: Case | None, **fields) -> None:
 
 
 def _provider(db: Session, org_id: uuid.UUID, agent: str):
-    """(EffectiveAI | None, scope token | None, reason). Platform AI first; for synthetic demo organizations the owner-managed
-    demo provider (under its shared limits) when the owner has enabled it. Never a visitor's temporary key."""
-    from app.ai import owner_demo
+    """(EffectiveAI | None, scope token | None, reason): the platform AI configuration, if it serves this assistant."""
     from app.ai.config import platform_effective
-    from app.ai.policy import contains_phi
-    from app.demo.sandbox import is_sandbox_org
 
     plat = platform_effective()
-    if is_sandbox_org(org_id, db):
-        # A private demo hospital never uses the platform key: only the owner-managed demo provider (shared limits).
-        _, demo_eff = owner_demo.load()
-        if demo_eff and (not demo_eff.allowed_agents or agent in demo_eff.allowed_agents):
-            return demo_eff, f"auto:{org_id}", None
-        return None, None, "Public demo AI isn't enabled by the platform owner."
     if plat.provider == "openai" and plat.api_key and plat.text_model and (not plat.allowed_agents or agent in plat.allowed_agents):
         return plat, None, None
-    if not contains_phi(db, org_id):
-        _, demo_eff = owner_demo.load()
-        if demo_eff and (not demo_eff.allowed_agents or agent in demo_eff.allowed_agents):
-            return demo_eff, f"auto:{org_id}", None
     return None, None, plat.reason or "No AI provider is configured for automatic assistance."
 
 

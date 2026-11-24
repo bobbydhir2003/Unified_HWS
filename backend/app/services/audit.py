@@ -34,7 +34,11 @@ def record(
     request: Request | None = None,
     details: dict | None = None,
 ) -> AuditEvent:
-    """Add an audit event to the current transaction. Never put PHI values into `details` — ids and field names only."""
+    """Add an audit event to the current transaction. Never put PHI values into `details` — ids and field names only.
+    The actor is always the signed-in person; when they work in a header-selected workspace, the role is recorded too."""
+    acting = getattr(getattr(request, "state", None), "acting_role", None) if request is not None else None
+    if acting:
+        details = {**(details or {}), "acting_role": acting}
     ev = AuditEvent(
         organization_id=org_id,
         actor_user_id=actor_id,

@@ -31,8 +31,6 @@ def production_problems(s: Settings) -> list[str]:
         problems.append("CORS_ORIGINS must use https")
     if s.ai_phi_allowed and s.ai_provider == "simulated":
         problems.append("AI_PHI_ALLOWED set without an external provider — check configuration")
-    if s.demo_mode:
-        problems.append("DEMO_MODE must be off in production (it allows one-click sign-in to demo accounts)")
     if not s.enforce_mfa:
         problems.append("ENFORCE_MFA should be true for privileged roles in production")
     return problems
@@ -59,7 +57,7 @@ class RateLimiter:
 
 LIMITED_PREFIXES = {
     "/api/auth/login": "auth", "/api/auth/mfa/verify": "auth", "/api/auth/password/forgot": "auth", "/api/auth/password/reset": "auth",
-    "/api/auth/invitations/accept": "auth", "/api/auth/demo-login": "auth", "/api/auth/demo/reset": "auth", "/api/integrations/": "webhook",
+    "/api/auth/invitations/accept": "auth", "/api/integrations/": "webhook",
 }
 
 

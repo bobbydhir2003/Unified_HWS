@@ -19,15 +19,11 @@ from app.models import AgentConfig, AgentConfigVersion, AgentRun, AIFeedback, AI
 router = APIRouter(tags=["agents"])
 
 
-def cfg_out(c, ctx, override: dict | None = None) -> dict:
-    if override:
-        c = R.view(c, override)
+def cfg_out(c, ctx) -> dict:
     out = {"key": c.key, "name": c.name, "purpose": c.purpose, "instructions": c.instructions, "allowed_tools": c.allowed_tools, "model": c.model,
             "trigger": c.trigger, "required_permission": c.required_permission, "max_tool_calls": c.max_tool_calls, "timeout_seconds": c.timeout_seconds,
             "max_cost_usd": c.max_cost_usd, "enabled": c.enabled, "facility_overrides": c.facility_overrides, "version": c.version,
             "can_run": c.trigger != "feature" and ctx.can(c.required_permission) and c.enabled}
-    if override:
-        out["demo_override"] = True  # edited in this demo session only
     return out
 
 
@@ -39,8 +35,7 @@ def list_agents(ctx: TenantContext = Depends(require(P.AI_USE))):
                                                                     func.coalesce(func.sum(AgentRun.cost_usd), 0)).where(
         AgentRun.organization_id == ctx.org_id, AgentRun.started_at > now() - timedelta(days=30)).group_by(AgentRun.agent_key)).all()}
     rows = ctx.db.scalars(select(AgentConfig).where(AgentConfig.organization_id == ctx.org_id).order_by(AgentConfig.name)).all()
-    ov = R.demo_overrides(ctx)
-    return [{**cfg_out(c, ctx, ov.get(c.key)), "runs_30d": stats.get(c.key, (0, 0, 0))[0], "failed_30d": stats.get(c.key, (0, 0, 0))[1],
+    return [{**cfg_out(c, ctx), "runs_30d": stats.get(c.key, (0, 0, 0))[0], "failed_30d": stats.get(c.key, (0, 0, 0))[1],
              "cost_30d_usd": float(stats.get(c.key, (0, 0, 0))[2])} for c in rows]
 
 
@@ -71,24 +66,6 @@ def update_agent(key: str, body: AgentPatch, ctx: TenantContext = Depends(requir
         if unknown:
             raise bad_request(f"Unknown tools: {unknown}")
     data = body.model_dump(exclude_unset=True, exclude={"note"})
-    from app.ai import demo_scope
-    from app.core import demo
-
-    token = demo_scope.current_token()
-    if token and demo.is_demo_user(ctx.user):
-        # Demo session: save as this session's override, not the organization's configuration.
-        from sqlalchemy.orm.attributes import flag_modified
-
-        from app.api.routers.ai_admin import _demo_row
-
-        row = _demo_row(ctx, token, create=True)
-        ov = dict(row.agent_overrides or {})
-        ov[key] = {**ov.get(key, {}), **{k: v for k, v in data.items() if k in R.DEMO_EDITABLE}}
-        row.agent_overrides, row.updated_at = ov, now()
-        flag_modified(row, "agent_overrides")
-        ctx.audit("agent.demo_config_updated", resource_type="agent", resource_id=key, details={"fields": list(data)})
-        ctx.db.commit()
-        return cfg_out(c, ctx, ov[key])
     for k, v in data.items():
         setattr(c, k, v)
     c.version, c.updated_by_id = c.version + 1, ctx.user.id

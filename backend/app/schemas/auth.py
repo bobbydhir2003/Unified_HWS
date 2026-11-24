@@ -24,6 +24,12 @@ class ClinicBrief(ORM):
     timezone: str
 
 
+class WorkspaceOut(BaseModel):
+    role: str
+    label: str
+    permissions: list[str]
+
+
 class MembershipOut(BaseModel):
     organization_id: uuid.UUID
     organization_name: str
@@ -32,6 +38,8 @@ class MembershipOut(BaseModel):
     clinics: list[ClinicBrief]
     provider_id: uuid.UUID | None = None
     patient_id: uuid.UUID | None = None
+    # Workspaces selectable in the header role switcher (empty when the user has a single role and no switching rights).
+    workspaces: list[WorkspaceOut] = []
 
 
 class UserOut(ORM):
@@ -51,7 +59,6 @@ class MeOut(BaseModel):
     user: UserOut
     memberships: list[MembershipOut]
     mfa_enrollment_required: bool = False
-    demo_hospital: bool = False  # an identity of a private demo hospital (GET /auth/demo/session for the details)
 
 
 class TokenOut(BaseModel):

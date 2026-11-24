@@ -1,4 +1,4 @@
-"""Private demo hospitals (DEMO_MODE only). See app/demo/sandbox.py.
+"""Private demo hospitals of the former Demo Mode (RETIRED — see app/demo_retirement.py; kept for migration history).
 
 A row tracks one synthetic hospital organization through its life: building → ready (in the pool) → leased (one visitor)
 → releasing → purging → purged. `organization_id` deliberately has NO foreign key: the row must outlive the organization's

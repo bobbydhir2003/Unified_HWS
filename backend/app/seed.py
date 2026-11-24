@@ -45,20 +45,17 @@ DEV_PASSWORD = os.environ.get("SEED_DEMO_PASSWORD") or "Undeclared!2026"
 RNG_SEED = 20261119
 rng = random.Random(RNG_SEED)
 
-# Who the builder creates. Harborview: <local>@harborview.dev with the demo password. A private demo hospital
-# (app.demo.sandbox): <local>@<tag>.demo.example.com, NO password hash (cannot sign in with a password) and
-# users.sandbox_org_id set, so the identity only exists inside that hospital and is removed with it.
-_IDENTITY: dict = {"domain": "harborview.dev", "sandbox_org_id": None}
+# Email domain of the synthetic staff the builder creates.
+_IDENTITY: dict = {"domain": "harborview.dev"}
 
 
 def em(local: str) -> str:
     return f"{local}@{_IDENTITY['domain']}"
 
 
-def _webhook_secret(kind: str, sandbox: bool = False) -> str:
-    """Known values locally (tests/E2E post to these webhooks); random per deployment when a demo password is set,
-    and always random for private demo hospitals."""
-    if sandbox or os.environ.get("SEED_DEMO_PASSWORD"):
+def _webhook_secret(kind: str) -> str:
+    """Known values locally (tests/E2E post to these webhooks); random per deployment when a demo password is set."""
+    if os.environ.get("SEED_DEMO_PASSWORD"):
         import secrets
 
         return secrets.token_urlsafe(32)
@@ -93,9 +90,8 @@ ACUTE = [("J06.9", "Acute upper respiratory infection, unspecified", "Cough and 
 
 
 def user(db, email, first, last, title=None, superadmin=False) -> User:
-    sandbox_org = _IDENTITY["sandbox_org_id"]
-    u = User(email=email, first_name=first, last_name=last, title=title, is_superadmin=superadmin and not sandbox_org,
-             password_hash=None if sandbox_org else hash_password(DEV_PASSWORD), sandbox_org_id=sandbox_org)
+    u = User(email=email, first_name=first, last_name=last, title=title, is_superadmin=superadmin,
+             password_hash=hash_password(DEV_PASSWORD))
     db.add(u)
     db.flush()
     return u
@@ -318,18 +314,15 @@ def _lab(db, org, pat, prov, user, code, title, comps, when):
                          flag=flag, resulted_at=when, source="simulated"))
 
 
-def build_hospital(db, *, name: str = "Harborview Health", slug: str = "harborview", sandbox: bool = False) -> Organization:
+def build_hospital(db, *, name: str = "Harborview Health", slug: str = "harborview") -> Organization:
     """Builds one complete synthetic hospital organization (clinics, staff, patients, schedule, hospital, inpatients,
-    ED, insurance scenarios). Harborview at first seed; private demo hospitals (sandbox=True) reuse exactly the same
-    builder with their own sign-in-less identities (see app.demo.sandbox)."""
+    ED, insurance scenarios)."""
     # ---- Org 1: Harborview Family Medicine ----
     org = Organization(name=name, slug=slug,
-                       settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": _webhook_secret("fax", sandbox),
-                                 "voice_webhook_secret": _webhook_secret("voice", sandbox)})
+                       settings={"synthetic_data": True, "mrn_seq": 100000, "fax_webhook_secret": _webhook_secret("fax"),
+                                 "voice_webhook_secret": _webhook_secret("voice")})
     db.add(org)
     db.flush()
-    if sandbox:
-        _IDENTITY["sandbox_org_id"] = org.id  # every user created from here on is a sign-in-less identity of this hospital
     tz = "America/New_York"
     downtown = Clinic(organization_id=org.id, name="Harborview Downtown", code="HDT", timezone=tz, phone="(555) 201-4400",
                       address_line1="120 Beacon Rd", city="Port Harbor", state="MA", postal_code="02110",

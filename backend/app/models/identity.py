@@ -74,9 +74,8 @@ class User(UUIDPk, Timestamps, Base):
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     preferences: Mapped[dict] = mapped_column(JSONB, default=dict)
-    # Set only for identities that exist inside ONE private demo hospital (app.demo.sandbox). Such users have no password,
-    # can't use password/reset/invitation sign-in, are reachable only through that hospital's demo lease, and are deleted
-    # with the hospital (ON DELETE CASCADE).
+    # Former Demo Mode only (retired; see app/demo_retirement.py): identities of a private demo hospital. Such users can
+    # never sign in; the column is kept so migration history stays intact.
     sandbox_org_id: Mapped[uuid.UUID | None] = fk("organizations.id", nullable=True)
 
     memberships: Mapped[list["Membership"]] = relationship(back_populates="user", cascade="all, delete-orphan")
@@ -154,7 +153,7 @@ class UserSession(UUIDPk, Base):
     last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    # Demo hospital lease this session belongs to (None for ordinary sessions). Checked on every request.
+    # Former Demo Mode only (retired): the demo-hospital lease of a session. Always None for new sessions.
     sandbox_lease_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), index=True)
 
 

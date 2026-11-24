@@ -52,11 +52,11 @@ from app.schemas.common import Message
 from app.services import audit
 from app.services.identity import (
     REFRESH_COOKIE,
+    access_token_for,
     build_me,
     clear_refresh_cookie,
     issue_session,
     send_email,
-    session_token,
     set_refresh_cookie,
 )
 
@@ -69,7 +69,7 @@ INVALID = "Invalid email or password"
 def login(body: LoginIn, request: Request, response: Response, db: Session = Depends(get_db)):
     email = body.email.lower()
     user = db.scalar(select(User).where(User.email == email))
-    if not user or not user.is_active or user.sandbox_org_id is not None:  # demo hospital identities have no password
+    if not user or not user.is_active or user.sandbox_org_id is not None:  # retired demo identities have no password
         verify_password(body.password, None)  # constant-ish time
         audit.record(db, "auth.login", outcome="failure", request=request, details={"reason": "unknown_user"})
         db.commit()
@@ -131,21 +131,16 @@ def refresh(
     user = db.get(User, sess.user_id)
     if not user or not user.is_active:
         raise HTTPException(401, "Session expired")
-    if user.sandbox_org_id is not None:
-        from app.demo import sandbox
-
-        try:
-            sandbox.check_session(db, user, sess)
-        except HTTPException:
-            clear_refresh_cookie(response)
-            raise
+    if user.sandbox_org_id is not None:  # retired demo-hospital identity
+        clear_refresh_cookie(response)
+        raise HTTPException(401, "Session expired")
     # Rotate refresh token on every use.
     new_refresh = new_opaque_token()
     sess.refresh_token_hash = hash_token(new_refresh)
     sess.last_used_at = now()
     db.commit()
     set_refresh_cookie(response, new_refresh)
-    return TokenOut(access_token=session_token(db, user, sess), expires_in=settings.access_token_minutes * 60,
+    return TokenOut(access_token=access_token_for(user, sess.id), expires_in=settings.access_token_minutes * 60,
                     me=build_me(db, user))
 
 
@@ -186,9 +181,7 @@ def update_me(body: ProfileUpdate, auth: AuthUser = Depends(get_auth_user), db: 
 @router.post("/password/forgot", response_model=Message)
 def forgot_password(body: ForgotIn, request: Request, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == body.email.lower()))
-    from app.core import demo
-
-    if user and user.is_active and not demo.is_demo_user(user) and not demo.is_sandbox_user(user):  # demo accounts: no resets
+    if user and user.is_active and user.sandbox_org_id is None:
         token = new_opaque_token()
         db.add(PasswordResetToken(user_id=user.id, token_hash=hash_token(token), created_at=now(),
                                   expires_at=now() + timedelta(hours=1)))
@@ -351,12 +344,6 @@ def preview_invitation(token: str, db: Session = Depends(get_db)):
 @router.post("/invitations/accept", response_model=TokenOut)
 def accept_invitation(body: AcceptInviteIn, request: Request, response: Response, db: Session = Depends(get_db)):
     inv = _load_invite(db, body.token)
-    from app.demo import sandbox
-
-    if sandbox.is_sandbox_org(inv.organization_id, db):
-        # Accepting would create a real password account inside a demo hospital. Demo staff are added directly instead.
-        raise bad_request("Invitations to a demo hospital can't be accepted. Staff added in a demo hospital are available "
-                          "in its role switcher.")
     user = db.scalar(select(User).where(User.email == inv.email))
     if user is not None and user.sandbox_org_id is not None:
         raise bad_request("This invitation is invalid or has expired.")
@@ -395,187 +382,3 @@ def accept_invitation(body: AcceptInviteIn, request: Request, response: Response
     db.commit()
     return out
 
-
-# ---------- Demo mode (synthetic demonstration deployments only; see app/core/demo.py) ----------
-
-
-class DemoLoginIn(BaseModel):
-    key: str = Field(min_length=1, max_length=40)
-
-
-class DemoSwitchIn(BaseModel):
-    key: str | None = Field(default=None, max_length=40)
-    user_id: uuid.UUID | None = None
-
-
-class DemoResetIn(BaseModel):
-    confirm: str = Field(max_length=20)
-
-
-@router.get("/demo")
-def demo_accounts():
-    """Public: which one-click demo roles exist. Empty unless DEMO_MODE is on (never in production)."""
-    from app.core import demo
-    from app.demo import sandbox
-
-    if not demo.enabled():
-        return {"enabled": False, "accounts": []}
-    if sandbox.enabled():
-        return {"enabled": True, "private_hospitals": True,
-                "accounts": [{"key": r.key, "label": r.label, "role": r.role, "featured": r.featured} for r in sandbox.ROLES]}
-    return {"enabled": True, "accounts": [{"key": k, "label": label, "role": role} for k, label, _, role in demo.DEMO_ACCOUNTS]}
-
-
-@router.post("/demo-login", response_model=TokenOut)
-def demo_login(body: DemoLoginIn, request: Request, response: Response, db: Session = Depends(get_db),
-               ud_refresh: str | None = Cookie(default=None, alias=REFRESH_COOKIE)):
-    """Start a demo: the visitor gets their own private demo hospital and is signed in as the chosen role there. A browser
-    that already has an active demo hospital keeps it (the chosen role is opened inside it) instead of starting another."""
-    from app.core import demo
-    from app.demo import sandbox
-    from app.services.audit import client_ip
-
-    if not demo.enabled():
-        raise HTTPException(404, "Not found")
-    if not sandbox.enabled():
-        return _legacy_demo_login(body, request, response, db)
-    role = sandbox.BY_KEY.get(body.key)
-    if not role:
-        raise HTTPException(404, "Not found")
-    current = _browser_sandbox(db, ud_refresh)
-    if current is not None:
-        sess, sb = current
-        user = sandbox.identity(db, sb, key=role.key)
-        if user is not None:
-            sess.revoked_at = now()
-            out = sandbox.open_session(db, sb, user, request, response)
-            audit.record(db, "demo.role_switched", org_id=sb.organization_id, actor_id=sess.user_id, request=request,
-                         resource_type="user", resource_id=user.id, details={"to": role.key, "via": "demo-login"})
-            db.commit()
-            return out
-    try:
-        sb = sandbox.lease(db, visitor=sandbox.visitor_hash(client_ip(request)))
-    except sandbox.SandboxUnavailable as e:
-        db.rollback()
-        raise HTTPException(503, {"code": "demo_unavailable", "message": str(e)}) from None
-    user = sandbox.identity(db, sb, key=role.key)
-    if user is None:
-        sandbox.release(db, sb, "no-identity")
-        db.commit()
-        raise HTTPException(503, {"code": "demo_unavailable", "message": "That demo role isn't available. Please try again."})
-    out = sandbox.open_session(db, sb, user, request, response)
-    audit.record(db, "auth.demo_login", org_id=sb.organization_id, actor_id=user.id, request=request, details={"role": role.key})
-    db.commit()
-    return out
-
-
-def _legacy_demo_login(body: DemoLoginIn, request: Request, response: Response, db: Session) -> TokenOut:
-    """DEMO_SANDBOX_ENABLED=false: the original shared accounts (restricted by app.core.demo.DEMO_BLOCKED)."""
-    from app.core import demo
-    from app.models import Organization
-
-    acct = demo.account(body.key)
-    if not acct:
-        raise HTTPException(404, "Not found")
-    user = db.scalar(select(User).where(User.email == acct[2]))
-    memberships = [m for m in user.memberships if m.is_active] if user else []
-    orgs = [db.get(Organization, m.organization_id) for m in memberships]
-    # Only synthetic organizations, never the platform administrator, never bypass MFA.
-    if (not user or not user.is_active or user.is_superadmin or user.mfa_enabled or not memberships
-            or not all(o and (o.settings or {}).get("synthetic_data") for o in orgs)):
-        audit.record(db, "auth.demo_login", outcome="failure", request=request, details={"role": body.key})
-        db.commit()
-        raise HTTPException(403, "This demo account is not available.")
-    out = issue_session(db, user, request, response)
-    audit.record(db, "auth.demo_login", actor_id=user.id, request=request, details={"role": body.key})
-    db.commit()
-    return out
-
-
-def _browser_sandbox(db: Session, refresh_cookie: str | None):
-    """The demo hospital this browser is already using (valid refresh cookie of an active lease), if any."""
-    from fastapi import HTTPException as _H
-
-    from app.demo import sandbox
-
-    if not refresh_cookie:
-        return None
-    sess = db.scalar(select(UserSession).where(UserSession.refresh_token_hash == hash_token(refresh_cookie)))
-    if not sess or sess.revoked_at or sess.expires_at < now() or not sess.sandbox_lease_id:
-        return None
-    user = db.get(User, sess.user_id)
-    if not user or user.sandbox_org_id is None:
-        return None
-    try:
-        return sess, sandbox.check_session(db, user, sess)
-    except _H:
-        return None
-
-
-def _current_sandbox(auth: AuthUser, db: Session):
-    from app.demo import sandbox
-
-    if auth.user.sandbox_org_id is None:
-        raise HTTPException(404, "Not in a demo hospital")
-    sess = db.get(UserSession, auth.session_id)
-    return sandbox.check_session(db, auth.user, sess)
-
-
-@router.get("/demo/session")
-def demo_session(auth: AuthUser = Depends(get_auth_user), db: Session = Depends(get_db)):
-    """The visitor's demo hospital: active role, everyone they can switch to, and when it ends."""
-    from app.demo import sandbox
-
-    sb = _current_sandbox(auth, db)
-    return sandbox.info(db, sb, auth.user)
-
-
-@router.post("/demo/switch", response_model=TokenOut)
-def demo_switch(body: DemoSwitchIn, request: Request, response: Response, auth: AuthUser = Depends(get_auth_user),
-                db: Session = Depends(get_db)):
-    """Switch to another role (or a specific staff member / the patient) inside the SAME demo hospital, without
-    starting a new demo. The new identity's ordinary permissions apply; the previous session ends."""
-    from app.demo import sandbox
-
-    sb = _current_sandbox(auth, db)
-    target = sandbox.identity(db, sb, key=body.key, user_id=body.user_id)
-    if target is None:
-        raise HTTPException(404, "That person isn't available in your demo hospital")
-    before = sandbox.role_of(auth.user)
-    db.execute(update(UserSession).where(UserSession.id == auth.session_id).values(revoked_at=now()))
-    out = sandbox.open_session(db, sb, target, request, response)
-    after = sandbox.role_of(target)
-    audit.record(db, "demo.role_switched", org_id=sb.organization_id, actor_id=auth.user.id, request=request,
-                 resource_type="user", resource_id=target.id,
-                 details={"from": before.key if before else None, "to": after.key if after else None})
-    db.commit()
-    return out
-
-
-@router.post("/demo/reset", response_model=TokenOut)
-def demo_reset(body: DemoResetIn, request: Request, response: Response, auth: AuthUser = Depends(get_auth_user),
-               db: Session = Depends(get_db)):
-    """Replace the visitor's demo hospital with a fresh one (same role). Only this visitor's hospital is removed."""
-    from app.demo import sandbox
-    from app.services.audit import client_ip
-
-    if body.confirm != "RESET":
-        raise bad_request('Type RESET to confirm')
-    old = _current_sandbox(auth, db)
-    role = sandbox.role_of(auth.user) or sandbox.BY_KEY["super_admin"]
-    visitor = old.visitor_hash or sandbox.visitor_hash(client_ip(request))
-    try:
-        new = sandbox.lease(db, visitor=visitor, exclude=old.id)
-    except sandbox.SandboxUnavailable as e:
-        db.rollback()
-        raise HTTPException(503, {"code": "demo_unavailable", "message": str(e)}) from None
-    user = sandbox.identity(db, new, key=role.key) or sandbox.identity(db, new, key="super_admin")
-    old = db.get(type(old), old.id)
-    sandbox.release(db, old, "reset")
-    out = sandbox.open_session(db, new, user, request, response)
-    audit.record(db, "demo.hospital_reset", org_id=new.organization_id, actor_id=user.id, request=request, details={"role": role.key})
-    db.commit()
-    from app.tasks import demo_sandbox_purge_task
-
-    demo_sandbox_purge_task.delay(str(old.id))  # remove the old hospital now (maintenance would also pick it up)
-    return out

@@ -81,31 +81,11 @@ class AgentError(ValueError):
 
 CFG_FIELDS = ("key", "name", "purpose", "instructions", "allowed_tools", "model", "trigger", "required_permission", "max_tool_calls",
               "timeout_seconds", "max_cost_usd", "enabled", "facility_overrides", "version")
-DEMO_EDITABLE = ("instructions", "allowed_tools", "model", "max_tool_calls", "timeout_seconds", "max_cost_usd", "enabled")
-
-
-def demo_overrides(ctx, key: str | None = None) -> dict:
-    """Agent overrides saved by THIS demo session (never written to the organization's agent configuration)."""
-    import uuid as _uuid
-
-    from app.ai import demo_scope
-    from app.core import demo
-
-    token = demo_scope.current_token()
-    if not token or not demo.is_demo_user(ctx.user):
-        return {}
-    row = demo_scope.load_row(ctx.db, _uuid.UUID(token.split(":", 1)[1]))
-    ov = (row.agent_overrides or {}) if row else {}
-    return ov.get(key, {}) if key else ov
-
-
-def view(cfg: AgentConfig, override: dict | None = None):
-    """Read-only copy of an agent's configuration with a demo override applied (the ORM row is never mutated)."""
+def view(cfg: AgentConfig):
+    """Read-only copy of an agent's configuration for one run (the ORM row is never mutated)."""
     from types import SimpleNamespace
 
-    data = {f: getattr(cfg, f) for f in CFG_FIELDS}
-    data.update({k: v for k, v in (override or {}).items() if k in DEMO_EDITABLE})
-    return SimpleNamespace(**data)
+    return SimpleNamespace(**{f: getattr(cfg, f) for f in CFG_FIELDS})
 
 
 def _summarize(key: str, calls: list[dict]) -> str:
@@ -140,7 +120,7 @@ def run_agent(ctx, key: str, user_input: str, *, facility_id: uuid.UUID | None =
     cfg = ctx.db.scalar(select(AgentConfig).where(AgentConfig.organization_id == ctx.org_id, AgentConfig.key == key))
     if not cfg:
         raise AgentError("Unknown agent")
-    cfg = view(cfg, demo_overrides(ctx, key))
+    cfg = view(cfg)
     if cfg.trigger == "feature":
         raise AgentError(f"{cfg.name} runs inside its own workflow screen")
     enabled = cfg.facility_overrides.get(str(facility_id), cfg.enabled) if facility_id else cfg.enabled
