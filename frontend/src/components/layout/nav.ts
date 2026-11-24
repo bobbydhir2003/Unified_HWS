@@ -67,6 +67,7 @@ export const NAV: NavSection[] = [
       { to: "/admin/staff", label: "Staff & roles", icon: Users, perm: "users:manage" },
       { to: "/admin/clinics", label: "Clinic settings", icon: Settings2, perm: "clinic:manage" },
       { to: "/admin/scheduling", label: "Scheduling setup", icon: CalendarDays, perm: "clinic:manage" },
+      { to: "/admin/order-sets", label: "Order sets", icon: ListChecks, perm: "clinic:manage" },
       { to: "/admin/audit", label: "Audit log", icon: ScrollText, perm: "audit:read" },
       { to: "/admin/outbox", label: "Message outbox", icon: Mail, perm: "users:manage" },
       { to: "/admin/system", label: "System status", icon: ServerCog, perm: "clinic:manage" },

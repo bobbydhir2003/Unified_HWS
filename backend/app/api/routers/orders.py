@@ -71,13 +71,26 @@ class ReferralDetails(BaseModel):
     reason: str = Field(min_length=5, max_length=1000)
 
 
-DETAIL_MODELS = {"medication": MedicationDetails, "lab": LabDetails, "imaging": ImagingDetails, "referral": ReferralDetails}
+class ProcedureDetails(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    body_site: str | None = Field(default=None, max_length=100)
+    instructions: str | None = Field(default=None, max_length=1000)
+    code: str | None = Field(default=None, max_length=20)  # internal list; CPT requires a licence
+
+
+class NursingDetails(BaseModel):
+    instruction: str = Field(min_length=3, max_length=500)
+    frequency: str | None = Field(default=None, max_length=60)
+
+
+DETAIL_MODELS = {"medication": MedicationDetails, "lab": LabDetails, "imaging": ImagingDetails, "referral": ReferralDetails,
+                 "procedure": ProcedureDetails, "nursing": NursingDetails}
 
 
 class OrderIn(BaseModel):
     patient_id: uuid.UUID
     encounter_id: uuid.UUID | None = None
-    order_type: Literal["medication", "lab", "imaging", "referral"]
+    order_type: Literal["medication", "lab", "imaging", "referral", "procedure", "nursing"]
     priority: Literal["routine", "urgent", "stat"] = "routine"
     details: dict
     indication_codes: list[str] = Field(default_factory=list, max_length=8)
@@ -184,6 +197,10 @@ def _normalize(order_type: str, raw: dict) -> tuple[dict, str, str | None]:
             raise bad_request("Unknown imaging study")
         lat = f" ({d.laterality})" if d.laterality != "n/a" else ""
         return d.model_dump(), f"{img['name']}{lat}", img["code"]
+    if order_type == "procedure":
+        return d.model_dump(), d.name + (f" ({d.body_site})" if d.body_site else ""), d.code
+    if order_type == "nursing":
+        return d.model_dump(), d.instruction[:120] + (f" — {d.frequency}" if d.frequency else ""), None
     return d.model_dump(), f"Referral to {d.specialty}", None
 
 
@@ -312,6 +329,10 @@ def sign_order(oid: uuid.UUID, body: SignIn, ctx: TenantContext = Depends(requir
             raise HTTPException(409, {"code": e.code, "message": str(e)}) from None
         if o.details.get("setting") == "outpatient":
             o.transmission = adapters.order_transmitter().transmit(o.order_type, o.details, o.id)
+    elif o.order_type in ("procedure", "nursing"):
+        # Internal hospital work: goes to the care team's worklist, never to an external system.
+        o.transmission = {"channel": "internal_worklist", "simulated": False}
+        o.status = "signed"
     else:
         o.transmission = adapters.order_transmitter().transmit(o.order_type, o.details, o.id)
         o.status = "transmitted"

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Ban, CheckCircle2, FileSignature, FlaskConical, Info, Pill, ScanLine, Send, Stethoscope, TestTube } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, ClipboardCheck, FileSignature, FlaskConical, Info, Pill, ScanLine, Send, Stethoscope, TestTube } from "lucide-react";
 import { Dialog as D } from "radix-ui";
 import * as React from "react";
 import { Link } from "react-router-dom";
@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { fmtDateTime, fmtDob } from "@/lib/format";
 import { cn, titleCase } from "@/lib/utils";
 
-export type OrderType = "medication" | "lab" | "imaging" | "referral";
+export type OrderType = "medication" | "lab" | "imaging" | "referral" | "procedure" | "nursing";
 export type Warning = { type: string; severity: "high" | "moderate" | "low" | "info"; message: string };
 export type LabResultT = { id: string; name: string; value: string; unit: string | null; reference_range: string | null; flag: string; status: string; resulted_at: string; source: string };
 export type Order = {
@@ -32,7 +32,7 @@ export type Order = {
   released_to_patient_at: string | null; cancelled_reason: string | null; created_at: string;
 };
 
-export const TYPE_ICON: Record<OrderType, typeof Pill> = { medication: Pill, lab: TestTube, imaging: ScanLine, referral: Send };
+export const TYPE_ICON: Record<OrderType, typeof Pill> = { medication: Pill, lab: TestTube, imaging: ScanLine, referral: Send, procedure: Stethoscope, nursing: ClipboardCheck };
 const STATUS_VARIANT: Record<Order["status"], React.ComponentProps<typeof Badge>["variant"]> = {
   draft: "warning", signed: "info", transmitted: "info", in_progress: "primary", resulted: "ai", completed: "success", cancelled: "neutral",
   pending_verification: "warning", clarification_needed: "warning", rejected: "danger", active: "success", on_hold: "neutral", discontinued: "neutral",
@@ -109,6 +109,8 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
   const [imgF, setImgF] = React.useState({ laterality: "n/a", contrast: false, clinical_question: "" });
   const spec = useQuery({ queryKey: ["specialists"], queryFn: () => get<{ specialties: string[]; specialists: { specialty: string; name: string; organization: string; phone: string }[] }>("/catalog/specialists"), enabled: open });
   const [refF, setRefF] = React.useState({ specialty: "", specialist: "", reason: "" });
+  const [procF, setProcF] = React.useState({ name: "", body_site: "", instructions: "" });
+  const [nurF, setNurF] = React.useState({ instruction: "", frequency: "" });
   const [busy, setBusy] = React.useState(false);
   React.useEffect(() => { if (open) { setMed(null); setLab(null); setImg(null); setNotes(""); setPriority("routine"); setIndications(initialIndications); setRefF({ specialty: "", specialist: "", reason: "" }); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -126,6 +128,8 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
     }
     if (type === "lab") return lab ? { code: lab.code, fasting } : null;
     if (type === "imaging") return img && imgF.clinical_question.trim().length >= 3 ? { code: img.code, ...imgF } : null;
+    if (type === "procedure") return procF.name.trim().length >= 2 ? { name: procF.name, body_site: procF.body_site || null, instructions: procF.instructions || null } : null;
+    if (type === "nursing") return nurF.instruction.trim().length >= 3 ? { instruction: nurF.instruction, frequency: nurF.frequency || null } : null;
     const s = spec.data?.specialists.find((x) => x.name === refF.specialist);
     return refF.specialty && refF.reason.trim().length >= 5 ? { specialty: refF.specialty, reason: refF.reason, specialist_name: s?.name ?? null, specialist_org: s?.organization ?? null, specialist_phone: s?.phone ?? null } : null;
   };
@@ -152,6 +156,8 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
             <TabsTrigger value="lab"><TestTube />Lab</TabsTrigger>
             <TabsTrigger value="imaging"><ScanLine />Imaging</TabsTrigger>
             <TabsTrigger value="referral"><Send />Referral</TabsTrigger>
+            <TabsTrigger value="procedure"><Stethoscope />Procedure</TabsTrigger>
+            <TabsTrigger value="nursing"><ClipboardCheck />Nursing</TabsTrigger>
           </TabsList>
           <TabsContent value="medication" className="space-y-3">
             {!med ? (
@@ -207,6 +213,15 @@ export function NewOrderDialog({ open, onOpenChange, patientId, encounterId, ini
                 <Field label="Clinical question" required className="sm:col-span-2"><Textarea rows={2} value={imgF.clinical_question} onChange={(e) => setImgF({ ...imgF, clinical_question: e.target.value })} /></Field>
               </div>
             )}
+          </TabsContent>
+          <TabsContent value="procedure" className="grid gap-3 sm:grid-cols-2">
+            <Field label="Procedure" required className="sm:col-span-2" hint="Procedure codes (CPT) need an AMA licence; describe the procedure."><Input value={procF.name} onChange={(e) => setProcF({ ...procF, name: e.target.value })} /></Field>
+            <Field label="Body site"><Input value={procF.body_site} onChange={(e) => setProcF({ ...procF, body_site: e.target.value })} /></Field>
+            <Field label="Instructions" className="sm:col-span-2"><Textarea rows={2} value={procF.instructions} onChange={(e) => setProcF({ ...procF, instructions: e.target.value })} /></Field>
+          </TabsContent>
+          <TabsContent value="nursing" className="grid gap-3 sm:grid-cols-2">
+            <Field label="Nursing instruction" required className="sm:col-span-2"><Input value={nurF.instruction} onChange={(e) => setNurF({ ...nurF, instruction: e.target.value })} placeholder="e.g. Neurological checks" /></Field>
+            <Field label="Frequency"><Input value={nurF.frequency} onChange={(e) => setNurF({ ...nurF, frequency: e.target.value })} placeholder="e.g. Every 2 hours" /></Field>
           </TabsContent>
           <TabsContent value="referral" className="grid gap-3 sm:grid-cols-2">
             <Field label="Specialty" required><NativeSelect value={refF.specialty} onChange={(e) => setRefF({ ...refF, specialty: e.target.value, specialist: "" })}><option value="">Select…</option>{spec.data?.specialties.map((s) => <option key={s}>{s}</option>)}</NativeSelect></Field>

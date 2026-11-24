@@ -86,6 +86,7 @@ from app.models.revenue import ClaimFinding, PriorAuthorization
 from app.models.scheduling import Appointment, AppointmentType, ProviderAvailability
 from app.models.scheduling_ops import Shift, StaffSkill, SurgicalCase, SwapRequest, TimeOff
 from app.models.scribe import ScribeSession
+from app.models.terminology import OrderSet, OrderSetItem, TerminologyConcept, TerminologyRelease
 
 __all__ = [
     "Prediction",
@@ -110,6 +111,10 @@ __all__ = [
     "InventoryItem",
     "InventoryLot",
     "MedicationAdministration",
+    "OrderSet",
+    "OrderSetItem",
+    "TerminologyConcept",
+    "TerminologyRelease",
     "MedicationAdministrationWitness",
     "MedicationVerification",
     "PurchaseRequest",

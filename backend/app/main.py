@@ -39,6 +39,7 @@ from app.api.routers import (
     operations,
     or_roster,
     orders,
+    ordersets,
     patients,
     pharmacy,
     portal,
@@ -147,7 +148,7 @@ async def prometheus_metrics(request: Request):
     return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
 
 
-ROUTERS = [health, auth, mar, admin, facilities, home, live, operations, insurance, command, adt, inpatient_care, ed, ai_admin, pharmacy, lab, radiology, revenue, or_roster, portal_ext, equipment, agents, insights, patients, scheduling, clinical, workspace, documents, scribe, orders, portal, messages,
+ROUTERS = [health, auth, mar, ordersets, admin, facilities, home, live, operations, insurance, command, adt, inpatient_care, ed, ai_admin, pharmacy, lab, radiology, revenue, or_roster, portal_ext, equipment, agents, insights, patients, scheduling, clinical, workspace, documents, scribe, orders, portal, messages,
            telehealth, billing, ai, analytics]
 
 # Versioned API (documented). The unversioned /api prefix remains as a hidden compatibility alias so existing

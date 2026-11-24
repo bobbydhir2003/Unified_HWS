@@ -21,6 +21,7 @@ from app.models import (
     StockBalance,
     StockMovement,
     Supplier,
+    User,
 )
 
 MEDS = [  # sku, name, form, strength, unit, controlled, reorder_point, reorder_qty, unit_cost_cents, daily_use
@@ -322,6 +323,36 @@ def seed_equipment(db, org: Organization, hosp: Clinic) -> int:
     return len(rows)
 
 
+def seed_order_sets(db, org: Organization) -> bool:
+    """Demonstration order sets (clearly labelled; NOT clinical protocols — content must be reviewed by clinical governance)."""
+    from app.models import OrderSet, OrderSetItem
+
+    if db.scalar(select(OrderSet.id).where(OrderSet.organization_id == org.id).limit(1)):
+        return False
+    admin = db.scalar(select(User.id).where(User.email == "hospitaladmin@harborview.dev"))
+    sets = [
+        ("adm-baseline", "Inpatient admission — baseline labs and nursing (demonstration)", "Admission",
+         "Demonstration template only. Not a clinical protocol: review and adapt through your clinical governance before use.",
+         [("lab", {"code": "58410-2"}, True, None), ("lab", {"code": "24320-4"}, True, None),
+          ("nursing", {"instruction": "Vital signs", "frequency": "Every 4 hours"}, True, None),
+          ("nursing", {"instruction": "Admission nursing assessment and fall-risk screening", "frequency": "On admission"}, True, None),
+          ("imaging", {"code": "71046", "clinical_question": "Baseline chest imaging if clinically indicated"}, False, "Optional — select only if indicated")]),
+        ("ed-chest-pain", "ED chest pain — initial diagnostics (demonstration)", "Emergency",
+         "Demonstration template only. Not a clinical protocol: review and adapt through your clinical governance before use.",
+         [("lab", {"code": "58410-2"}, True, None), ("lab", {"code": "24323-8"}, True, None),
+          ("imaging", {"code": "71046", "clinical_question": "Chest pain — evaluate for acute cardiopulmonary process"}, True, None),
+          ("nursing", {"instruction": "Continuous cardiac monitoring", "frequency": "Continuous"}, True, None)]),
+    ]
+    for key, name, cat, desc, items in sets:
+        os_ = OrderSet(organization_id=org.id, key=key, version=1, name=name, category=cat, description=desc, status="published",
+                       is_demonstration=True, created_by_id=admin, published_by_id=admin, published_at=now())
+        os_.items = [OrderSetItem(organization_id=org.id, position=n, order_type=t, details=d, default_selected=sel, note=note)
+                     for n, (t, d, sel, note) in enumerate(items)]
+        db.add(os_)
+    db.flush()
+    return True
+
+
 def extend_org(db, org: Organization) -> list[str]:
     """All additive hospital modules for one organization ."""
     done: list[str] = []
@@ -342,6 +373,8 @@ def extend_org(db, org: Organization) -> list[str]:
         done.append("roster + OR cases")
     if seed_equipment(db, org, hosp):
         done.append("equipment + par levels")
+    if seed_order_sets(db, org):
+        done.append("order sets")
     return done
 
 

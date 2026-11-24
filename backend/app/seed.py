@@ -496,7 +496,8 @@ def build_hospital(db, *, name: str = "Harborview Health", slug: str = "harborvi
 def seed(reset: bool = False) -> None:
     if reset:
         with engine.begin() as c:
-            tables = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
+            keep = {"terminology_releases", "terminology_concepts"}  # reference code systems (loaded by migrations), not seed data
+            tables = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables if t.name not in keep)
             c.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
     db = SessionLocal()
     try:

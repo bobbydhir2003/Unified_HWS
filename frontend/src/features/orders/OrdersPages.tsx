@@ -1,8 +1,9 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { ClipboardList, FileSignature, Plus } from "lucide-react";
+import { ClipboardList, FileSignature, ListPlus, Plus } from "lucide-react";
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
+import { ApplyOrderSetDialog } from "@/features/ordersets/OrderSets";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 import { EmptyState, ErrorState, LoadingRows, PageHeader, SimulatedBadge } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +79,7 @@ export function OrdersPage() {
 export function EncounterOrdersCard({ patientId, encounterId, diagnosisCodes, editable }: { patientId: string; encounterId: string; diagnosisCodes: string[]; editable: boolean }) {
   const { can } = useAuth();
   const [newOpen, setNewOpen] = React.useState(false);
+  const [setOpen, setSetOpen] = React.useState(false);
   const [openId, setOpenId] = React.useState<string | null>(null);
   const [signing, setSigning] = React.useState<Order | null>(null);
   const q = useQuery({ queryKey: ["orders", "encounter", encounterId], queryFn: () => get<Order[]>(`/patients/${patientId}/orders`, { encounter_id: encounterId }) });
@@ -86,7 +88,7 @@ export function EncounterOrdersCard({ patientId, encounterId, diagnosisCodes, ed
     <Card>
       <CardHeader className="pb-2">
         <CardTitle>Orders</CardTitle>
-        {editable && can("orders:write") && <Button size="xs" variant="outline" onClick={() => setNewOpen(true)}><Plus />New</Button>}
+        {editable && can("orders:write") && <span className="flex gap-1"><Button size="xs" variant="ghost" onClick={() => setSetOpen(true)}><ListPlus />Order set</Button><Button size="xs" variant="outline" onClick={() => setNewOpen(true)}><Plus />New</Button></span>}
       </CardHeader>
       <CardContent>
         {!q.data?.length ? <p className="text-table text-muted-foreground">No orders for this visit.</p> : (
@@ -105,6 +107,7 @@ export function EncounterOrdersCard({ patientId, encounterId, diagnosisCodes, ed
         )}
       </CardContent>
       <NewOrderDialog open={newOpen} onOpenChange={setNewOpen} patientId={patientId} encounterId={encounterId} initialIndications={diagnosisCodes} />
+      <ApplyOrderSetDialog open={setOpen} onOpenChange={setSetOpen} patientId={patientId} encounterId={encounterId} indications={diagnosisCodes} />
       <OrderDrawer order={open} onOpenChange={(v) => !v && setOpenId(null)} showPatient={false} />
       <SignOrderDialog order={signing} onOpenChange={(v) => !v && setSigning(null)} />
     </Card>
@@ -115,6 +118,7 @@ export function PatientOrdersTab({ patientId }: { patientId: string }) {
   const { can } = useAuth();
   const [type, setType] = React.useState("");
   const [newOpen, setNewOpen] = React.useState(false);
+  const [setOpen, setSetOpen] = React.useState(false);
   const [openId, setOpenId] = React.useState<string | null>(null);
   const q = useQuery({ queryKey: ["orders", "patient", patientId, type], queryFn: () => get<Order[]>(`/patients/${patientId}/orders`, { order_type: type }) });
   const open = q.data?.find((o) => o.id === openId) ?? null;
@@ -122,12 +126,13 @@ export function PatientOrdersTab({ patientId }: { patientId: string }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <NativeSelect value={type} onChange={(e) => setType(e.target.value)} className="w-44" aria-label="Order type"><option value="">All types</option><option value="medication">Medications</option><option value="lab">Labs</option><option value="imaging">Imaging</option><option value="referral">Referrals</option></NativeSelect>
-        {can("orders:write") && <Button size="sm" className="ml-auto" onClick={() => setNewOpen(true)}><Plus />New order</Button>}
+        {can("orders:write") && <span className="ml-auto flex gap-2"><Button size="sm" variant="outline" onClick={() => setSetOpen(true)}><ListPlus />Use order set</Button><Button size="sm" onClick={() => setNewOpen(true)}><Plus />New order</Button></span>}
       </div>
       <Card className="overflow-hidden">
         {q.isLoading ? <LoadingRows /> : !q.data?.length ? <EmptyState icon={ClipboardList} title="No orders" /> : <OrdersTable orders={q.data} onOpen={(o) => setOpenId(o.id)} showPatient={false} />}
       </Card>
       <NewOrderDialog open={newOpen} onOpenChange={setNewOpen} patientId={patientId} />
+      <ApplyOrderSetDialog open={setOpen} onOpenChange={setSetOpen} patientId={patientId} />
       <OrderDrawer order={open} onOpenChange={(v) => !v && setOpenId(null)} showPatient={false} />
     </div>
   );

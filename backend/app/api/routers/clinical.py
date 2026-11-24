@@ -285,6 +285,16 @@ def set_diagnoses(encounter_id: uuid.UUID, body: list[DiagnosisIn], ctx: TenantC
     codes = [d.code.upper() for d in body]
     if len(codes) != len(set(codes)):
         raise bad_request("Duplicate diagnosis codes")
+    from app.services import terminology as T
+
+    if T.loaded(ctx.db, T.ICD10CM):
+        for d in body:
+            c = T.lookup(ctx.db, T.ICD10CM, d.code)
+            if not c:
+                raise bad_request(f"{d.code} is not an ICD-10-CM code")
+            if c["status"] != "active":
+                raise bad_request(f"{d.code} is retired in the current ICD-10-CM release")
+            d.code = c["code"]
     e.diagnoses.clear()
     ctx.db.flush()
     existing_problems = set(ctx.db.scalars(select(Problem.code).where(Problem.patient_id == e.patient_id,
@@ -429,6 +439,10 @@ def create_template(body: TemplateIn, ctx: TenantContext = Depends(require(P.CLI
 
 @router.get("/codes/icd10")
 def search_icd10(q: str = Query(min_length=1), ctx: TenantContext = Depends(get_ctx)):
+    from app.services import terminology as T
+
+    if T.loaded(ctx.db, T.ICD10CM):  # full ICD-10-CM release (versioned); the curated list is only a fallback
+        return T.search(ctx.db, T.ICD10CM, q)
     ql = q.lower().strip()
     hits = [{"code": c, "description": d} for c, d in ICD10 if c.lower().startswith(ql) or ql in d.lower()]
     return hits[:20]

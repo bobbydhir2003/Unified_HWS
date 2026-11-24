@@ -1,5 +1,6 @@
 /* © 2026 Sidra Riaz Awan. All rights reserved. HMS Workflows — unified hospital management system. */
 import "./index.css";
+import { OrderSetsAdminPage } from "@/features/ordersets/OrderSets";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ShieldAlert } from "lucide-react";
 import { lazy, StrictMode, Suspense } from "react";
@@ -238,6 +239,7 @@ const router = createBrowserRouter([
               },
               { path: "admin/staff", element: <Perm perm="users:manage"><StaffPage /></Perm>, handle: { crumb: "Staff & roles" } },
               { path: "admin/clinics", element: <Perm perm="clinic:manage"><ClinicsPage /></Perm>, handle: { crumb: "Clinics" } },
+              { path: "admin/order-sets", element: <Perm perm="clinic:manage"><OrderSetsAdminPage /></Perm>, handle: { crumb: "Order sets" } },
               { path: "admin/scheduling", element: <Perm perm="clinic:manage"><SchedulingSetupPage /></Perm>, handle: { crumb: "Scheduling setup" } },
               { path: "admin/audit", element: <Perm perm="audit:read"><AuditPage /></Perm>, handle: { crumb: "Audit log" } },
               { path: "admin/outbox", element: <Perm perm="users:manage"><OutboxPage /></Perm>, handle: { crumb: "Message outbox" } },
