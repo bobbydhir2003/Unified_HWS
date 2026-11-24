@@ -21,80 +21,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/ai-owner/demo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Owner Demo Update */
-        put: operations["owner_demo_update_api_v1_admin_ai_owner_demo_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/ai-owner/demo/disable": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Owner Demo Disable
-         * @description Emergency switch: stop all owner-funded demo AI immediately (no redeploy).
-         */
-        post: operations["owner_demo_disable_api_v1_admin_ai_owner_demo_disable_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/ai-owner/demo/key": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Owner Demo Delete Key */
-        delete: operations["owner_demo_delete_key_api_v1_admin_ai_owner_demo_key_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/ai-owner/demo/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Owner Demo Test
-         * @description Owner's own test of the demo provider: models.list + one tiny real call per configured capability.
-         */
-        post: operations["owner_demo_test_api_v1_admin_ai_owner_demo_test_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/ai-owner/platform": {
         parameters: {
             query?: never;
@@ -1077,108 +1003,6 @@ export interface paths {
         get: operations["list_audit_api_v1_audit_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/demo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Demo Accounts
-         * @description Public: which one-click demo roles exist. Empty unless DEMO_MODE is on (never in production).
-         */
-        get: operations["demo_accounts_api_v1_auth_demo_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/demo-login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Demo Login
-         * @description Start a demo: the visitor gets their own private demo hospital and is signed in as the chosen role there. A browser
-         *     that already has an active demo hospital keeps it (the chosen role is opened inside it) instead of starting another.
-         */
-        post: operations["demo_login_api_v1_auth_demo_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/demo/reset": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Demo Reset
-         * @description Replace the visitor's demo hospital with a fresh one (same role). Only this visitor's hospital is removed.
-         */
-        post: operations["demo_reset_api_v1_auth_demo_reset_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/demo/session": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Demo Session
-         * @description The visitor's demo hospital: active role, everyone they can switch to, and when it ends.
-         */
-        get: operations["demo_session_api_v1_auth_demo_session_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/demo/switch": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Demo Switch
-         * @description Switch to another role (or a specific staff member / the patient) inside the SAME demo hospital, without
-         *     starting a new demo. The new identity's ordinary permissions apply; the previous session ends.
-         */
-        post: operations["demo_switch_api_v1_auth_demo_switch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6999,23 +6823,6 @@ export interface components {
             /** Subject */
             subject: string;
         };
-        /** DemoLoginIn */
-        DemoLoginIn: {
-            /** Key */
-            key: string;
-        };
-        /** DemoResetIn */
-        DemoResetIn: {
-            /** Confirm */
-            confirm: string;
-        };
-        /** DemoSwitchIn */
-        DemoSwitchIn: {
-            /** Key */
-            key?: string | null;
-            /** User Id */
-            user_id?: string | null;
-        };
         /** DepartmentIn */
         DepartmentIn: {
             /** Code */
@@ -7887,49 +7694,6 @@ export interface components {
             /** Roles */
             roles: string[];
         };
-        /** Limits */
-        Limits: {
-            /**
-             * Global Concurrency
-             * @default 6
-             */
-            global_concurrency: number;
-            /**
-             * Global Daily Requests
-             * @default 200
-             */
-            global_daily_requests: number;
-            /**
-             * Monthly Budget Usd
-             * @default 10
-             */
-            monthly_budget_usd: number;
-            /**
-             * Realtime Daily Sessions
-             * @default 20
-             */
-            realtime_daily_sessions: number;
-            /**
-             * Realtime Enabled
-             * @default false
-             */
-            realtime_enabled: boolean;
-            /**
-             * Realtime Max Seconds
-             * @default 120
-             */
-            realtime_max_seconds: number;
-            /**
-             * Visitor Concurrency
-             * @default 2
-             */
-            visitor_concurrency: number;
-            /**
-             * Visitor Daily Requests
-             * @default 25
-             */
-            visitor_daily_requests: number;
-        };
         /** LocationIn */
         LocationIn: {
             /**
@@ -8042,11 +7806,6 @@ export interface components {
         };
         /** MeOut */
         MeOut: {
-            /**
-             * Demo Hospital
-             * @default false
-             */
-            demo_hospital: boolean;
             /** Memberships */
             memberships: components["schemas"]["MembershipOut"][];
             /**
@@ -8133,6 +7892,11 @@ export interface components {
             provider_id?: string | null;
             /** Roles */
             roles: string[];
+            /**
+             * Workspaces
+             * @default []
+             */
+            workspaces: components["schemas"]["WorkspaceOut"][];
         };
         /** Message */
         Message: {
@@ -8564,56 +8328,6 @@ export interface components {
             kind: "self_pay" | "financial_counseling" | "charity" | "other";
             /** Reason */
             reason: string;
-        };
-        /** OwnerDemoIn */
-        OwnerDemoIn: {
-            /**
-             * Allowed Agents
-             * @default []
-             */
-            allowed_agents: string[];
-            /**
-             * Allowed Models
-             * @default []
-             */
-            allowed_models: string[];
-            /** Api Key */
-            api_key?: string | null;
-            /**
-             * Enabled
-             * @default false
-             */
-            enabled: boolean;
-            /**
-             * Key Source
-             * @default dedicated
-             * @enum {string}
-             */
-            key_source: "dedicated" | "platform";
-            /**
-             * @default {
-             *       "global_concurrency": 6,
-             *       "global_daily_requests": 200,
-             *       "monthly_budget_usd": 10,
-             *       "realtime_daily_sessions": 20,
-             *       "realtime_enabled": false,
-             *       "realtime_max_seconds": 120,
-             *       "visitor_concurrency": 2,
-             *       "visitor_daily_requests": 25
-             *     }
-             */
-            limits: components["schemas"]["Limits"];
-            /** Realtime Model */
-            realtime_model?: string | null;
-            /**
-             * Text Model
-             * @default gpt-4.1-mini
-             */
-            text_model: string;
-            /** Transcription Model */
-            transcription_model?: string | null;
-            /** Vision Model */
-            vision_model?: string | null;
         };
         /** PAIn */
         PAIn: {
@@ -10029,6 +9743,15 @@ export interface components {
             /** Requires Approval */
             requires_approval?: boolean | null;
         };
+        /** WorkspaceOut */
+        WorkspaceOut: {
+            /** Label */
+            label: string;
+            /** Permissions */
+            permissions: string[];
+            /** Role */
+            role: string;
+        };
         /** RejectIn */
         app__api__routers__documents__RejectIn: {
             /** Reason */
@@ -10311,134 +10034,6 @@ export interface components {
 export type $defs = Record<string, never>;
 export interface operations {
     owner_status_api_v1_admin_ai_owner_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-organization-id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    owner_demo_update_api_v1_admin_ai_owner_demo_put: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-organization-id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OwnerDemoIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    owner_demo_disable_api_v1_admin_ai_owner_demo_disable_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-organization-id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    owner_demo_delete_key_api_v1_admin_ai_owner_demo_key_delete: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-organization-id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    owner_demo_test_api_v1_admin_ai_owner_demo_test_post: {
         parameters: {
             query?: never;
             header?: {
@@ -12664,147 +12259,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_AuditOut_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    demo_accounts_api_v1_auth_demo_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    demo_login_api_v1_auth_demo_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                ud_refresh?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DemoLoginIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    demo_reset_api_v1_auth_demo_reset_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DemoResetIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    demo_session_api_v1_auth_demo_session_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    demo_switch_api_v1_auth_demo_switch_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DemoSwitchIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenOut"];
                 };
             };
             /** @description Validation Error */

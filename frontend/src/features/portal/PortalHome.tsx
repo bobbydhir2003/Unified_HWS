@@ -23,7 +23,7 @@ import { VideoVisit } from "@/features/telehealth/VideoVisit";
 import { PatientHelp } from "@/features/help/HelpPage";
 import { get, post } from "@/lib/api";
 import { fmtMoney, newIdempotencyKey } from "@/lib/format";
-import { DemoBar } from "@/features/demo/DemoBar";
+import { WorkspaceSwitcher } from "@/components/layout/WorkspaceSwitcher";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtTime } from "@/lib/format";
 import type { Appointment } from "@/lib/types";
@@ -55,11 +55,19 @@ function sectionFor(pathname: string) {
 }
 
 export function PortalHome() {
-  const { membership, logout, me } = useAuth();
+  const { membership, logout, me, workspace } = useAuth();
   const { pathname } = useLocation();
   const section = sectionFor(pathname.replace(/\/$/, "") || "/portal");
   if (membership && !membership.roles.includes("patient")) return <EmptyState title="The portal is for patients" description="Staff use the main workspace." action={<Button asChild><Link to="/">Go to workspace</Link></Button>} className="min-h-dvh" />;
-  if (!membership?.patient_id) return <EmptyState title="Your account isn't linked to a patient record yet" description="Please contact the clinic." className="min-h-dvh" />;
+  if (!membership?.patient_id) {
+    if (workspace === "patient") {
+      // A staff member chose the Patient workspace: the portal only ever shows the signed-in person's own record.
+      return <EmptyState title="The patient portal shows a patient's own record"
+        description="Your account isn't a patient, so there is nothing to show here. Patients see the portal when they sign in with their own account; staff work with patient records from their staff workspaces."
+        action={<WorkspaceSwitcher />} className="min-h-dvh" />;
+    }
+    return <EmptyState title="Your account isn't linked to a patient record yet" description="Please contact the clinic." className="min-h-dvh" />;
+  }
   return (
     <div className="portal-scale min-h-dvh bg-background">
       <header className="sticky top-0 z-30 border-b bg-card">
@@ -68,6 +76,7 @@ export function PortalHome() {
           <span className="min-w-0 leading-tight"><span className="block truncate font-semibold text-heading">{membership.organization_name}</span>
             <span className="block text-label text-muted-foreground">Patient portal · {PRODUCT_NAME}</span></span>
           <div className="ml-auto flex items-center gap-1">
+            <WorkspaceSwitcher />
             <Notifications />
             <span className="hidden text-body sm:inline">{me?.user.first_name}</span>
             <Button variant="ghost" size="sm" onClick={() => logout()}><LogOut />Sign out</Button>
@@ -91,7 +100,6 @@ export function PortalHome() {
             ))}
           </span>
         </nav>
-        {me?.demo_hospital && <DemoBar className="px-4" />}
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
         {section?.sub && (

@@ -195,22 +195,10 @@ export function AccountPage() {
             </dl>
           </CardContent>
         </Card>
-        {me.demo_hospital ? (
-          <Card className="lg:col-span-2" data-testid="demo-account-note">
-            <CardHeader><div><CardTitle>Sign-in and security</CardTitle></div></CardHeader>
-            <CardContent className="text-table text-muted-foreground">
-              This is an identity in your private demo hospital. It has no password, email sign-in or two-factor settings — you
-              entered with the demo button and switch people with the role switcher above. Everything else in the hospital can be changed.
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <MfaCard />
-            <EmailCard />
-            <PasswordCard />
-            <div className="lg:col-span-2"><SessionsCard /></div>
-          </>
-        )}
+        <MfaCard />
+        <EmailCard />
+        <PasswordCard />
+        <div className="lg:col-span-2"><SessionsCard /></div>
       </div>
     </>
   );

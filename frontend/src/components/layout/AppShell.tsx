@@ -18,7 +18,7 @@ import { fromNow } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CommandSearch } from "./CommandSearch";
-import { DemoBar } from "@/features/demo/DemoBar";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { PRODUCT_NAME } from "@/lib/legal";
 import { NAV, type NavItem, primaryNav, profileFor } from "./nav";
 
@@ -139,7 +139,7 @@ function OrgSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex h-9 min-w-0 max-w-[22rem] items-center gap-2 rounded-md border border-control bg-card px-2.5 text-left text-table text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        <button className="flex h-9 min-w-0 max-w-24 items-center gap-1.5 rounded-md border border-control bg-card px-2 text-left sm:max-w-[22rem] sm:gap-2 sm:px-2.5 text-table text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           aria-label="Switch organization or clinic">
           <Building2 className="size-4 shrink-0" />
           <span className="min-w-0 truncate"><span className="font-semibold text-heading">{membership.organization_name}</span><span className="hidden md:inline"> · {clinic?.name ?? "All locations"}</span></span>
@@ -314,7 +314,7 @@ export function AppShell() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [labels, setLabels] = React.useState<Record<string, string>>({});
-  const { membership, me } = useAuth();
+  const { membership } = useAuth();
   const org = useQuery({ queryKey: ["organization", membership?.organization_id], queryFn: () => get<{ settings: { synthetic_data?: boolean } }>("/organization"), enabled: !!membership, staleTime: 300_000 });
   const synthetic = !!org.data?.settings.synthetic_data;
   useLiveConnection(membership?.organization_id);
@@ -371,10 +371,11 @@ export function AppShell() {
         </Dialog>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card px-4 sm:px-6">
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu /></Button>
-            <span className="lg:hidden"><Brand collapsed /></span>
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-card px-3 sm:gap-3 sm:px-6">
+            <Button variant="ghost" size="icon" className="shrink-0 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu /></Button>
+            <span className="hidden sm:inline lg:hidden"><Brand collapsed /></span>
             <OrgSwitcher />
+            <WorkspaceSwitcher />
             <Breadcrumbs labels={labels} />
             <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
               {membership?.permissions.includes("patients:read") && (
@@ -397,7 +398,6 @@ export function AppShell() {
               <UserMenu />
             </div>
           </header>
-          {me?.demo_hospital && <DemoBar />}
           <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 sm:px-6 lg:py-6 min-[1600px]:px-8">
             <React.Suspense fallback={<div className="space-y-3" aria-busy="true"><Skeleton className="h-8 w-56" /><Skeleton className="h-64 w-full rounded-lg" /></div>}>
               <Outlet />

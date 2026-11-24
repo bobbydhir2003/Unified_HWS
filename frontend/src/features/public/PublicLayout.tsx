@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { COPYRIGHT_NOTICE, PRODUCT_TAGLINE } from "@/lib/legal";
 import { cn } from "@/lib/utils";
 
-/** Public navigation (approved): Platform · Solutions · AI & Automation · About · [Explore the demo] · [Sign in]. */
+/** Public navigation: Platform · Solutions · AI & Automation · About · [Sign in]. */
 const NAV = [
   { to: "/platform", label: "Platform" },
   { to: "/solutions", label: "Solutions" },
@@ -44,10 +44,7 @@ function Header() {
   );
   const actions = authed
     ? <Button asChild size="sm"><Link to="/">Open workspace<ArrowRight /></Link></Button>
-    : <>
-        <Button asChild size="sm"><Link to="/#demo">Explore the demo</Link></Button>
-        <Button asChild size="sm" variant="outline"><Link to="/login"><LogIn />Sign in</Link></Button>
-      </>;
+    : <Button asChild size="sm"><Link to="/login"><LogIn />Sign in</Link></Button>;
   return (
     <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
@@ -101,7 +98,6 @@ function Footer() {
         </nav>
         <nav aria-label="Access" className={col}>
           <p className="font-semibold text-heading">Access</p>
-          <Link to="/#demo" className={a}>Explore the demo</Link>
           <Link to="/login" className={a}>Sign in</Link>
         </nav>
       </div>
@@ -115,7 +111,7 @@ function Footer() {
   );
 }
 
-/** Public website shell: light header, content, footer. Scrolls to #hash targets (e.g. /#demo). */
+/** Public website shell: light header, content, footer. Scrolls to #hash targets. */
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { hash, pathname } = useLocation();
   React.useEffect(() => {

@@ -1,14 +1,13 @@
-import { ArrowRight, Check, Info, KeyRound, Lock, LogIn, ScrollText, ShieldAlert, UsersRound } from "lucide-react";
+import { ArrowRight, Check, Info, KeyRound, Lock, ScrollText, ShieldAlert, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProvenanceChip } from "@/components/common/Status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useDemoAccounts, useDemoLogin } from "@/features/auth/demo";
 import { LoginForm } from "@/features/auth/LoginForm";
 import { CODE_SET_NOTICES, COPYRIGHT_NOTICE, THIRD_PARTY } from "@/lib/legal";
 import { cn } from "@/lib/utils";
 import {
-  AI_TIERS, APPROACH, AREAS, AUDIENCES, DEFINITION, DEMO_ROLE_INFO, JOURNEY, PRINCIPLES, PROBLEMS, PRODUCT_STATUS, SHOTS,
+  AI_TIERS, APPROACH, AREAS, AUDIENCES, DEFINITION, JOURNEY, PRINCIPLES, PROBLEMS, PRODUCT_STATUS, SHOTS,
   type ShotKey, TAG_LABEL,
 } from "./content";
 import { PublicLayout } from "./PublicLayout";
@@ -78,15 +77,6 @@ function StatusList({ id }: { id?: string }) {
   );
 }
 
-/** One-click demo sign-in button (uses the shared demo-login flow; falls back to /login where demo mode is off). */
-function DemoButton({ demoKey, label, variant = "default", className }: { demoKey: string; label: string; variant?: "default" | "outline"; className?: string }) {
-  const { accounts } = useDemoAccounts();
-  const { signIn, busy } = useDemoLogin();
-  const available = accounts?.some((a) => a.key === demoKey);
-  if (!available) return <Button asChild variant="outline" className={className}><Link to="/login"><LogIn />Sign in</Link></Button>;
-  return <Button variant={variant} className={className} onClick={() => signIn(demoKey)} loading={busy === demoKey}>Try as {label}<ArrowRight /></Button>;
-}
-
 // ---------------------------------------------------------------------------------------------- Home
 
 export function HomePage() {
@@ -105,10 +95,10 @@ export function HomePage() {
             </p>
             <p className="mt-3 text-body leading-relaxed text-muted-foreground">For hospital leadership, clinical teams and the departments that keep patients moving.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg"><Link to="/#demo">Explore the Demo<ArrowRight /></Link></Button>
+              <Button asChild size="lg"><Link to="/login">Sign in<ArrowRight /></Link></Button>
               <Button asChild size="lg" variant="outline"><Link to="/platform">Explore the Platform</Link></Button>
             </div>
-            <p className="mt-4 text-table text-muted-foreground">Seven one-click demo roles · synthetic data only · no account needed</p>
+            <p className="mt-4 text-table text-muted-foreground">One account, every hospital workspace · synthetic data only</p>
           </div>
           <ProductShot shot="commandCenter" priority caption="The Command Center, with synthetic demonstration data." sizes="(min-width: 1024px) 58vw, 100vw" />
         </div>
@@ -254,9 +244,6 @@ export function HomePage() {
           <Button asChild variant="outline"><Link to="/ai-automation">How AI & automation work<ArrowRight /></Link></Button>
         </div>
       </Section>
-
-      {/* 7. Explore the demo. */}
-      <DemoSection />
     </PublicLayout>
   );
 }
@@ -267,57 +254,6 @@ const TAG_STYLE: Record<string, string> = {
 };
 function JourneyTag({ tag, label }: { tag: keyof typeof TAG_LABEL; label: string }) {
   return <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-label font-medium", TAG_STYLE[tag])}>{label}</span>;
-}
-
-function DemoSection() {
-  const { accounts, isLoading } = useDemoAccounts();
-  const { signIn, busy, error } = useDemoLogin();
-  return (
-    <Section id="demo" labelledBy="demo-title">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-12">
-        <div>
-          <Eyebrow>Explore the demo</Eyebrow>
-          <H2 id="demo-title">Try HMS Workflows as a hospital role.</H2>
-          <Lead>Choose a role and you are signed straight in to a demonstration hospital with synthetic patients.</Lead>
-          <ul className="mt-6 space-y-2.5 text-body text-muted-foreground">
-            {["Synthetic data only — no real patient information.", "Demo sessions can't change real settings, accounts or credentials.", "AI answers are labelled Simulated unless you add your own key in the demo's isolated AI settings."].map((t) => (
-              <li key={t} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />{t}</li>
-            ))}
-          </ul>
-          <p className="mt-6 text-table text-muted-foreground">Not sure where to start? <strong className="font-semibold text-heading">Super Admin</strong> shows the whole hospital; <strong className="font-semibold text-heading">Doctor</strong> shows clinical care.</p>
-        </div>
-        <div>
-          {error && <p role="alert" className="mb-3 rounded-lg border border-destructive/30 bg-destructive-soft p-3 text-body text-destructive">{error}</p>}
-          {!accounts && !isLoading && (
-            <div className="mb-4 rounded-lg border bg-subtle p-4 text-body text-muted-foreground">
-              One-click demo access is enabled on the public demonstration site. Here, <Link to="/login" className="font-medium text-primary hover:underline">sign in</Link> with your account.
-            </div>
-          )}
-          <ul className="grid gap-3 sm:grid-cols-2" data-testid="demo-roles">
-            {(accounts?.filter((a) => a.featured !== false) ?? Object.keys(DEMO_ROLE_INFO).map((key) => ({ key, label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), role: key }))).map((a) => {
-              const info = DEMO_ROLE_INFO[a.key] ?? { sees: "Explore this role's workspace.", icon: UsersRound };
-              return (
-                <li key={a.key} className="flex flex-col rounded-xl border bg-card p-5">
-                  <p className="flex items-center gap-2 text-section font-semibold text-heading"><info.icon className="size-5 text-primary" aria-hidden />{a.label}</p>
-                  {info.start && <p className="mt-1 text-label font-medium text-primary">{info.start}</p>}
-                  <p className="mt-2 flex-1 text-table leading-relaxed text-muted-foreground">{info.sees}</p>
-                  <Button className="mt-4 w-full sm:w-auto sm:self-start" variant={info.start ? "default" : "outline"} disabled={!accounts || !!busy} loading={busy === a.key}
-                    onClick={() => signIn(a.key)} aria-label={`Start the demo as ${a.label}`}>Start as {a.label}<ArrowRight /></Button>
-                </li>
-              );
-            })}
-          </ul>
-          {accounts?.some((a) => a.featured === false) && (
-            <p className="mt-4 text-table text-muted-foreground" data-testid="demo-private-note">
-              Every visitor gets a private demo hospital with synthetic data. Inside it you can switch between all {accounts.length} roles,
-              change settings and reset it whenever you like.
-            </p>
-          )}
-          <p className="mt-4 text-table text-muted-foreground">Returning user? <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link></p>
-        </div>
-      </div>
-    </Section>
-  );
 }
 
 // ---------------------------------------------------------------------------------------------- Platform
@@ -404,7 +340,6 @@ export function SolutionsPage() {
               <ul className="mt-6 space-y-2.5 text-body">
                 {a.points.map((p) => <li key={p} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />{p}</li>)}
               </ul>
-              <div className="mt-8"><DemoButton demoKey={a.demo.key} label={a.demo.label} variant="outline" /></div>
             </div>
             <ProductShot shot={a.shot} className={cn(i % 2 && "lg:order-1")} sizes="(min-width: 1024px) 50vw, 100vw" />
           </div>
@@ -461,7 +396,7 @@ export function AiAutomationPage() {
             <ul className="mt-6 space-y-3 text-body text-muted-foreground">
               <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />Provider keys are encrypted on the server and never sent to the browser.</li>
               <li className="flex gap-3"><Lock className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />Sending patient information to an external AI provider is off unless an administrator enables it.</li>
-              <li className="flex gap-3"><UsersRound className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />Public demo sessions get isolated AI settings with per-session request, concurrency and cost limits.</li>
+              <li className="flex gap-3"><UsersRound className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />Assistants act within the signed-in person's current workspace permissions; proposals need human approval.</li>
             </ul>
           </div>
         </div>
@@ -553,7 +488,7 @@ export function PublicLoginPage() {
             <Eyebrow>HMS Workflows</Eyebrow>
             <h1 className="text-4xl font-semibold tracking-tight text-heading">Sign in to your hospital workspace.</h1>
             <p className="mt-4 text-lead leading-relaxed text-muted-foreground">Your role decides what you see: your priorities, your department's worklists and the patients in your care.</p>
-            <p className="mt-6 text-body text-muted-foreground">New here? <Link to="/#demo" className="font-medium text-primary hover:underline">Explore the demo</Link> or read about the <Link to="/platform" className="font-medium text-primary hover:underline">platform</Link>.</p>
+            <p className="mt-6 text-body text-muted-foreground">New here? Read about the <Link to="/platform" className="font-medium text-primary hover:underline">platform</Link>.</p>
           </div>
           <div className="rounded-2xl border bg-card p-6 shadow-[0_8px_30px_rgba(16,24,40,0.08)] sm:p-8">
             <LoginForm autoFocus emailId="login-email" />

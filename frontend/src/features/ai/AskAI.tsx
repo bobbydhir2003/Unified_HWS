@@ -13,7 +13,7 @@ type AgentRow = { key: string; name: string; can_run: boolean };
 export type AgentRun = { status: string; mode: "openai" | "rule_based" | string; model: string | null; output: string | null; error: string | null;
   tool_calls: { tool: string; ok: boolean }[]; approvals: string[]; ai_source?: string | null; trigger?: string };
 
-const SOURCE: Record<string, string> = { "owner-demo": "demo AI", "visitor-key": "your key", "demo-project": "demo key" };
+const SOURCE: Record<string, string> = {}; // only non-platform AI sources need a label; none remain
 
 /** Live vs simulated is decided only by the server's `mode`; a rule-based answer is never labelled as OpenAI. */
 export function RunProvenance({ run }: { run: Pick<AgentRun, "mode" | "model"> & Partial<Pick<AgentRun, "ai_source" | "status" | "error">> }) {

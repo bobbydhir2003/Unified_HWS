@@ -10,58 +10,8 @@ import { Input, inputBase } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { type DemoAccount, useDemoAccounts, useDemoLogin } from "./demo";
 
 const loginSchema = z.object({ email: z.email("Enter a valid email"), password: z.string().min(1, "Enter your password") });
-
-/* Quick role login. Local dev server: always on, every role, documented dev password.
- * Other builds: off unless VITE_DEMO_LOGIN=true (an isolated, synthetic-data demo environment). There, administrator
- * roles are never offered and a password is filled only if VITE_DEMO_PASSWORD is set for that demo. The default
- * production build (the public site) compiles it out entirely. Buttons only fill the normal sign-in form. */
-const DEMO_LOGIN = import.meta.env.DEV || import.meta.env.VITE_DEMO_LOGIN === "true";
-const DEMO_PASSWORD: string = import.meta.env.DEV ? "Undeclared!2026" : (import.meta.env.VITE_DEMO_PASSWORD ?? "");
-// Administrator accounts exist in the list only in dev-server builds (compiled out everywhere else).
-const DEMO_ACCOUNTS: [string, string][] = !DEMO_LOGIN ? [] : [
-  ["dr.chen@harborview.dev", "Doctor"],
-  ["nurse.rivera@harborview.dev", "Nurse"],
-  ["frontdesk@harborview.dev", "Front desk"],
-  ...(import.meta.env.DEV ? [["clinicadmin@harborview.dev", "Clinic admin"] as [string, string]] : []),
-  ["billing@harborview.dev", "Billing"],
-  ["patient@harborview.dev", "Patient"],
-  ...(import.meta.env.DEV ? [["admin@undeclared.dev", "Super admin"] as [string, string]] : []),
-];
-
-function ServerDemoAccess({ accounts }: { accounts: DemoAccount[] }) {
-  const { signIn: go, busy, error } = useDemoLogin();
-  const [ended] = React.useState(() => {
-    try {
-      const v = sessionStorage.getItem("ud-demo-ended");
-      sessionStorage.removeItem("ud-demo-ended");
-      return !!v;
-    } catch { return false; }
-  });
-  const privateHospitals = accounts.some((a) => a.featured !== undefined);
-  return (
-    <div className="mt-5 rounded-xl border border-dashed p-3" data-testid="demo-access">
-      <p className="text-xs font-medium">Demo Access</p>
-      <p className="mb-2 text-label text-muted-foreground">
-        {privateHospitals
-          ? "Start a private demo hospital (synthetic data, only you can see it). Pick a role to start with; you can switch roles inside."
-          : "Explore HMS Workflows with a preconfigured role. Synthetic data only."}
-      </p>
-      {ended && <p role="status" className="mb-2 rounded-md bg-warning-soft px-2 py-1 text-label text-warning-foreground" data-testid="demo-ended">Your demo hospital ended (it expires after a period without activity). Start a new one below.</p>}
-      {error && <p role="alert" className="mb-2 text-label text-destructive">{error}</p>}
-      <div className="flex flex-wrap gap-1.5">
-        {accounts.map((a) => (
-          <button key={a.key} type="button" onClick={() => go(a.key)} disabled={!!busy} aria-label={`Sign in as demo ${a.label}`}
-            className="rounded-md border bg-card px-2 py-1 text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60">
-            {busy === a.key ? "Signing in…" : a.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 type IconInputProps = React.ComponentProps<"input"> & { icon: React.ElementType; trailing?: React.ReactNode };
 
@@ -85,7 +35,6 @@ export function LoginForm({ autoFocus = false, emailId, heading }: { autoFocus?:
   const [busy, setBusy] = React.useState(false);
   const [show, setShow] = React.useState(false);
   const form = useForm({ resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" } });
-  const { accounts: serverDemo } = useDemoAccounts();
 
   const onSubmit = form.handleSubmit(async (v) => {
     setError(null);
@@ -163,23 +112,6 @@ export function LoginForm({ autoFocus = false, emailId, heading }: { autoFocus?:
         </div>
         <Button type="submit" className="h-11 w-full text-section" loading={busy}>Sign in<ArrowRight /></Button>
       </form>
-      {serverDemo && <ServerDemoAccess accounts={serverDemo} />}
-      {!serverDemo && DEMO_LOGIN && (
-        <div className="mt-6 rounded-xl border border-dashed p-3" data-testid="demo-accounts">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
-            {import.meta.env.DEV ? "Development accounts" : "Demo accounts (synthetic data)"}
-            {DEMO_PASSWORD ? <> · password <code className="rounded bg-muted px-1">{DEMO_PASSWORD}</code></> : " · ask your administrator for the demo password"}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {DEMO_ACCOUNTS.map(([email, label]) => (
-              <button key={email} type="button" className="rounded-md border bg-card px-2 py-1 text-xs hover:bg-muted"
-                onClick={() => { form.setValue("email", email); if (DEMO_PASSWORD) form.setValue("password", DEMO_PASSWORD); else form.setFocus("password"); }}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }

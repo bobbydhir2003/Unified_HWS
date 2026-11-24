@@ -12,7 +12,7 @@ export const DEFINITION =
   "HMS Workflows is a hospital management platform that puts every department on one shared patient record, turns problems into owned and tracked work, and gives leaders one live view of the hospital — with AI that drafts and summarizes while people decide.";
 
 // ------------------------------------------------------------------------------------------------ product screenshots
-/** Captured by e2e/capture_marketing_shots.py from the demo deployment (synthetic data). */
+/** Captured by e2e/capture_marketing_shots.py from the deployed site (synthetic data). */
 export const SHOTS = {
   commandCenter: { src: "command-center", w: 1440, h: 1000, alt: "HMS Workflows Command Center: hospital status figures, problems grouped by area with owners and overdue times, and department detail tabs (synthetic data)" },
   doctorHome: { src: "doctor-home", w: 1440, h: 900, alt: "Doctor Home: priorities grouped by patient, today's appointments and quick actions (synthetic data)" },
@@ -149,39 +149,28 @@ export const PRODUCT_STATUS: StatusRow[] = [
   { label: "Implemented", tone: "success", text: "The hospital workflows described on this site — clinical records, scheduling, emergency and inpatient care, pharmacy, laboratory, radiology, insurance and billing workflows, automation, the Command Center and the patient portal — work end to end with a real database and automated tests." },
   { label: "Live AI tested", tone: "info", text: "An AI agent run has completed successfully against OpenAI (gpt-4.1-mini) in development. The medical scribe's transcription, document reading, chart assistant and realtime voice have not yet been verified end to end with a live provider." },
   { label: "Simulated", tone: "neutral", text: "Payer eligibility, the claims clearinghouse, payer decisions, card payments, supplier orders, the imaging archive (PACS) and email/text delivery are simulated and labelled in the application." },
-  { label: "Public demo", tone: "warning", text: "The public demonstration uses synthetic data. Its AI answers are labelled Simulated unless a visitor adds their own key in the demo's isolated AI settings." },
+  { label: "Synthetic data", tone: "warning", text: "This deployment uses synthetic data only. AI answers are labelled Simulated whenever no AI provider is configured." },
   { label: "Not certified", tone: "danger", text: "HMS Workflows is a demonstration build. It is not certified for clinical use and is not represented as HIPAA-compliant." },
 ];
 
-// ------------------------------------------------------------------------------------------------ audiences & demo
-export const AUDIENCES: { id: string; title: string; icon: LucideIcon; need: string; points: string[]; shot: ShotKey; demo: { key: string; label: string } }[] = [
-  { id: "leadership", title: "For hospital leadership", icon: Radar, shot: "commandCenter", demo: { key: "super_admin", label: "Super Admin" },
+// ------------------------------------------------------------------------------------------------ audiences
+export const AUDIENCES: { id: string; title: string; icon: LucideIcon; need: string; points: string[]; shot: ShotKey }[] = [
+  { id: "leadership", title: "For hospital leadership", icon: Radar, shot: "commandCenter",
     need: "See where the hospital is waiting and who owns each delay, without collecting reports from every department.",
     points: ["Command Center: hospital status, grouped problems and department detail", "Every figure opens the records behind it", "Approvals and escalations in one place", "Analytics and a daily briefing that lists its sources"] },
-  { id: "clinical", title: "For clinical teams", icon: HeartPulse, shot: "doctorHome", demo: { key: "doctor", label: "Doctor" },
+  { id: "clinical", title: "For clinical teams", icon: HeartPulse, shot: "doctorHome",
     need: "Have the whole patient in one chart and spend less time chasing tasks between departments.",
     points: ["Role Home with priorities grouped by patient", "Patient chart with allergies and abnormal vitals clearly marked", "Notes with signing, and an optional AI scribe draft with consent", "Orders, results and critical-result acknowledgement"] },
-  { id: "operations", title: "For hospital operations", icon: Activity, shot: "edBoard", demo: { key: "nurse", label: "Nurse" },
+  { id: "operations", title: "For hospital operations", icon: Activity, shot: "edBoard",
     need: "Keep patients moving through emergency, beds, diagnostics and discharge, with clear hand-offs.",
     points: ["ED board and live bed board", "Nursing worklists with overdue-vitals flags", "Laboratory and pharmacy verification worklists", "Discharge checklist showing what each team still owes", "Staff roster and operating-room schedule"] },
-  { id: "revenue", title: "For revenue teams", icon: Receipt, shot: "insuranceGuardian", demo: { key: "billing", label: "Billing" },
+  { id: "revenue", title: "For revenue teams", icon: Receipt, shot: "insuranceGuardian",
     need: "Catch coverage and claim problems before they become denials.",
     points: ["Coverage checks before visits, with cases for problems", "Claims reviewed before submission", "Prior authorizations, denials and appeals", "Patient statements (payments simulated)"] },
-  { id: "patients", title: "For patients", icon: UsersRound, shot: "patientPortal", demo: { key: "patient", label: "Patient" },
+  { id: "patients", title: "For patients", icon: UsersRound, shot: "patientPortal",
     need: "Handle appointments, forms, messages and bills without phone calls.",
     points: ["Book visits and complete pre-visit forms", "Secure messages with the care team", "Released results and visit summaries", "Video visits in the browser", "Insurance updates and statements"] },
 ];
-
-/** What each one-click demo role shows (keys match GET /auth/demo). */
-export const DEMO_ROLE_INFO: Record<string, { sees: string; icon: LucideIcon; start?: string }> = {
-  doctor: { sees: "Doctor Home, patient charts, orders and results, and the AI scribe in a visit.", icon: Stethoscope, start: "Start here to see clinical care" },
-  nurse: { sees: "Nursing worklists, the emergency department board, the bed board and discharge tasks.", icon: HeartPulse },
-  front_desk: { sees: "Arrivals and check-in, scheduling, registration and Insurance Guardian.", icon: UserPlus },
-  clinic_admin: { sees: "Clinic operations: the front desk, schedules, patients and analytics.", icon: Hospital },
-  billing: { sees: "Claims review, prior authorizations, denials and patient balances.", icon: Receipt },
-  patient: { sees: "The patient portal: appointments, messages, results, insurance and bills.", icon: UsersRound },
-  super_admin: { sees: "The Command Center, Agent Studio and AI settings in an isolated demo session.", icon: Radar, start: "Start here for the whole-hospital view" },
-};
 
 // ------------------------------------------------------------------------------------------------ about
 export const PRINCIPLES: [string, string][] = [

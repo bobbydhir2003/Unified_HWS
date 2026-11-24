@@ -26,7 +26,7 @@ type Run = { id: string; agent_key: string; mode: string; model: string | null; 
   approvals: string[]; cost_usd: number | null; latency_ms: number | null; error: string | null; started_at: string; trigger?: string; ai_source?: string | null };
 
 const TRIGGER_LABEL: Record<string, string> = { manual: "Run by staff", case_open: "Case opened (automatic)", case_escalation: "Case escalated (automatic)" };
-const SOURCE_LABEL: Record<string, string> = { platform: "Platform AI", "owner-demo": "Owner demo AI", "visitor-key": "Visitor's own key", "demo-project": "Demo project key", rules: "Rules (no AI)" };
+const SOURCE_LABEL: Record<string, string> = { platform: "Platform AI", "owner-demo": "Former demo AI (retired)", "visitor-key": "Former demo visitor key (retired)", "demo-project": "Former demo key (retired)", rules: "Rules (no AI)" };
 
 const usd = (n: number | null | undefined) => (n == null ? "—" : n > 0 && n < 0.01 ? "< $0.01" : "$" + n.toFixed(2));
 

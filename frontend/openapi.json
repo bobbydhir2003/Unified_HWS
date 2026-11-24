@@ -3133,65 +3133,6 @@
     "title": "DeliveryOut",
     "type": "object"
    },
-   "DemoLoginIn": {
-    "properties": {
-     "key": {
-      "maxLength": 40,
-      "minLength": 1,
-      "title": "Key",
-      "type": "string"
-     }
-    },
-    "required": [
-     "key"
-    ],
-    "title": "DemoLoginIn",
-    "type": "object"
-   },
-   "DemoResetIn": {
-    "properties": {
-     "confirm": {
-      "maxLength": 20,
-      "title": "Confirm",
-      "type": "string"
-     }
-    },
-    "required": [
-     "confirm"
-    ],
-    "title": "DemoResetIn",
-    "type": "object"
-   },
-   "DemoSwitchIn": {
-    "properties": {
-     "key": {
-      "anyOf": [
-       {
-        "maxLength": 40,
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Key"
-     },
-     "user_id": {
-      "anyOf": [
-       {
-        "format": "uuid",
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "User Id"
-     }
-    },
-    "title": "DemoSwitchIn",
-    "type": "object"
-   },
    "DepartmentIn": {
     "properties": {
      "code": {
@@ -5898,66 +5839,6 @@
     "title": "InvitationPreview",
     "type": "object"
    },
-   "Limits": {
-    "properties": {
-     "global_concurrency": {
-      "default": 6,
-      "maximum": 50.0,
-      "minimum": 1.0,
-      "title": "Global Concurrency",
-      "type": "integer"
-     },
-     "global_daily_requests": {
-      "default": 200,
-      "maximum": 20000.0,
-      "minimum": 0.0,
-      "title": "Global Daily Requests",
-      "type": "integer"
-     },
-     "monthly_budget_usd": {
-      "default": 10.0,
-      "maximum": 5000.0,
-      "minimum": 0.0,
-      "title": "Monthly Budget Usd",
-      "type": "number"
-     },
-     "realtime_daily_sessions": {
-      "default": 20,
-      "maximum": 1000.0,
-      "minimum": 0.0,
-      "title": "Realtime Daily Sessions",
-      "type": "integer"
-     },
-     "realtime_enabled": {
-      "default": false,
-      "title": "Realtime Enabled",
-      "type": "boolean"
-     },
-     "realtime_max_seconds": {
-      "default": 120,
-      "maximum": 900.0,
-      "minimum": 30.0,
-      "title": "Realtime Max Seconds",
-      "type": "integer"
-     },
-     "visitor_concurrency": {
-      "default": 2,
-      "maximum": 10.0,
-      "minimum": 1.0,
-      "title": "Visitor Concurrency",
-      "type": "integer"
-     },
-     "visitor_daily_requests": {
-      "default": 25,
-      "maximum": 1000.0,
-      "minimum": 0.0,
-      "title": "Visitor Daily Requests",
-      "type": "integer"
-     }
-    },
-    "title": "Limits",
-    "type": "object"
-   },
    "LocationIn": {
     "properties": {
      "attributes": {
@@ -6263,11 +6144,6 @@
    },
    "MeOut": {
     "properties": {
-     "demo_hospital": {
-      "default": false,
-      "title": "Demo Hospital",
-      "type": "boolean"
-     },
      "memberships": {
       "items": {
        "$ref": "#/components/schemas/MembershipOut"
@@ -6550,6 +6426,14 @@
        "type": "string"
       },
       "title": "Roles",
+      "type": "array"
+     },
+     "workspaces": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/WorkspaceOut"
+      },
+      "title": "Workspaces",
       "type": "array"
      }
     },
@@ -7708,106 +7592,6 @@
      "reason"
     ],
     "title": "OverrideIn",
-    "type": "object"
-   },
-   "OwnerDemoIn": {
-    "properties": {
-     "allowed_agents": {
-      "default": [],
-      "items": {
-       "type": "string"
-      },
-      "title": "Allowed Agents",
-      "type": "array"
-     },
-     "allowed_models": {
-      "default": [],
-      "items": {
-       "type": "string"
-      },
-      "title": "Allowed Models",
-      "type": "array"
-     },
-     "api_key": {
-      "anyOf": [
-       {
-        "maxLength": 300,
-        "minLength": 20,
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Api Key"
-     },
-     "enabled": {
-      "default": false,
-      "title": "Enabled",
-      "type": "boolean"
-     },
-     "key_source": {
-      "default": "dedicated",
-      "enum": [
-       "dedicated",
-       "platform"
-      ],
-      "title": "Key Source",
-      "type": "string"
-     },
-     "limits": {
-      "$ref": "#/components/schemas/Limits",
-      "default": {
-       "global_concurrency": 6,
-       "global_daily_requests": 200,
-       "monthly_budget_usd": 10.0,
-       "realtime_daily_sessions": 20,
-       "realtime_enabled": false,
-       "realtime_max_seconds": 120,
-       "visitor_concurrency": 2,
-       "visitor_daily_requests": 25
-      }
-     },
-     "realtime_model": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Realtime Model"
-     },
-     "text_model": {
-      "default": "gpt-4.1-mini",
-      "title": "Text Model",
-      "type": "string"
-     },
-     "transcription_model": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Transcription Model"
-     },
-     "vision_model": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Vision Model"
-     }
-    },
-    "title": "OwnerDemoIn",
     "type": "object"
    },
    "PAIn": {
@@ -12193,6 +11977,32 @@
     "title": "WorkflowPatch",
     "type": "object"
    },
+   "WorkspaceOut": {
+    "properties": {
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "permissions": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Permissions",
+      "type": "array"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "role",
+     "label",
+     "permissions"
+    ],
+    "title": "WorkspaceOut",
+    "type": "object"
+   },
    "app__api__routers__documents__RejectIn": {
     "properties": {
      "reason": {
@@ -12986,226 +12796,6 @@
      }
     ],
     "summary": "Owner Status",
-    "tags": [
-     "ai-admin"
-    ]
-   }
-  },
-  "/api/v1/admin/ai-owner/demo": {
-   "put": {
-    "operationId": "owner_demo_update_api_v1_admin_ai_owner_demo_put",
-    "parameters": [
-     {
-      "in": "header",
-      "name": "x-organization-id",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "X-Organization-Id"
-      }
-     }
-    ],
-    "requestBody": {
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/OwnerDemoIn"
-       }
-      }
-     },
-     "required": true
-    },
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      },
-      "description": "Successful Response"
-     },
-     "422": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      },
-      "description": "Validation Error"
-     }
-    },
-    "security": [
-     {
-      "HTTPBearer": []
-     }
-    ],
-    "summary": "Owner Demo Update",
-    "tags": [
-     "ai-admin"
-    ]
-   }
-  },
-  "/api/v1/admin/ai-owner/demo/disable": {
-   "post": {
-    "description": "Emergency switch: stop all owner-funded demo AI immediately (no redeploy).",
-    "operationId": "owner_demo_disable_api_v1_admin_ai_owner_demo_disable_post",
-    "parameters": [
-     {
-      "in": "header",
-      "name": "x-organization-id",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "X-Organization-Id"
-      }
-     }
-    ],
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      },
-      "description": "Successful Response"
-     },
-     "422": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      },
-      "description": "Validation Error"
-     }
-    },
-    "security": [
-     {
-      "HTTPBearer": []
-     }
-    ],
-    "summary": "Owner Demo Disable",
-    "tags": [
-     "ai-admin"
-    ]
-   }
-  },
-  "/api/v1/admin/ai-owner/demo/key": {
-   "delete": {
-    "operationId": "owner_demo_delete_key_api_v1_admin_ai_owner_demo_key_delete",
-    "parameters": [
-     {
-      "in": "header",
-      "name": "x-organization-id",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "X-Organization-Id"
-      }
-     }
-    ],
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      },
-      "description": "Successful Response"
-     },
-     "422": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      },
-      "description": "Validation Error"
-     }
-    },
-    "security": [
-     {
-      "HTTPBearer": []
-     }
-    ],
-    "summary": "Owner Demo Delete Key",
-    "tags": [
-     "ai-admin"
-    ]
-   }
-  },
-  "/api/v1/admin/ai-owner/demo/test": {
-   "post": {
-    "description": "Owner's own test of the demo provider: models.list + one tiny real call per configured capability.",
-    "operationId": "owner_demo_test_api_v1_admin_ai_owner_demo_test_post",
-    "parameters": [
-     {
-      "in": "header",
-      "name": "x-organization-id",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "X-Organization-Id"
-      }
-     }
-    ],
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      },
-      "description": "Successful Response"
-     },
-     "422": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      },
-      "description": "Validation Error"
-     }
-    },
-    "security": [
-     {
-      "HTTPBearer": []
-     }
-    ],
-    "summary": "Owner Demo Test",
     "tags": [
      "ai-admin"
     ]
@@ -17695,205 +17285,6 @@
     "summary": "List Audit",
     "tags": [
      "admin"
-    ]
-   }
-  },
-  "/api/v1/auth/demo": {
-   "get": {
-    "description": "Public: which one-click demo roles exist. Empty unless DEMO_MODE is on (never in production).",
-    "operationId": "demo_accounts_api_v1_auth_demo_get",
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      },
-      "description": "Successful Response"
-     }
-    },
-    "summary": "Demo Accounts",
-    "tags": [
-     "auth"
-    ]
-   }
-  },
-  "/api/v1/auth/demo-login": {
-   "post": {
-    "description": "Start a demo: the visitor gets their own private demo hospital and is signed in as the chosen role there. A browser\nthat already has an active demo hospital keeps it (the chosen role is opened inside it) instead of starting another.",
-    "operationId": "demo_login_api_v1_auth_demo_login_post",
-    "parameters": [
-     {
-      "in": "cookie",
-      "name": "ud_refresh",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Ud Refresh"
-      }
-     }
-    ],
-    "requestBody": {
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/DemoLoginIn"
-       }
-      }
-     },
-     "required": true
-    },
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/TokenOut"
-        }
-       }
-      },
-      "description": "Successful Response"
-     },
-     "422": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      },
-      "description": "Validation Error"
-     }
-    },
-    "summary": "Demo Login",
-    "tags": [
-     "auth"
-    ]
-   }
-  },
-  "/api/v1/auth/demo/reset": {
-   "post": {
-    "description": "Replace the visitor's demo hospital with a fresh one (same role). Only this visitor's hospital is removed.",
-    "operationId": "demo_reset_api_v1_auth_demo_reset_post",
-    "requestBody": {
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/DemoResetIn"
-       }
-      }
-     },
-     "required": true
-    },
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/TokenOut"
-        }
-       }
-      },
-      "description": "Successful Response"
-     },
-     "422": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      },
-      "description": "Validation Error"
-     }
-    },
-    "security": [
-     {
-      "HTTPBearer": []
-     }
-    ],
-    "summary": "Demo Reset",
-    "tags": [
-     "auth"
-    ]
-   }
-  },
-  "/api/v1/auth/demo/session": {
-   "get": {
-    "description": "The visitor's demo hospital: active role, everyone they can switch to, and when it ends.",
-    "operationId": "demo_session_api_v1_auth_demo_session_get",
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      },
-      "description": "Successful Response"
-     }
-    },
-    "security": [
-     {
-      "HTTPBearer": []
-     }
-    ],
-    "summary": "Demo Session",
-    "tags": [
-     "auth"
-    ]
-   }
-  },
-  "/api/v1/auth/demo/switch": {
-   "post": {
-    "description": "Switch to another role (or a specific staff member / the patient) inside the SAME demo hospital, without\nstarting a new demo. The new identity's ordinary permissions apply; the previous session ends.",
-    "operationId": "demo_switch_api_v1_auth_demo_switch_post",
-    "requestBody": {
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/DemoSwitchIn"
-       }
-      }
-     },
-     "required": true
-    },
-    "responses": {
-     "200": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/TokenOut"
-        }
-       }
-      },
-      "description": "Successful Response"
-     },
-     "422": {
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      },
-      "description": "Validation Error"
-     }
-    },
-    "security": [
-     {
-      "HTTPBearer": []
-     }
-    ],
-    "summary": "Demo Switch",
-    "tags": [
-     "auth"
     ]
    }
   },

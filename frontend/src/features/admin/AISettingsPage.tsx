@@ -18,9 +18,7 @@ type Settings = {
   provider: string; source: string; key: { configured: boolean; hint: string | null; updated_at: string | null };
   models: Record<"text" | "vision" | "transcription" | "realtime", string | null>; agent_models: Record<string, string>; agents: string[];
   suggested: Record<string, string>; last_test: null | (TestResult & { at: string });
-  active_provider: string; phi_allowed: boolean; encryption: string; demo_restricted?: boolean;
-  demo_scope?: { isolated: boolean; expires_at: string | null; shared_demo_key: boolean; provider_source?: string; owner_managed?: boolean; reason?: string | null;
-    usage: { requests_last_hour: number; cost_usd: number; limits: { requests_per_hour: number; concurrency: number; cost_usd: number } } };
+  active_provider: string; phi_allowed: boolean; encryption: string;
 };
 type TestResult = { ok: boolean; models?: Record<string, boolean>; error?: string; available_count?: number; latency_ms?: number;
   family_problems?: Record<string, string>; capabilities?: Record<string, { ok: boolean; error?: string }> };
@@ -62,22 +60,6 @@ export function AISettingsPage() {
     <>
       <PageHeader title="AI settings" description="Platform AI provider for every organization. The API key is encrypted on the server and can never be viewed again — only replaced or removed."
         actions={s.active_provider === "openai" ? <Badge variant="ai">Live: OpenAI</Badge> : <SimulatedBadge label="Rule-based simulation active" />} />
-      {s.demo_scope && (
-        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-body" data-testid="ai-demo-scope">
-          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-primary" />
-          <div className="space-y-1">
-            <p><strong>Demo session settings.</strong> Everything you save here applies only to this demo sign-in — the platform configuration and other visitors are never affected. A key you enter is checked with OpenAI, stored encrypted, never shown again, and deleted when this session expires{s.demo_scope.expires_at ? ` (${fmtDateTime(s.demo_scope.expires_at)})` : ""}.</p>
-            <p data-testid="ai-demo-source"><strong>AI used in this session:</strong> {s.demo_scope.provider_source === "visitor-key" ? "your own key (temporary)" : s.demo_scope.owner_managed ? "the platform owner's demo AI (limited)" : s.demo_scope.provider_source === "demo-project" ? "the shared demo project key (limited)" : `labelled simulation${s.demo_scope.reason ? ` — ${s.demo_scope.reason}` : ""}`}.</p>
-            {!s.demo_scope.owner_managed && <p className="text-muted-foreground">Limits: {s.demo_scope.usage.limits.requests_per_hour} AI requests per hour, {s.demo_scope.usage.limits.concurrency} at a time, ${s.demo_scope.usage.limits.cost_usd.toFixed(2)} estimated spend. Used this hour: {s.demo_scope.usage.requests_last_hour}.{s.demo_scope.shared_demo_key ? " Without your own key, the shared demo project key is used." : " Without your own key, AI runs in the labeled simulation."}</p>}
-          </div>
-        </div>
-      )}
-      {s.demo_restricted && (
-        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning-soft/60 p-4 text-body" data-testid="ai-demo-notice">
-          <Lock className="mt-0.5 size-4 shrink-0" />
-          <p><strong>View only — demo account.</strong> You're signed in with the one-click demo Super Admin, which can't change AI keys, models or run connection tests. To configure OpenAI, sign out and sign in with a real administrator account (email and password).</p>
-        </div>
-      )}
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
         <div className="space-y-4">
           <Card>
@@ -89,9 +71,9 @@ export function AISettingsPage() {
                   : <p className="flex items-center gap-2 text-muted-foreground"><Lock className="size-4" />No key stored</p>}
               </div>
               <Field label={s.key.configured ? "Replace API key" : "API key"} hint="Sent once over HTTPS, encrypted at rest, never shown again or stored in the browser.">
-                <Input type="password" autoComplete="off" spellCheck={false} value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk-…" disabled={s.demo_restricted} />
+                <Input type="password" autoComplete="off" spellCheck={false} value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk-…" />
               </Field>
-              {s.key.configured && s.source === "ui" && <Button variant="outline" size="sm" disabled={s.demo_restricted} onClick={async () => {
+              {s.key.configured && s.source === "ui" && <Button variant="outline" size="sm" onClick={async () => {
                 if (!(await confirm({ title: "Remove the stored API key?", description: "AI features fall back to the rule-based simulation.", confirmLabel: "Remove key", destructive: true }))) return;
                 try { await api("/admin/ai-settings/key", { method: "DELETE" }); toast.success("Key removed"); qc.invalidateQueries({ queryKey: ["ai"] }); } catch (e) { toastError(e); }
               }}><Trash2 />Remove key</Button>}
@@ -114,10 +96,10 @@ export function AISettingsPage() {
                 <Field key={a} label={titleCase(a.replace(/_/g, " "))}><Input value={f.agent_models[a] ?? ""} placeholder={f.models.text || "text model"} onChange={(e) => setF({ ...f, agent_models: { ...f.agent_models, [a]: e.target.value } })} /></Field>))}</div>
             </CardContent>
           </Card>
-          <div className="flex gap-2"><Button loading={busy} disabled={s.demo_restricted} onClick={save}><Save />Save settings</Button><Button variant="outline" loading={busy} disabled={s.demo_restricted} onClick={runTest}><PlugZap />Test connection</Button></div>
+          <div className="flex gap-2"><Button loading={busy} onClick={save}><Save />Save settings</Button><Button variant="outline" loading={busy} onClick={runTest}><PlugZap />Test connection</Button></div>
         </div>
         <div className="space-y-4">
-          {me?.user.is_superadmin && !s.demo_scope && !s.demo_restricted && <OwnerAICard />}
+          {me?.user.is_superadmin && <OwnerAICard />}
           <Card>
             <CardHeader><CardTitle>Connection test</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-table">{!shown ? <p className="text-muted-foreground">Not tested yet. Live validation is pending until a key is saved and tested.</p> : (

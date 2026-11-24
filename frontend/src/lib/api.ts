@@ -30,6 +30,7 @@ function messageFrom(detail: Detail, status: number): string {
 
 let accessToken: string | null = null;
 let orgId: string | null = null;
+let actingRole: string | null = null; // header role switcher: the server enforces it on every request (X-Acting-Role)
 let onUnauthorized: (() => void) | null = null;
 let refreshing: Promise<unknown> | null = null;
 
@@ -39,6 +40,9 @@ export const session = {
   },
   setOrg(id: string | null) {
     orgId = id;
+  },
+  setActingRole(role: string | null) {
+    actingRole = role;
   },
   get org() {
     return orgId;
@@ -75,6 +79,7 @@ async function doFetch(path: string, opts: Opts) {
   const headers: Record<string, string> = { ...(opts.headers ?? {}) };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (orgId) headers["X-Organization-Id"] = orgId;
+  if (actingRole) headers["X-Acting-Role"] = actingRole;
   let body: BodyInit | undefined;
   if (opts.body instanceof FormData) body = opts.body;
   else if (opts.body !== undefined) {
@@ -94,14 +99,7 @@ export async function refreshSession<T = unknown>(): Promise<T | null> {
   if (!refreshing) {
     refreshing = fetch("/api/v1/auth/refresh", { method: "POST", credentials: "include" })
       .then(async (r) => {
-        if (!r.ok) {
-          // A private demo hospital that expired or was reset: tell the visitor why they were signed out.
-          try {
-            const j = await r.json();
-            if (j?.detail?.code === "demo_expired") sessionStorage.setItem("ud-demo-ended", "1");
-          } catch { /* not JSON */ }
-          return null;
-        }
+        if (!r.ok) return null;
         const data = await r.json();
         accessToken = data.access_token;
         return data;
