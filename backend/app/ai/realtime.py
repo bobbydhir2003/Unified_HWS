@@ -69,7 +69,8 @@ def probe_realtime(cfg) -> None:
 
 
 def mint_client_secret(*, org_id: uuid.UUID, user_id: uuid.UUID, contains_phi: bool, voice: str = "marin",
-                       instructions: str = RECEPTIONIST_INSTRUCTIONS, client: httpx.Client | None = None) -> dict:
+                       instructions: str = RECEPTIONIST_INSTRUCTIONS, tools: list[dict] | None = None,
+                       client: httpx.Client | None = None) -> dict:
     """Return {"value", "expires_at", "model"} for one browser session. Raises AIError/AIPolicyError."""
     from app.ai.config import effective
     from app.core.config import settings
@@ -83,7 +84,9 @@ def mint_client_secret(*, org_id: uuid.UUID, user_id: uuid.UUID, contains_phi: b
     max_seconds = int((e.limits or {}).get("realtime_max_seconds") or settings.ai_realtime_max_seconds)
     body = {"expires_after": {"anchor": "created_at", "seconds": 60},  # the browser must connect within a minute
             "session": {"type": "realtime", "model": e.realtime_model, "instructions": instructions, "audio": {"output": {"voice": voice}},
-                        "tools": TOOLS, "tool_choice": "auto"}}
+                        "tools": TOOLS if tools is None else tools, "tool_choice": "auto"}}
+    if e.transcription_model:  # caller transcripts let the server apply its confirmation and emergency rules to voice sessions
+        body["session"]["audio"]["input"] = {"transcription": {"model": e.transcription_model}}
     # Pseudonymous safety identifier (no names/emails): hash of org + user.
     safety_id = hashlib.sha256(f"{org_id}:{user_id}".encode()).hexdigest()[:32]
     from app.ai import demo_scope

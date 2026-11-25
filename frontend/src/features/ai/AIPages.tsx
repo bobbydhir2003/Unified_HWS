@@ -1,10 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, CheckCircle2, CircleSlash, ListChecks, Phone, PhoneOff, Plus, RotateCcw, Send, ShieldCheck, Workflow, XCircle } from "lucide-react";
+import { Bot, CheckCircle2, CircleSlash, ListChecks, Plus, RotateCcw, Send, ShieldCheck, Workflow, XCircle } from "lucide-react";
 import * as React from "react";
-import { RealtimeVoicePanel } from "./RealtimeVoice";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { EmptyState, LoadingRows, PageHeader, SimulatedBadge, Stat, toastError } from "@/components/common";
+import { EmptyState, LoadingRows, PageHeader, Stat, toastError } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +33,7 @@ export function TasksPage() {
   const act = async (t: TaskT, a: "complete" | "reopen") => { try { await post(`/tasks/${t.id}/${a}`); qc.invalidateQueries({ queryKey: ["tasks"] }); qc.invalidateQueries({ queryKey: ["tasks-count"] }); } catch (e) { toastError(e); } };
   return (
     <>
-      <PageHeader title="Tasks" description="Your worklist — created by colleagues, automations and the AI receptionist." actions={<Button onClick={() => setCreating(true)}><Plus />New task</Button>} />
+      <PageHeader title="Tasks" description="Your worklist — created by colleagues, automations and the HMS Voice Concierge." actions={<Button onClick={() => setCreating(true)}><Plus />New task</Button>} />
       <Card className="overflow-hidden">
         <div className="flex flex-wrap gap-2 border-b p-3">
           {(["mine", "all"] as const).map((s) => <button key={s} onClick={() => setScope(s)} className={cn("rounded-md px-2.5 py-1 text-table font-medium text-muted-foreground", scope === s && "bg-accent text-accent-foreground")}>{s === "mine" ? "Mine & my roles" : "Everyone"}</button>)}
@@ -51,7 +50,7 @@ export function TasksPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   {t.link ? <Link to={t.link} className={cn("text-body font-medium hover:underline", t.status === "done" && "line-through opacity-60")}>{t.title}</Link> : <span className="text-body font-medium">{t.title}</span>}
                   {t.priority !== "normal" && <Badge variant={PRIO[t.priority]}>{titleCase(t.priority)}</Badge>}
-                  {t.source !== "manual" && <Badge variant="ai"><Bot />{t.source === "automation" ? "Automation" : "AI receptionist"}</Badge>}
+                  {t.source !== "manual" && <Badge variant="ai"><Bot />{t.source === "voice_ai" || t.source === "receptionist" ? "Voice Concierge" : "Automation"}</Badge>}
                 </div>
                 {t.description && <p className="text-xs text-muted-foreground">{t.description}</p>}
                 <p className="text-xs text-muted-foreground">{t.assigned_role ? ROLE_LABELS[t.assigned_role] : "Assigned to a person"}{t.patient_name ? ` · ${t.patient_name}` : ""} · {fromNow(t.created_at)}</p>
@@ -156,82 +155,6 @@ export function AutomationPage() {
           ))}</div>
         )
       )}
-    </>
-  );
-}
-
-// ======================= AI receptionist =======================
-
-type Call = { id: string; from_number: string | null; status: string; consented: boolean; verified_patient_id: string | null; patient_name: string | null; transcript: { speaker: string; text: string; at: string }[]; intent: string | null; outcome: string | null; summary: string | null; created_at: string; stage: string | null };
-const QUICK = ["Yes", "I'd like to book an appointment", "Cancel my appointment", "What are your hours?", "I need a refill", "Option 1", "Talk to a person", "That's all, bye"];
-
-export function ReceptionistPage() {
-  const qc = useQueryClient();
-  const logs = useQuery({ queryKey: ["calls"], queryFn: () => get<Call[]>("/receptionist/calls") });
-  const [call, setCall] = React.useState<Call | null>(null);
-  const [text, setText] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
-  const [viewing, setViewing] = React.useState<Call | null>(null);
-  const pane = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => { pane.current?.scrollTo({ top: pane.current.scrollHeight, behavior: "smooth" }); }, [call?.transcript.length, call?.status]);
-  const send = async (t: string) => {
-    if (!call || !t.trim()) return;
-    setBusy(true);
-    try { const c = await post<Call>(`/receptionist/calls/${call.id}/message`, { text: t }); setCall(c); setText(""); if (c.status !== "active") qc.invalidateQueries({ queryKey: ["calls"] }); }
-    catch (e) { toastError(e); } finally { setBusy(false); }
-  };
-  const transcript = (c: Call) => (
-    <ol className="space-y-2">{c.transcript.map((t, i) => (
-      <li key={i} className={cn("max-w-[85%] rounded-2xl px-3.5 py-2 text-body", t.speaker === "caller" ? "ml-auto bg-primary text-primary-foreground" : "bg-muted")}>
-        <span className="mb-0.5 block text-label font-semibold uppercase tracking-wide opacity-70">{t.speaker === "caller" ? "Caller" : "AI receptionist"}</span>{t.text}
-      </li>
-    ))}</ol>
-  );
-  return (
-    <>
-      <PageHeader title="AI receptionist" description="Sandbox for the phone assistant: test conversations as a caller. Telephony is not connected." actions={<SimulatedBadge label="Sandbox — no real calls" />} />
-      <RealtimeVoicePanel />
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_1fr]">
-        <Card className="flex h-[calc(100dvh-220px)] min-h-[480px] flex-col">
-          <CardHeader className="border-b pb-3">
-            <CardTitle className="flex items-center gap-2"><Phone className="size-4" />Call simulator</CardTitle>
-            {call?.status === "active" ? (
-              <Button size="sm" variant="destructive" onClick={async () => { try { setCall(await post<Call>(`/receptionist/calls/${call.id}/end`)); qc.invalidateQueries({ queryKey: ["calls"] }); } catch (e) { toastError(e); } }}><PhoneOff />End call</Button>
-            ) : (
-              <Button size="sm" onClick={async () => { try { setCall(await post<Call>("/receptionist/calls", { from_number: "+1 (555) 010-7788" })); } catch (e) { toastError(e); } }}><Phone />{call ? "New call" : "Start call"}</Button>
-            )}
-          </CardHeader>
-          <div ref={pane} className="min-h-0 flex-1 overflow-y-auto p-4">
-            {!call ? <EmptyState icon={Bot} title="Start a call to talk to the AI receptionist" description="Try booking as Elena Moreau, DOB 04/12/1986, or test the safeguards with a wrong date of birth or an emergency phrase." /> : <>
-              {transcript(call)}
-              {call.status !== "active" && <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-table"><p className="font-medium">Call {call.status}</p><p className="text-muted-foreground">{call.summary}</p></div>}
-            </>}
-          </div>
-          {call?.status === "active" && (
-            <div className="space-y-2 border-t p-3">
-              <div className="flex flex-wrap gap-1.5">{QUICK.map((q) => <button key={q} onClick={() => send(q)} className="rounded-full border px-2.5 py-0.5 text-xs hover:border-primary hover:text-primary">{q}</button>)}</div>
-              <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); send(text); }}>
-                <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Say something as the caller…" aria-label="Caller says" autoFocus />
-                <Button type="submit" loading={busy} disabled={!text.trim()}><Send /></Button>
-              </form>
-            </div>
-          )}
-        </Card>
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-2"><CardTitle>Call log</CardTitle></CardHeader>
-          {logs.isLoading ? <LoadingRows /> : !logs.data?.length ? <EmptyState title="No calls yet" /> : (
-            <ul className="max-h-[calc(100dvh-300px)] divide-y overflow-y-auto">{logs.data.map((c) => (
-              <li key={c.id}><button onClick={() => setViewing(c)} className="block w-full px-4 py-3 text-left hover:bg-muted/40">
-                <span className="flex items-center gap-2 text-table font-medium">{c.patient_name ?? "Unverified caller"}<Badge variant={c.status === "transferred" ? "warning" : c.status === "completed" ? "success" : "neutral"}>{titleCase(c.status)}</Badge><span className="ml-auto text-xs text-muted-foreground">{fmtDateTime(c.created_at)}</span></span>
-                <span className="block text-xs text-muted-foreground">{c.summary ?? `${c.transcript.length} turns`}</span>
-              </button></li>
-            ))}</ul>
-          )}
-        </Card>
-      </div>
-      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <DialogContent size="lg"><DialogHeader><DialogTitle>Call transcript</DialogTitle></DialogHeader>{viewing && <><p className="text-table text-muted-foreground">{viewing.summary}</p><div className="max-h-[60vh] overflow-y-auto">{transcript(viewing)}</div></>}</DialogContent>
-      </Dialog>
     </>
   );
 }

@@ -87,6 +87,9 @@ class Settings(BaseSettings):
     assist_auto_actions: bool = False                # policy auto-execution of low-risk internal actions (off by default)
     approval_expiry_days: int = 7                    # pending agent proposals expire after this
     ai_realtime_max_seconds: int = 300               # staff voice sessions end after this (client timer + short-lived secret)
+    voice_telephony_enabled: bool = False            # inbound telephony webhook (public phone answering) — off until a provider is validated
+    voice_concierge_turn_limit: int = 40             # caller turns per call before the concierge hands off to staff
+    voice_concierge_calls_per_user_day: int = 200    # test/browser calls one staff user can start per day
     rls_enabled: bool = True
     credentials_encryption_key: str | None = None  # Fernet key for stored secrets (AI keys); required in production
     eligibility_adapter: str = "simulated"

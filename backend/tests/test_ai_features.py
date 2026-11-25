@@ -4,8 +4,6 @@ import uuid
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi.testclient import TestClient
-
 DOCTOR, NURSE, FRONT, ADMIN, PATIENT = ("dr.chen@harborview.dev", "nurse.rivera@harborview.dev", "frontdesk@harborview.dev",
                                         "clinicadmin@harborview.dev", "patient@harborview.dev")
 
@@ -96,63 +94,7 @@ def test_disabled_workflow_does_not_run_and_document_routing(as_user):
     assert any(d2["id"] in (t["link"] or "") for t in _open_tasks(nurse))
 
 
-# ---------- receptionist ----------
-
-def _call(front):
-    return front.post("/receptionist/calls", json={"from_number": "+15550001111"}).json()
-
-
-def _say(front, c, text):
-    return front.post(f"/receptionist/calls/{c['id']}/message", json={"text": text}).json()
-
-
-def test_receptionist_requires_consent(as_user):
-    front = as_user(FRONT)
-    c = _call(front)
-    assert "AI assistant" in c["transcript"][0]["text"] and "recorded" in c["transcript"][0]["text"]
-    c = _say(front, c, "no")
-    assert c["status"] == "transferred"
-
-
-def test_receptionist_verification_never_leaks_and_books_when_verified(as_user):
-    front = as_user(FRONT)
-    c = _call(front)
-    _say(front, c, "yes")
-    _say(front, c, "I want to cancel my appointment")
-    for _ in range(3):
-        _say(front, c, "Elena Moreau")
-        c = _say(front, c, "01/01/1900")
-    assert c["status"] == "transferred" and c["verified_patient_id"] is None
-    assistant_lines = " ".join(t["text"] for t in c["transcript"] if t["speaker"] == "assistant")
-    assert "appointment is" not in assistant_lines and "April" not in assistant_lines
-    c = _call(front)
-    _say(front, c, "yes")
-    _say(front, c, "I'd like to book an appointment")
-    _say(front, c, "Elena Moreau")
-    c = _say(front, c, "04/12/1986")
-    assert c["verified_patient_id"] and "option 1" in c["transcript"][-1]["text"]
-    c = _say(front, c, "option 1")
-    assert c["outcome"].startswith("Booked")
-    appts = as_user(PATIENT).get("/portal/appointments").json()
-    assert any(a["reason"] == "Booked by phone (AI receptionist)" for a in appts)
-    c = _say(front, c, "that's all, bye")
-    assert c["status"] == "completed" and "identity verified" in c["summary"]
-
-
-def test_receptionist_emergency_safeguard_and_webhook_auth(as_user, app):
-    front, doc = as_user(FRONT), as_user(DOCTOR)
-    c = _call(front)
-    c = _say(front, c, "my husband has chest pain and can't breathe")
-    assert c["status"] == "transferred" and "911" in c["transcript"][-1]["text"]
-    assert any(t["priority"] == "urgent" and "emergency" in t["title"].lower() for t in _open_tasks(doc))
-    tc = TestClient(app)
-    assert tc.post("/api/integrations/voice/harborview/inbound", json={"call_sid": "CA1234"}, headers={"X-Voice-Secret": "nope"}).status_code == 401
-    r = tc.post("/api/integrations/voice/harborview/inbound", json={"call_sid": "CA-test-1", "from_number": "+15550002222"},
-                headers={"X-Voice-Secret": "dev-voice-secret-harborview"}).json()
-    assert "automated AI assistant" in r["say"] and r["hangup"] is False
-    r = tc.post("/api/integrations/voice/harborview/inbound", json={"call_sid": "CA-test-1", "speech": "what are your hours"},
-                headers={"X-Voice-Secret": "dev-voice-secret-harborview"}).json()
-    assert "Is it okay to continue" in r["say"]  # consent first, even for general questions
+# ---------- receptionist: replaced by HMS Voice Concierge (tests/test_voice_concierge.py) ----------
 
 
 def test_ai_monitoring_lists_jobs(as_user):

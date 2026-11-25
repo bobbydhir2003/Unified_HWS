@@ -3202,8 +3202,8 @@ export interface paths {
         put?: never;
         /**
          * Voice Webhook
-         * @description Telephony integration point: the provider posts each recognized utterance; we return what to say.
-         *     Authenticated with a per-org secret. Real deployments need a BAA-covered telephony/ASR vendor.
+         * @description Telephony integration point: the provider posts each recognized utterance; we return what to say. Disabled unless
+         *     VOICE_TELEPHONY_ENABLED; authenticated with a per-organization secret. `transfer` is always false — no live transfer exists.
          */
         post: operations["voice_webhook_api_v1_integrations_voice__org_slug__inbound_post"];
         delete?: never;
@@ -5792,6 +5792,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/receptionist/calls/{cid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Call */
+        get: operations["get_call_api_v1_receptionist_calls__cid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/receptionist/calls/{cid}/end": {
         parameters: {
             query?: never;
@@ -5820,6 +5837,100 @@ export interface paths {
         put?: never;
         /** Call Message */
         post: operations["call_message_api_v1_receptionist_calls__cid__message_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receptionist/calls/{cid}/staff-action": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Staff Action
+         * @description Front-desk staff create the callback or handoff themselves (same idempotent tools, recorded as a staff action).
+         */
+        post: operations["staff_action_api_v1_receptionist_calls__cid__staff_action_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receptionist/calls/{cid}/voice/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Voice Session
+         * @description Short-lived Realtime credential bound to this call's concierge instructions and tool set. Permanent key never returned.
+         */
+        post: operations["voice_session_api_v1_receptionist_calls__cid__voice_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receptionist/calls/{cid}/voice/tools/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Voice Tool
+         * @description The Realtime model may only request a tool; the browser relays it here and the server validates and executes it.
+         */
+        post: operations["voice_tool_api_v1_receptionist_calls__cid__voice_tools__name__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receptionist/calls/{cid}/voice/utterance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Voice Utterance */
+        post: operations["voice_utterance_api_v1_receptionist_calls__cid__voice_utterance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receptionist/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overview */
+        get: operations["overview_api_v1_receptionist_overview_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7126,6 +7237,14 @@ export interface components {
         };
         /** CallStart */
         CallStart: {
+            /**
+             * Channel
+             * @default text
+             * @enum {string}
+             */
+            channel: "text" | "browser_voice";
+            /** Clinic Id */
+            clinic_id?: string | null;
             /** From Number */
             from_number?: string | null;
         };
@@ -10175,6 +10294,22 @@ export interface components {
             /** Until */
             until?: string | null;
         };
+        /** StaffAction */
+        StaffAction: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "callback" | "handoff";
+            /**
+             * Category
+             * @default scheduling
+             * @enum {string}
+             */
+            category: "scheduling" | "billing" | "records" | "clinical_question" | "other";
+            /** Note */
+            note: string;
+        };
         /** StaffNewThread */
         StaffNewThread: {
             /** Body */
@@ -10463,6 +10598,16 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** Utterance */
+        Utterance: {
+            /**
+             * Speaker
+             * @enum {string}
+             */
+            speaker: "caller" | "assistant";
+            /** Text */
+            text: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -10581,6 +10726,15 @@ export interface components {
             from_number?: string | null;
             /** Speech */
             speech?: string | null;
+        };
+        /** VoiceIn */
+        VoiceIn: {
+            /**
+             * Voice
+             * @default marin
+             * @enum {string}
+             */
+            voice: "marin" | "cedar" | "alloy" | "verse";
         };
         /** VoidIn */
         VoidIn: {
@@ -24207,6 +24361,39 @@ export interface operations {
             };
         };
     };
+    get_call_api_v1_receptionist_calls__cid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                cid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     end_call_api_v1_receptionist_calls__cid__end_post: {
         parameters: {
             query?: never;
@@ -24256,6 +24443,188 @@ export interface operations {
                 "application/json": components["schemas"]["CallMsg"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staff_action_api_v1_receptionist_calls__cid__staff_action_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                cid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_session_api_v1_receptionist_calls__cid__voice_session_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                cid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_tool_api_v1_receptionist_calls__cid__voice_tools__name__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                cid: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_utterance_api_v1_receptionist_calls__cid__voice_utterance_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path: {
+                cid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Utterance"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_v1_receptionist_overview_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-organization-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

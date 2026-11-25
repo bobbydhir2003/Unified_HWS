@@ -35,14 +35,24 @@ with sync_playwright() as pw:
     print("urgent message → urgent task for doctor")
     front = login("frontdesk@harborview.dev")
     front.goto("http://localhost:5173/receptionist")
-    front.get_by_role("button", name="Start call").click(); front.wait_for_selector("text=automated AI assistant")
-    for said in ["Yes", "I'd like to book an appointment", "Elena Moreau", "04/12/1986", "option 1"]:
-        front.get_by_label("Caller says").fill(said); front.get_by_label("Caller says").press("Enter"); front.wait_for_timeout(700)
-    expect(front.get_by_text("You're booked for").first).to_be_visible()
-    front.get_by_label("Caller says").fill("That's all, bye"); front.get_by_label("Caller says").press("Enter")
-    expect(front.get_by_text("Call completed")).to_be_visible()
+    front.get_by_test_id("start-call").click(); front.wait_for_selector("text=automated AI assistant")
+
+    def caller(said):
+        n = front.locator("[data-role=assistant]").count()
+        front.get_by_label("Caller says").fill(said); front.get_by_label("Caller says").press("Enter")
+        expect(front.locator("[data-role=assistant]")).to_have_count(n + 1, timeout=15000)
+
+    caller("I'd like to book an appointment")  # natural request, no scripted consent step
+    caller("It's Elena Moreau, April 12, 1986")
+    caller(front.get_by_test_id("test-code").locator("span.font-mono").inner_text())
+    caller("option 1")
+    expect(front.get_by_test_id("pending-action")).to_be_visible()
+    caller("Yes, please book it")
+    expect(front.get_by_text("You're all set").first).to_be_visible()
+    caller("That's all, bye")
+    expect(front.get_by_test_id("call-ended")).to_be_visible()
     front.screenshot(path=f"{OUT}/ai-02-receptionist.png")
-    print("receptionist booked appointment after verification")
+    print("voice concierge booked an appointment after portal-code verification and an explicit yes")
     admin = login("clinicadmin@harborview.dev")
     admin.goto("http://localhost:5173/automation"); expect(admin.get_by_text("Patient message triage")).to_be_visible()
     admin.get_by_role("button", name="Activity log").click(); admin.wait_for_timeout(800)

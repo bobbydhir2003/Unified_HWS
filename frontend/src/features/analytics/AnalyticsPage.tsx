@@ -74,7 +74,7 @@ function Operations({ days, clinicId }: { days: number; clinicId?: string }) {
   const q = useQuery({ queryKey: ["an-ops", days, scope, clinicId], queryFn: () => get<Ops>("/analytics/operations", { days, clinic_id: scope === "clinic" ? clinicId : undefined }) });
   if (!q.data) return <LoadingRows />;
   const d = q.data;
-  const channels = Object.entries(d.booking_channels).map(([k, v]) => ({ name: { staff: "Front desk", portal: "Patient portal", ai_phone: "AI receptionist" }[k] ?? titleCase(k), value: v }));
+  const channels = Object.entries(d.booking_channels).map(([k, v]) => ({ name: { staff: "Front desk", portal: "Patient portal", ai_phone: "HMS Voice Concierge" }[k] ?? titleCase(k), value: v }));
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2 text-table"><span className="text-muted-foreground">Scope:</span>

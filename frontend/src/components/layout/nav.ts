@@ -56,7 +56,7 @@ export const NAV: NavSection[] = [
       { to: "/admin/ai-governance", label: "AI governance", icon: ShieldCheck, perm: "ai:manage" },
       { to: "/automation/monitors", label: "Monitors & rules", icon: Activity, any: ["automation:manage", "command:view"] },
       { to: "/automation", label: "Automation studio", icon: Workflow, perm: "automation:manage" },
-      { to: "/receptionist", label: "AI receptionist", icon: PhoneCall, perm: "schedule:write" },
+      { to: "/receptionist", label: "HMS Voice Concierge", icon: PhoneCall, perm: "schedule:write" },
       { to: "/admin/ai", label: "AI monitoring", icon: Bot, perm: "clinic:manage" },
     ],
   },
@@ -115,7 +115,7 @@ const PRIMARY: Record<HomeProfile, [string, string?][]> = {
   bed_manager: [["/"], ["/worklist"], ["/beds"], ["/inpatients"], ["/ed"], ["/command"], ["/help"]],
   billing: [["/"], ["/worklist"], ["/billing"], ["/revenue", "Claims & authorizations"], ["/insurance"], ["/patients"], ["/analytics", "Reports"], ["/help"]],
   insurance_specialist: [["/"], ["/worklist"], ["/insurance"], ["/revenue", "Claims & authorizations"], ["/patients"], ["/documents"], ["/help"]],
-  receptionist: [["/"], ["/worklist"], ["/front-desk"], ["/schedule"], ["/patients"], ["/insurance"], ["/messages"], ["/help"]],
+  receptionist: [["/"], ["/worklist"], ["/front-desk"], ["/schedule"], ["/receptionist"], ["/patients"], ["/insurance"], ["/messages"], ["/help"]],
   staff: [["/"], ["/worklist"], ["/patients"], ["/help"]],
 };
 

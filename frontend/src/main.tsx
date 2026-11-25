@@ -39,7 +39,7 @@ const VideoVisit = lazy(() => import("@/features/telehealth/VideoVisit").then((m
 const BillingPage = lazy(() => import("@/features/billing/BillingPage").then((m) => ({ default: m.BillingPage })));
 const AIMonitoringPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AIMonitoringPage })));
 const AutomationPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.AutomationPage })));
-const ReceptionistPage = lazy(() => import("@/features/ai/AIPages").then((m) => ({ default: m.ReceptionistPage })));
+const VoiceConciergePage = lazy(() => import("@/features/voice/VoiceConcierge").then((m) => ({ default: m.VoiceConciergePage })));
 const CommandCenter = lazy(() => import("@/features/command/CommandCenter").then((m) => ({ default: m.CommandCenter })));
 const AgentStudio = lazy(() => import("@/features/ai/AgentStudio").then((m) => ({ default: m.AgentStudio })));
 const HelpPage = lazy(() => import("@/features/help/HelpPage").then((m) => ({ default: m.HelpPage })));
@@ -219,7 +219,8 @@ const router = createBrowserRouter([
               { path: "admin/facilities", element: <Perm perm="clinic:manage"><FacilitiesPage /></Perm>, handle: { crumb: "Facilities" } },
               { path: "tasks", element: <Perm perm="patients:read"><TasksPage /></Perm>, handle: { crumb: "Tasks" } },
               { path: "automation", element: <Perm perm="messages:use"><AutomationPage /></Perm>, handle: { crumb: "Automation studio" } },
-              { path: "receptionist", element: <Perm perm="schedule:write"><ReceptionistPage /></Perm>, handle: { crumb: "AI receptionist" } },
+              { path: "receptionist", element: <Perm perm="schedule:write"><VoiceConciergePage /></Perm>, handle: { crumb: "HMS Voice Concierge" } },
+              { path: "voice-concierge", element: <Navigate to="/receptionist" replace /> },
               { path: "admin/ai", element: <Perm perm="clinic:manage"><AIMonitoringPage /></Perm>, handle: { crumb: "AI monitoring" } },
               { path: "billing", element: <Perm perm="billing:read"><BillingPage /></Perm>, handle: { crumb: "Billing" } },
               { path: "orders", element: <Perm perm="clinical:read"><OrdersPage /></Perm>, handle: { crumb: "Orders" } },

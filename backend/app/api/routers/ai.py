@@ -1,9 +1,8 @@
-import hmac
 import uuid
 from datetime import timedelta
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 
@@ -12,7 +11,6 @@ from app.ai.config import active_provider, effective
 from app.ai.provider import AIError
 from app.api.deps import TenantContext, require
 from app.core.config import settings
-from app.core.db import get_db
 from app.core.errors import bad_request, not_found
 from app.core.permissions import P
 from app.core.security import now
@@ -21,12 +19,9 @@ from app.models import (
     AutomationRun,
     AutomationWorkflow,
     Membership,
-    Organization,
     Patient,
     Task,
-    VoiceCall,
 )
-from app.services import receptionist
 from app.services.automation import ACTIONS, TEMPLATES, execute
 from app.services.patients import get_patient
 
@@ -307,94 +302,6 @@ def tasks_count(ctx: TenantContext = Depends(require(P.PATIENTS_READ))):
     return {"open": ctx.db.scalar(select(func.count()).select_from(Task).where(
         Task.organization_id == ctx.org_id, Task.status.in_(("open", "in_progress")),
         or_(Task.assigned_user_id == ctx.user.id, (Task.assigned_user_id.is_(None) & Task.assigned_role.in_(ctx.roles)))))}
-
-
-# ======================= AI receptionist =======================
-
-class CallStart(BaseModel):
-    from_number: str | None = Field(default=None, max_length=40)
-
-
-class CallMsg(BaseModel):
-    text: str = Field(min_length=1, max_length=500)
-
-
-def call_out(c: VoiceCall, pname: str | None = None) -> dict:
-    return {"id": c.id, "from_number": c.from_number, "channel": c.channel, "status": c.status, "consented": c.consented,
-            "verified_patient_id": c.verified_patient_id, "patient_name": pname, "transcript": c.transcript, "intent": c.intent,
-            "outcome": c.outcome, "summary": c.summary, "created_at": c.created_at, "ended_at": c.ended_at, "stage": (c.state or {}).get("stage")}
-
-
-def _call(ctx: TenantContext, cid: uuid.UUID) -> VoiceCall:
-    c = ctx.db.get(VoiceCall, cid)
-    if not c or c.organization_id != ctx.org_id:
-        raise not_found("Call")
-    return c
-
-
-@router.post("/receptionist/calls", status_code=201)
-def start_call(body: CallStart, ctx: TenantContext = Depends(require(P.SCHEDULE_WRITE))):
-    c = receptionist.start(ctx.db, ctx.db.get(Organization, ctx.org_id), body.from_number, ctx.user.id)
-    ctx.audit("receptionist.call_started", resource_type="voice_call", resource_id=None, details={"channel": "sandbox"})
-    ctx.db.commit()
-    return call_out(c)
-
-
-@router.post("/receptionist/calls/{cid}/message")
-def call_message(cid: uuid.UUID, body: CallMsg, ctx: TenantContext = Depends(require(P.SCHEDULE_WRITE))):
-    c = _call(ctx, cid)
-    if c.status != "active":
-        raise bad_request("This call has ended")
-    receptionist.message(ctx.db, c, body.text)
-    ctx.db.commit()
-    p = ctx.db.get(Patient, c.verified_patient_id) if c.verified_patient_id else None
-    return call_out(c, p.full_name if p else None)
-
-
-@router.post("/receptionist/calls/{cid}/end")
-def end_call(cid: uuid.UUID, ctx: TenantContext = Depends(require(P.SCHEDULE_WRITE))):
-    c = _call(ctx, cid)
-    if c.status == "active":
-        c.status = "abandoned" if not c.consented else "completed"
-        receptionist.finish(ctx.db, c)
-    ctx.db.commit()
-    return call_out(c)
-
-
-@router.get("/receptionist/calls")
-def list_calls(ctx: TenantContext = Depends(require(P.SCHEDULE_READ))):
-    rows = ctx.db.execute(select(VoiceCall, Patient.first_name + " " + Patient.last_name).outerjoin(Patient, Patient.id == VoiceCall.verified_patient_id)
-                          .where(VoiceCall.organization_id == ctx.org_id).order_by(VoiceCall.created_at.desc()).limit(100)).all()
-    return [call_out(c, n) for c, n in rows]
-
-
-class VoiceHook(BaseModel):
-    call_sid: str = Field(min_length=4, max_length=80)
-    from_number: str | None = None
-    speech: str | None = Field(default=None, max_length=500)
-
-
-@router.post("/integrations/voice/{org_slug}/inbound")
-def voice_webhook(org_slug: str, body: VoiceHook, x_voice_secret: str | None = Header(default=None), db=Depends(get_db)):
-    """Telephony integration point: the provider posts each recognized utterance; we return what to say.
-    Authenticated with a per-org secret. Real deployments need a BAA-covered telephony/ASR vendor."""
-    org = db.scalar(select(Organization).where(Organization.slug == org_slug))
-    secret = (org.settings or {}).get("voice_webhook_secret") if org else None
-    if not org or not secret or not x_voice_secret or not hmac.compare_digest(secret, x_voice_secret):
-        raise HTTPException(401, "Invalid voice webhook credentials")
-    c = db.scalar(select(VoiceCall).where(VoiceCall.organization_id == org.id, VoiceCall.channel == "phone", VoiceCall.state["call_sid"].astext == body.call_sid))
-    if c is None:
-        c = receptionist.start(db, org, body.from_number, None, channel="phone")
-        c.state = {**c.state, "call_sid": body.call_sid}
-        db.flush()
-        say = c.transcript[-1]["text"]
-    elif c.status != "active":
-        say, c = "This call has ended. Goodbye.", c
-    else:
-        say = receptionist.message(db, c, body.speech or "")
-        c.state = {**c.state, "call_sid": body.call_sid}
-    db.commit()
-    return {"say": say, "hangup": c.status != "active", "transfer": c.status == "transferred"}
 
 
 # ======================= AI monitoring =======================

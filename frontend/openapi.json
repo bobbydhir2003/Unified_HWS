@@ -1952,6 +1952,27 @@
    },
    "CallStart": {
     "properties": {
+     "channel": {
+      "default": "text",
+      "enum": [
+       "text",
+       "browser_voice"
+      ],
+      "title": "Channel",
+      "type": "string"
+     },
+     "clinic_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Clinic Id"
+     },
      "from_number": {
       "anyOf": [
        {
@@ -11013,6 +11034,42 @@
     "title": "SnoozeIn",
     "type": "object"
    },
+   "StaffAction": {
+    "properties": {
+     "action": {
+      "enum": [
+       "callback",
+       "handoff"
+      ],
+      "title": "Action",
+      "type": "string"
+     },
+     "category": {
+      "default": "scheduling",
+      "enum": [
+       "scheduling",
+       "billing",
+       "records",
+       "clinical_question",
+       "other"
+      ],
+      "title": "Category",
+      "type": "string"
+     },
+     "note": {
+      "maxLength": 200,
+      "minLength": 2,
+      "title": "Note",
+      "type": "string"
+     }
+    },
+    "required": [
+     "action",
+     "note"
+    ],
+    "title": "StaffAction",
+    "type": "object"
+   },
    "StaffNewThread": {
     "properties": {
      "body": {
@@ -11899,6 +11956,30 @@
     "title": "UserRef",
     "type": "object"
    },
+   "Utterance": {
+    "properties": {
+     "speaker": {
+      "enum": [
+       "caller",
+       "assistant"
+      ],
+      "title": "Speaker",
+      "type": "string"
+     },
+     "text": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "speaker",
+     "text"
+    ],
+    "title": "Utterance",
+    "type": "object"
+   },
    "ValidationError": {
     "properties": {
      "ctx": {
@@ -12424,6 +12505,23 @@
      "call_sid"
     ],
     "title": "VoiceHook",
+    "type": "object"
+   },
+   "VoiceIn": {
+    "properties": {
+     "voice": {
+      "default": "marin",
+      "enum": [
+       "marin",
+       "cedar",
+       "alloy",
+       "verse"
+      ],
+      "title": "Voice",
+      "type": "string"
+     }
+    },
+    "title": "VoiceIn",
     "type": "object"
    },
    "VoidIn": {
@@ -27261,7 +27359,7 @@
   },
   "/api/v1/integrations/voice/{org_slug}/inbound": {
    "post": {
-    "description": "Telephony integration point: the provider posts each recognized utterance; we return what to say.\nAuthenticated with a per-org secret. Real deployments need a BAA-covered telephony/ASR vendor.",
+    "description": "Telephony integration point: the provider posts each recognized utterance; we return what to say. Disabled unless\nVOICE_TELEPHONY_ENABLED; authenticated with a per-organization secret. `transfer` is always false \u2014 no live transfer exists.",
     "operationId": "voice_webhook_api_v1_integrations_voice__org_slug__inbound_post",
     "parameters": [
      {
@@ -27322,7 +27420,7 @@
     },
     "summary": "Voice Webhook",
     "tags": [
-     "ai"
+     "voice-concierge"
     ]
    }
   },
@@ -39416,7 +39514,7 @@
     ],
     "summary": "List Calls",
     "tags": [
-     "ai"
+     "voice-concierge"
     ]
    },
    "post": {
@@ -39476,7 +39574,69 @@
     ],
     "summary": "Start Call",
     "tags": [
-     "ai"
+     "voice-concierge"
+    ]
+   }
+  },
+  "/api/v1/receptionist/calls/{cid}": {
+   "get": {
+    "operationId": "get_call_api_v1_receptionist_calls__cid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Get Call",
+    "tags": [
+     "voice-concierge"
     ]
    }
   },
@@ -39538,7 +39698,7 @@
     ],
     "summary": "End Call",
     "tags": [
-     "ai"
+     "voice-concierge"
     ]
    }
   },
@@ -39610,7 +39770,361 @@
     ],
     "summary": "Call Message",
     "tags": [
-     "ai"
+     "voice-concierge"
+    ]
+   }
+  },
+  "/api/v1/receptionist/calls/{cid}/staff-action": {
+   "post": {
+    "description": "Front-desk staff create the callback or handoff themselves (same idempotent tools, recorded as a staff action).",
+    "operationId": "staff_action_api_v1_receptionist_calls__cid__staff_action_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/StaffAction"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Staff Action",
+    "tags": [
+     "voice-concierge"
+    ]
+   }
+  },
+  "/api/v1/receptionist/calls/{cid}/voice/session": {
+   "post": {
+    "description": "Short-lived Realtime credential bound to this call's concierge instructions and tool set. Permanent key never returned.",
+    "operationId": "voice_session_api_v1_receptionist_calls__cid__voice_session_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VoiceIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Voice Session",
+    "tags": [
+     "voice-concierge"
+    ]
+   }
+  },
+  "/api/v1/receptionist/calls/{cid}/voice/tools/{name}": {
+   "post": {
+    "description": "The Realtime model may only request a tool; the browser relays it here and the server validates and executes it.",
+    "operationId": "voice_tool_api_v1_receptionist_calls__cid__voice_tools__name__post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "name",
+      "required": true,
+      "schema": {
+       "title": "Name",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "title": "Args",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Voice Tool",
+    "tags": [
+     "voice-concierge"
+    ]
+   }
+  },
+  "/api/v1/receptionist/calls/{cid}/voice/utterance": {
+   "post": {
+    "operationId": "voice_utterance_api_v1_receptionist_calls__cid__voice_utterance_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Utterance"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Voice Utterance",
+    "tags": [
+     "voice-concierge"
+    ]
+   }
+  },
+  "/api/v1/receptionist/overview": {
+   "get": {
+    "operationId": "overview_api_v1_receptionist_overview_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Overview",
+    "tags": [
+     "voice-concierge"
     ]
    }
   },

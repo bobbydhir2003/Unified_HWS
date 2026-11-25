@@ -29,7 +29,8 @@ def seed_hospital(db, org: Organization, clinics: list[Clinic], users: dict) -> 
         db.add(Department(organization_id=org.id, facility_id=c.id, name="Primary Care", code="PC", kind="outpatient"))
     hosp = Clinic(organization_id=org.id, name="Harborview General Hospital", code="HGH", timezone="America/New_York",
                   facility_type="hospital", phone="(555) 201-9000", address_line1="1 Harbor Medical Plaza", city="Port Harbor",
-                  state="MA", postal_code="02114", rooms=[])
+                  state="MA", postal_code="02114", rooms=[],
+                  settings={"published_hours": ["Emergency Department open 24 hours, every day", "Outpatient services Monday to Friday, 7:00 AM to 7:00 PM"]})
     db.add(hosp)
     db.flush()
     spec = [("ED", "Emergency Department", "emergency"), ("MS", "Medical-Surgical", "inpatient"), ("ICU", "Intensive Care", "icu"),
@@ -38,7 +39,9 @@ def seed_hospital(db, org: Organization, clinics: list[Clinic], users: dict) -> 
             ("EVS", "Environmental Services", "support")]
     depts = {}
     for code, name, kind in spec:
-        d = Department(organization_id=org.id, facility_id=hosp.id, name=name, code=code, kind=kind)
+        loc = {"RAD": "Ground floor, East wing", "LAB": "First floor, next to the main lobby", "PHARM": "Main lobby",
+               "ED": "Emergency entrance on Harbor Street", "BILL": "Second floor, Suite 210"}.get(code)
+        d = Department(organization_id=org.id, facility_id=hosp.id, name=name, code=code, kind=kind, settings={"location": loc} if loc else {})
         db.add(d)
         depts[code] = d
     db.flush()

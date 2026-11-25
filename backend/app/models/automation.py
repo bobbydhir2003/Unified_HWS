@@ -79,7 +79,9 @@ class Task(UUIDPk, Timestamps, OrgScoped, Base):
 
 
 class VoiceCall(UUIDPk, Timestamps, OrgScoped, Base):
-    """AI receptionist call (sandbox). Transcript is stored; PHI is only disclosed after identity verification."""
+    """HMS Voice Concierge call (typed test call, browser voice session, or telephony webhook). Workflow state lives in
+    `state` (server-only fields such as the verification candidate are never returned); `events` is the tool/action log;
+    `records` links what the call actually created or changed. Protected details are disclosed only after verification."""
 
     __tablename__ = "voice_calls"
     from_number: Mapped[str | None] = mapped_column(String(40))
@@ -95,3 +97,10 @@ class VoiceCall(UUIDPk, Timestamps, OrgScoped, Base):
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     started_by_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL")
     created_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    mode: Mapped[str] = mapped_column(String(10), default="test", server_default="test")  # test | live
+    clinic_id: Mapped[uuid.UUID | None] = fk("clinics.id", nullable=True, ondelete="SET NULL", index=False)
+    verification: Mapped[str] = mapped_column(String(20), default="unverified", server_default="unverified")  # unverified|code_sent|verified|failed
+    outcome_code: Mapped[str | None] = mapped_column(String(30))  # booked|rescheduled|cancelled|callback|handoff|info|emergency|unresolved
+    end_reason: Mapped[str | None] = mapped_column(String(60))
+    records: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    events: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")

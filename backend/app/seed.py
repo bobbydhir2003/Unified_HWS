@@ -326,9 +326,11 @@ def build_hospital(db, *, name: str = "Harborview Health", slug: str = "harborvi
     tz = "America/New_York"
     downtown = Clinic(organization_id=org.id, name="Harborview Downtown", code="HDT", timezone=tz, phone="(555) 201-4400",
                       address_line1="120 Beacon Rd", city="Port Harbor", state="MA", postal_code="02110",
-                      rooms=["Exam 1", "Exam 2", "Exam 3", "Procedure"])
+                      rooms=["Exam 1", "Exam 2", "Exam 3", "Procedure"],
+                      settings={"published_hours": ["Monday to Friday, 8:00 AM to 5:00 PM", "Saturday, 9:00 AM to 12:00 PM", "Closed Sunday"]})
     north = Clinic(organization_id=org.id, name="Harborview Northside", code="HNS", timezone=tz, phone="(555) 201-4500",
-                   address_line1="88 Orchard Way", city="Port Harbor", state="MA", postal_code="02128", rooms=["Exam A", "Exam B"])
+                   address_line1="88 Orchard Way", city="Port Harbor", state="MA", postal_code="02128", rooms=["Exam A", "Exam B"],
+                   settings={"published_hours": ["Monday to Friday, 8:00 AM to 5:00 PM", "Closed Saturday and Sunday"]})
     db.add_all([downtown, north])
     db.flush()
 

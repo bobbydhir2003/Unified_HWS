@@ -14,7 +14,7 @@ import time
 from app.core.config import settings
 
 AGENT_KEYS = ["insurance_guardian", "doctor_assistant", "medical_scribe", "document_intelligence", "pharmacy_watchdog", "discharge_coordination",
-              "hospital_operations", "claims_review", "patient_communication", "staff_scheduling"]
+              "hospital_operations", "claims_review", "patient_communication", "staff_scheduling", "voice_concierge"]
 
 DEFAULT_POLICY: dict = {
     "enabled": False,               # off until the owner configures a key and turns it on
