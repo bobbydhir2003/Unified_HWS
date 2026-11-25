@@ -36,7 +36,7 @@ def check() -> None:
 
     runner = (ROOT / "backend/app/agents/runner.py").read_text()
     defaults = re.findall(r'^    \("([a-z_]+)", "([^"]+)",.*?, "(manual|feature)"\),$', runner, re.M | re.S)  # tuples may span lines
-    site_assistants = re.findall(r'\{ (?:brand: "HMS Assist · [A-Za-z ]+", )?key: "([a-z_]+)", name: "([^"]+)",.*?start: "(Launched by staff|Runs inside a workflow)"', assistants_src, re.S)
+    site_assistants = re.findall(r'\{ (?:brand: "[^"]+", )?key: "([a-z_]+)", name: "([^"]+)",.*?start: "(Launched by staff|Runs inside a workflow)"', assistants_src, re.S)
     assert len(defaults) == 10, f"expected 10 default agents, code has {len(defaults)}"
     code = {k: (n, "Launched by staff" if t == "manual" else "Runs inside a workflow") for k, n, t in defaults}
     site = {k: (n, s) for k, n, s in site_assistants}

@@ -1,5 +1,5 @@
 import {
-  ArrowRight, Bot, ClipboardCheck, FlaskConical, HeartPulse, Info, KeyRound, Lock, Pill, Receipt, ScanLine, ScrollText,
+  ArrowRight, ClipboardCheck, FlaskConical, HeartPulse, Info, KeyRound, Lock, Pill, Receipt, ScanLine, ScrollText,
   ShieldAlert, Siren, Sparkles, Stethoscope, UserPlus, UsersRound, BedDouble, Hospital,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -9,22 +9,19 @@ import { Button } from "@/components/ui/button";
 import { LoginForm } from "@/features/auth/LoginForm";
 import { CODE_SET_NOTICES, COPYRIGHT_NOTICE, PRODUCT_TAGLINE, THIRD_PARTY } from "@/lib/legal";
 import { cn } from "@/lib/utils";
+import { AgentExplorer, AgentTeamGrid, Conversation, ConversationToAction } from "./intelligence";
+import { AGENTS, INTELLIGENCE } from "./agents";
 import {
   AccessButton, AnchorChips, AutomationFlow, CheckList, ConnectedHospitalDiagram, Eyebrow, H2, PageHero, PathwayExplorer,
   ProductShot, Section, SectionIntro, StatusList,
 } from "./components";
 import {
-  APPROACH, ASSISTANTS, BLOCKS, DEFINITION, GUARDIAN_STEPS, LAYERS, MONITOR_COUNT, MONITOR_GROUPS, PHILOSOPHY, PILLARS,
-  PROBLEMS, RESPONSIBLE, TEAMS, type Team, WHY,
+  APPROACH, CLINICAL, LAYERS, MONITOR_COUNT, MONITOR_GROUPS, OPERATIONS, PHILOSOPHY, PILLARS,
+  PROBLEMS, RESPONSIBLE, REVENUE, SECURITY, SHOTS, type ShotKey, TEAMS, type Team,
 } from "./content";
 import { BrandMark, PublicLayout } from "./PublicLayout";
 
 const VERSION = import.meta.env.VITE_APP_VERSION ?? "development";
-
-const QUESTIONS = [
-  "What is happening with this patient?", "Which department is responsible?", "What needs to happen next?", "Is anything delayed or missing?",
-  "Who should resolve the problem?", "Can automation detect it?", "Can AI help staff understand and act?", "Has the problem actually been resolved?",
-];
 
 const DEPARTMENTS = [
   { name: "Front desk", icon: UserPlus }, { name: "Doctors", icon: Stethoscope }, { name: "Nursing", icon: HeartPulse }, { name: "Emergency", icon: Siren },
@@ -57,74 +54,57 @@ function FinalCta({ secondary = { to: "/platform", label: "See how it works" } }
 export function HomePage() {
   return (
     <PublicLayout>
-      {/* A. Hero */}
-      <section className="overflow-hidden border-b bg-gradient-to-b from-accent/50 via-card to-card px-4 pb-16 pt-12 sm:px-6 lg:pb-24 lg:pt-20" aria-labelledby="home-title">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[minmax(0,6fr)_minmax(0,6fr)] lg:gap-14">
+      {/* 1. Hero */}
+      <section className="relative overflow-hidden bg-brand-navy px-4 pb-20 pt-14 text-white sm:px-6 lg:pb-28 lg:pt-20" aria-labelledby="home-title">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] [background-size:48px_48px]" aria-hidden />
+        <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
           <div>
-            <Eyebrow>HMS Workflows — Connected hospital operations</Eyebrow>
-            <h1 id="home-title" className="text-4xl font-semibold tracking-tight text-balance text-heading sm:text-5xl lg:leading-[1.1]">
-              One Patient. One Connected Hospital. <span className="text-primary">Every Task Accounted For.</span>
-            </h1>
-            <p className="mt-6 text-lead leading-relaxed text-foreground text-pretty">{DEFINITION}</p>
+            <p className="mb-4 flex items-center gap-2 text-label font-semibold uppercase tracking-[0.14em] text-white/70"><BrandMark className="size-5" />HMS Workflows</p>
+            <h1 id="home-title" className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl lg:leading-[1.05]">Your Entire Hospital. <span className="text-sky-300">Working as One.</span></h1>
+            <p className="mt-6 max-w-xl text-lead leading-relaxed text-white/85 text-pretty">Clinical care, hospital operations, revenue, automation and ten department AI agents on one platform — so every team works from the same patient, sees what is waiting, and knows who owns the next step.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <AccessButton />
-              <Button asChild size="lg" variant="outline"><Link to="/platform">See how it works<ArrowRight /></Link></Button>
+              <AccessButton className="bg-white text-brand-navy hover:bg-white/90" />
+              <Button asChild size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"><Link to="/ai-automation">Meet HMS Intelligence<ArrowRight /></Link></Button>
             </div>
-            <p className="mt-6 flex items-center gap-2 text-body font-medium text-heading" data-testid="hero-tagline">
-              <BrandMark className="size-6" />{PRODUCT_TAGLINE}
-            </p>
+            <p className="mt-6 text-table text-white/65">Real screens with synthetic data: the Command Center and Aurelia working on an insurance case. In development; not certified for clinical use.</p>
           </div>
-          <div className="relative lg:pb-12">
-            <ProductShot shot="commandCenter" priority caption="Command Center — synthetic data." sizes="(min-width: 1024px) 58vw, 100vw" />
-            <ProductShot shot="myWork" caption={false} sizes="320px" className="absolute -bottom-2 -left-8 hidden w-[44%] lg:block" />
+          <div className="relative lg:pb-10">
+            <ProductShot shot="commandCenter" priority caption={false} sizes="(min-width: 1024px) 56vw, 100vw" className="border-white/10" />
+            <ProductShot shot="assistCoverage" caption={false} sizes="380px" className="absolute -bottom-6 -left-10 hidden w-[46%] border-white/10 ring-1 ring-black/20 lg:block" />
           </div>
         </div>
       </section>
 
-      {/* Questions band */}
-      <section aria-labelledby="questions-title" className="border-b bg-card px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <h2 id="questions-title" className="text-center text-label font-semibold uppercase tracking-[0.12em] text-muted-foreground">Built to help every team answer</h2>
-          <ul className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {QUESTIONS.map((q) => <li key={q} className="rounded-lg border bg-subtle px-3 py-2.5 text-body font-medium text-heading">{q}</li>)}
-          </ul>
-        </div>
-      </section>
-
-      {/* B. The coordination problem */}
+      {/* 2. The problem */}
       <Section tone="subtle" labelledBy="problem-title">
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
-          <SectionIntro eyebrow="The coordination problem" id="problem-title" title="A hospital has many teams. The patient journey is one connected process.">
-            A single stay can involve registration, doctors, nurses, the laboratory, pharmacy, bed management, insurance and billing. Each team has its own
-            responsibilities — but every one of them depends on what the others have done, and on knowing what is still left to do.
-          </SectionIntro>
-          <ConnectedHospitalDiagram departments={DEPARTMENTS} />
-        </div>
-        <ul className="mt-14 grid gap-4 md:grid-cols-2" data-testid="problems">
+        <SectionIntro eyebrow="The problem" id="problem-title" title="Hospitals don't fail for lack of data. They fail at the hand-offs.">
+          Registration, wards, pharmacy, the lab, bed management, insurance and billing each depend on what the others have done. When their systems and follow-ups are disconnected, work waits silently until a patient is affected.
+        </SectionIntro>
+        <ul className="mt-10 grid gap-4 md:grid-cols-2" data-testid="problems">
           {PROBLEMS.map((p) => (
             <li key={p.title} className="flex flex-col overflow-hidden rounded-xl border bg-card">
               <div className="flex-1 p-5">
                 <p className="flex items-center gap-2.5 text-section font-semibold text-heading"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted"><p.icon className="size-5 text-muted-foreground" aria-hidden /></span>{p.title}</p>
                 <p className="mt-3 text-body leading-relaxed text-muted-foreground">{p.problem}</p>
               </div>
-              <div className="border-t border-primary/15 bg-accent/40 px-5 py-4">
-                <p className="text-label font-semibold uppercase tracking-wider text-accent-foreground">How HMS Workflows helps</p>
-                <p className="mt-1 text-body leading-relaxed text-heading">{p.helps}</p>
-              </div>
+              <div className="border-t border-primary/15 bg-accent/40 px-5 py-4"><p className="text-body leading-relaxed text-heading"><span className="font-semibold">HMS Workflows: </span>{p.helps}</p></div>
             </li>
           ))}
         </ul>
       </Section>
 
-      {/* C. Solution: four pillars */}
-      <Section labelledBy="pillars-title">
-        <SectionIntro eyebrow="Our solution" id="pillars-title" title="Four connected parts of one platform.">
-          HMS Workflows is not only a place to store records. It connects the information employees need with the work they must do — and keeps track of that work until it is done.
-        </SectionIntro>
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="pillars">
+      {/* 3. One connected hospital */}
+      <Section labelledBy="connected-title">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
+          <SectionIntro eyebrow="One connected hospital" id="connected-title" title="Every department, one patient, one record of the work.">
+            Four connected parts of one platform. Each team has its own workspace, and every hand-off between them is recorded, owned and followed through.
+          </SectionIntro>
+          <ConnectedHospitalDiagram departments={DEPARTMENTS} />
+        </div>
+        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="pillars">
           {PILLARS.map((p) => (
             <li key={p.id}>
-              <Link to={p.to} className="group flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+              <Link to={p.to} className="group flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
                 <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground"><p.icon className="size-5" aria-hidden /></span>
                 <span className="mt-4 text-lg font-semibold text-heading">{p.title}</span>
                 <span className="mt-1.5 text-body leading-relaxed text-muted-foreground">{p.text}</span>
@@ -134,88 +114,110 @@ export function HomePage() {
             </li>
           ))}
         </ul>
-      </Section>
-
-      {/* D. One patient journey */}
-      <Section tone="subtle" labelledBy="journey-title">
-        <SectionIntro eyebrow="One patient journey" id="journey-title" title="Follow a patient through the hospital.">
-          Choose a pathway. At each step the next team works from the same record, and where something can stall, a monitor watches for it.
-        </SectionIntro>
-        <PathwayExplorer />
-      </Section>
-
-      {/* E. When something goes wrong */}
-      <Section labelledBy="guardian-title">
-        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
-          <div>
-            <SectionIntro eyebrow="When something goes wrong" id="guardian-title" title="An insurance problem, from detection to resolution.">
-              A worked example using Insurance Guardian. It shows how a monitor, a case, an AI assistant and a person each play their part.
-            </SectionIntro>
-            <ol className="mt-8 space-y-0" data-testid="guardian-steps">
-              {GUARDIAN_STEPS.map((s, i) => (
-                <li key={s.title} className="relative flex gap-4 pb-6 last:pb-0">
-                  {i < GUARDIAN_STEPS.length - 1 && <span className="absolute left-4 top-9 h-[calc(100%-2.25rem)] w-px bg-border" aria-hidden />}
-                  <span className={cn("relative grid size-8 shrink-0 place-items-center rounded-full text-table font-semibold tabular",
-                    s.who === "AI (optional)" ? "border-2 border-dashed border-ai/50 bg-ai-soft text-ai" : s.who === "Person" ? "bg-success text-white" : "bg-primary text-primary-foreground")} aria-hidden>{i + 1}</span>
-                  <div className="min-w-0 pt-0.5">
-                    <p className="flex flex-wrap items-center gap-2">
-                      <span className="text-section font-semibold text-heading">{s.title}</span>
-                      <span className={cn("rounded-full border px-2 py-0.5 text-label font-medium",
-                        s.who === "AI (optional)" ? "border-ai/30 bg-ai-soft text-ai" : s.who === "Person" ? "border-success/30 bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{s.who}</span>
-                    </p>
-                    <p className="mt-1 text-body leading-relaxed text-muted-foreground">{s.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-          <div className="lg:sticky lg:top-24">
-            <ProductShot shot="insuranceGuardian" caption="Insurance Guardian: coverage of upcoming visits and open insurance cases. The payer connection is simulated." sizes="(min-width: 1024px) 45vw, 100vw" />
-            <p className="mt-4 flex gap-2 rounded-lg border bg-subtle p-4 text-table leading-relaxed text-muted-foreground">
-              <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-              <span>This is supported workflow coordination, not autonomous resolution. AI steps run only when an administrator has enabled an AI provider; otherwise the case, tasks and reminders continue without them. Payer eligibility checks are simulated.</span>
-            </p>
-          </div>
+        <div className="mt-14">
+          <h3 className="text-xl font-semibold tracking-tight text-heading">Follow a patient through the hospital</h3>
+          <p className="mt-1 text-body text-muted-foreground">Choose a pathway. Where something can stall, a monitor watches for it.</p>
+          <div className="mt-6"><PathwayExplorer /></div>
         </div>
       </Section>
 
-      {/* F. Departments working together */}
-      <Section tone="subtle" labelledBy="teams-title">
-        <SectionIntro eyebrow="Departments working together" id="teams-title" title="A workspace for each team, connected to all the others." />
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="team-cards">
-          {TEAMS.map((t) => (
-            <li key={t.id}>
-              <Link to={`/solutions#${t.id}`} className="group flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
-                <p className="flex items-center gap-2.5 text-section font-semibold text-heading"><t.icon className="size-5 text-primary" aria-hidden />{t.title}</p>
-                <p className="mt-2 text-body leading-relaxed text-muted-foreground">{t.short}</p>
-                <p className="mt-3 flex-1 text-table leading-relaxed text-muted-foreground"><span className="font-medium text-heading">Hands off: </span>{t.handsOff}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-table font-medium text-primary">How it helps<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" /></span>
-              </Link>
-            </li>
+      {/* 4. Clinical EHR */}
+      <FeatureBand id="clinical" eyebrow="Clinical EHR" title="A complete clinical record, built for the team around the patient." items={CLINICAL} shot="patientChart"
+        caption="Patient chart with allergies, flagged vitals, problems and medications. Synthetic data." tone="subtle" />
+
+      {/* 5. Hospital operations */}
+      <FeatureBand id="operations" eyebrow="Hospital operations" title="The departments that keep patients moving." items={OPERATIONS} shot="edBoard" reverse
+        caption="Emergency department tracking board. Synthetic data." />
+
+      {/* 6. Meet HMS Intelligence */}
+      <Section tone="brand" labelledBy="intelligence-title" width="max-w-7xl">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-3xl">
+            <Eyebrow className="text-sky-300">HMS Intelligence</Eyebrow>
+            <h2 id="intelligence-title" className="text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">Ten AI agents. Each one at home in its department.</h2>
+            <p className="mt-4 text-section leading-relaxed text-white/80 sm:text-lead">{INTELLIGENCE.text}</p>
+          </div>
+          <Button asChild size="lg" className="bg-white text-brand-navy hover:bg-white/90"><Link to="/ai-automation#agents">Meet the team<ArrowRight /></Link></Button>
+        </div>
+        <div className="mt-10"><AgentTeamGrid dark /></div>
+      </Section>
+
+      {/* 7. From conversation to action */}
+      <Section labelledBy="action-title" width="max-w-7xl">
+        <SectionIntro eyebrow="From conversation to action" id="action-title" title="Real work, not a chatbot that says it's done.">
+          The agent's tools are the same backend actions the application uses, with the same permissions. Status comes from the database — never from the AI's own words.
+        </SectionIntro>
+        <div className="mt-10"><ConversationToAction /></div>
+        <div className="mt-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+          <ProductShot shot="assistCoverage" caption="Aurelia on an insurance case: the follow-up was approved by a different person and the task was created. Synthetic data; rule-based mode." sizes="(min-width: 1024px) 55vw, 100vw" />
+          <Conversation turns={AGENTS[0].example} agent={AGENTS[0]} />
+        </div>
+      </Section>
+
+      {/* 8. 22 monitors */}
+      <Section tone="subtle" labelledBy="monitors-home-title">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+          <div>
+            <SectionIntro eyebrow={`${MONITOR_COUNT} automation monitors`} id="monitors-home-title" title="Rules find the problem. People and AI agents handle it.">
+              Rule-based monitors check hospital records on a schedule. When a defined condition is true they open one case for the owning team, and close it when the record shows the problem is gone.
+            </SectionIntro>
+            <dl className="mt-8 grid grid-cols-3 gap-3" data-testid="monitor-summary">
+              {([[MONITOR_COUNT, "rule-based monitors"], [6, "with AI assistance on by default"], [3, "safety-critical — never AI"]] as const).map(([n, l]) => (
+                <div key={l} className="rounded-xl border bg-card p-4"><dt className="text-label text-muted-foreground">{l}</dt><dd className="text-3xl font-semibold tabular text-heading">{n}</dd></div>))}
+            </dl>
+            <p className="mt-4 text-table text-muted-foreground">AI assistance can be switched on for 7 more monitors. Critical lab and imaging results and ED door-to-provider always stay rule-based.</p>
+            <Link to="/ai-automation#monitors" className="mt-5 inline-flex items-center gap-1 text-body font-medium text-primary hover:underline">See all {MONITOR_COUNT} monitors<ArrowRight className="size-4" /></Link>
+          </div>
+          <ProductShot shot="monitors" caption="Monitors & rules with per-monitor AI switches. Synthetic data." sizes="(min-width: 1024px) 50vw, 100vw" />
+        </div>
+      </Section>
+
+      {/* 9. Revenue and administration */}
+      <FeatureBand id="revenue" eyebrow="Revenue & administration" title="Coverage, authorizations and claims, before they become denials." items={REVENUE} shot="insuranceGuardian"
+        caption="Insurance Guardian: coverage of upcoming visits; the payer connection is simulated. Synthetic data." />
+
+      {/* 10. Security and human control */}
+      <Section tone="subtle" labelledBy="security-title">
+        <SectionIntro eyebrow="Security & human control" id="security-title" title="Built so that people stay in charge.">
+          Controls are enforced by the server and the database, not only by the screens. HMS Workflows is in development, tested with synthetic data, and is not certified or represented as HIPAA-compliant.
+        </SectionIntro>
+        <ul className="mt-10 grid gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-3" data-testid="security">
+          {SECURITY.map((w) => (
+            <li key={w.title} className="flex gap-3"><w.icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+              <span><span className="block text-section font-semibold text-heading">{w.title}</span><span className="mt-1 block text-body leading-relaxed text-muted-foreground">{w.text}</span></span></li>
           ))}
         </ul>
       </Section>
 
-      {/* G. Why our approach matters */}
-      <Section labelledBy="why-title">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
-          <SectionIntro eyebrow="Why our approach matters" id="why-title" title="Built for coordination, not only record-keeping.">
-            {PHILOSOPHY} Our aim is a hospital where the right information reaches the right team, pending work has a clear owner, and technology helps employees coordinate care.
-          </SectionIntro>
-          <ul className="grid gap-x-8 gap-y-7 sm:grid-cols-2">
-            {WHY.map((w) => (
-              <li key={w.title} className="flex gap-3">
-                <w.icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-                <span><span className="block text-section font-semibold text-heading">{w.title}</span><span className="mt-1 block text-body leading-relaxed text-muted-foreground">{w.text}</span></span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* 11. Product screens */}
+      <Section labelledBy="screens-title" width="max-w-7xl">
+        <SectionIntro eyebrow="Product" id="screens-title" title="The real application." >Screenshots of HMS Workflows with synthetic data — nothing here is a mock-up.</SectionIntro>
+        <ul className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2" data-testid="screens">
+          {(["assistChart", "myWork", "agentStudio", "doctorHome"] as const).map((k) => <li key={k}><ProductShot shot={k} caption={SHOTS[k].alt.replace(/ \(synthetic data\)$/, ".")} sizes="(min-width: 768px) 45vw, 100vw" /></li>)}
+        </ul>
       </Section>
 
-      {/* H. Final CTA */}
-      <FinalCta />
+      {/* 12. Final CTA */}
+      <FinalCta secondary={{ to: "/platform", label: "See how it works" }} />
     </PublicLayout>
+  );
+}
+
+function FeatureBand({ id, eyebrow, title, items, shot, caption, tone = "plain", reverse }: {
+  id: string; eyebrow: string; title: string; items: { title: string; text: string }[]; shot: ShotKey; caption: string; tone?: "plain" | "subtle"; reverse?: boolean;
+}) {
+  return (
+    <Section id={id} tone={tone} labelledBy={`${id}-title`} width="max-w-7xl">
+      <div className={cn("grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-14", reverse && "lg:[&>*:first-child]:order-2")}>
+        <div>
+          <SectionIntro eyebrow={eyebrow} id={`${id}-title`} title={title} />
+          <ul className="mt-8 grid gap-x-6 gap-y-5 sm:grid-cols-2" data-testid={`${id}-features`}>
+            {items.map((f) => <li key={f.title} className="border-l-2 border-primary/30 pl-3"><p className="text-section font-semibold text-heading">{f.title}</p><p className="mt-1 text-table leading-relaxed text-muted-foreground">{f.text}</p></li>)}
+          </ul>
+        </div>
+        <ProductShot shot={shot} caption={caption} sizes="(min-width: 1024px) 50vw, 100vw" />
+      </div>
+    </Section>
   );
 }
 
@@ -353,50 +355,52 @@ export function SolutionsPage() {
 // ---------------------------------------------------------------------------------------------- AI & Automation
 
 export function AiAutomationPage() {
-  const launched = ASSISTANTS.filter((a) => a.start === "Launched by staff");
-  const embedded = ASSISTANTS.filter((a) => a.start === "Runs inside a workflow");
   return (
     <PublicLayout>
-      <PageHero eyebrow="AI & Automation" title="Rules find the problem. AI helps with the work. People decide."
-        text={`HMS Workflows uses ${MONITOR_COUNT} rule-based automation monitors, ${ASSISTANTS.length} specialized AI assistants, tracked cases and tasks, and human approvals. Each does a different job, and each is labelled so nobody mistakes a rule for AI or a draft for a decision.`}>
-        <AnchorChips label="On this page" items={[{ id: "building-blocks", title: "Building blocks", icon: ClipboardCheck }, { id: "monitors", title: `${MONITOR_COUNT} monitors`, icon: Siren },
-          { id: "assistants", title: `${ASSISTANTS.length} AI assistants`, icon: Bot }, { id: "responsible-ai", title: "Responsible AI", icon: ShieldAlert }]} />
-      </PageHero>
+      <section className="relative overflow-hidden bg-brand-navy px-4 pb-16 pt-14 text-white sm:px-6 lg:pb-24 lg:pt-20" aria-labelledby="ai-title">
+        <div className="relative mx-auto max-w-7xl">
+          <p className="mb-4 text-label font-semibold uppercase tracking-[0.14em] text-sky-300">HMS Intelligence · AI & Automation</p>
+          <h1 id="ai-title" className="max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl lg:leading-[1.05]">Meet your hospital's AI team.</h1>
+          <p className="mt-6 max-w-3xl text-lead leading-relaxed text-white/85">{INTELLIGENCE.line} {INTELLIGENCE.text}</p>
+          <div className="mt-10"><AgentTeamGrid dark /></div>
+          <nav aria-label="On this page" className="mt-10 flex flex-wrap gap-2 text-table">
+            {[["agents", "The ten agents"], ["conversation", "Conversation to action"], ["monitors", `${MONITOR_COUNT} monitors`], ["responsible-ai", "Governance"]].map(([id, t]) => (
+              <a key={id} href={`#${id}`} className="rounded-full border border-white/25 px-3 py-1.5 text-white/85 hover:bg-white/10">{t}</a>))}
+          </nav>
+        </div>
+      </section>
 
-      <Section id="building-blocks" labelledBy="blocks-title">
-        <SectionIntro eyebrow="Building blocks" id="blocks-title" title="Five parts that work together." />
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" data-testid="building-blocks">
-          {BLOCKS.map((b) => (
-            <li key={b.id} className="flex flex-col rounded-xl border bg-card p-5">
-              <b.icon className={cn("size-6", b.kind === "AI" ? "text-ai" : "text-primary")} aria-hidden />
-              <p className="mt-3 text-section font-semibold text-heading">{b.title}</p>
-              <p className="text-label font-medium text-muted-foreground">{b.kind}</p>
-              <p className="mt-2 text-table leading-relaxed text-muted-foreground">{b.text}</p>
-            </li>
-          ))}
-        </ul>
+      <Section id="agents" labelledBy="agents-title" width="max-w-7xl">
+        <span id="assistants" className="block scroll-mt-24" aria-hidden />
+        <SectionIntro eyebrow="The ten agents" id="agents-title" title="Specialized teammates — not ten copies of one chatbot.">
+          Each agent has its own department, tools, permissions and limits. Choose one to see where it works, what staff ask it, what it can prepare, what needs approval, and what it will never do.
+        </SectionIntro>
+        <div className="mt-10"><AgentExplorer /></div>
       </Section>
 
-      <Section tone="brand" labelledBy="flow-title">
-        <Eyebrow className="text-white/70">How a problem is handled</Eyebrow>
-        <h2 id="flow-title" className="max-w-3xl text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">From detection to a verified outcome.</h2>
-        <p className="mt-4 max-w-3xl text-section leading-relaxed text-white/80 sm:text-lead">Dashed steps are optional. AI assistance runs only for selected case types, only when an administrator has enabled an AI provider, and within a daily limit. Without it, the case and its tasks continue normally.</p>
-        <AutomationFlow dark className="mt-10" />
-        <div className="mt-8 grid gap-4 text-body text-white/85 md:grid-cols-3">
-          <p><strong className="text-white">Detection is rule-based.</strong> Monitors evaluate the current state of records on a schedule — they are not AI models.</p>
-          <p><strong className="text-white">Execution waits for a person.</strong> AI never executes anything itself; the backend carries out an action only after approval.</p>
-          <p><strong className="text-white">Resolution is checked.</strong> When the monitor no longer detects the condition, the case closes automatically.</p>
+      <Section id="conversation" tone="brand" labelledBy="conv-title" width="max-w-7xl">
+        <Eyebrow className="text-sky-300">From conversation to action</Eyebrow>
+        <h2 id="conv-title" className="max-w-3xl text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">Three ways an agent helps — and who decides.</h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {[["Read and explain", "Answers from the records the employee may see, with case references or cited chart sources."],
+            ["Confirm in chat", "Small internal steps — a case note, an eligibility re-check, a claim re-scrub, a scribe draft edit — run only when the employee presses Confirm, with their own permissions."],
+            ["Request approval", "Tasks, patient messages, insurance requests and purchase quantities become proposals that a different authorized person approves in My Work."]].map(([t, d]) => (
+            <div key={t} className="rounded-xl border border-white/15 bg-white/[0.04] p-5"><p className="text-section font-semibold text-white">{t}</p><p className="mt-2 text-body leading-relaxed text-white/75">{d}</p></div>))}
+        </div>
+        <div className="mt-10"><ConversationToAction dark /></div>
+        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ProductShot shot="assistCoverage" caption="Aurelia: a proposal approved by a different person; the conversation shows the executed result and the task." className="border-white/10" sizes="(min-width: 1024px) 45vw, 100vw" />
+          <ProductShot shot="assistChart" caption="Aster: cited answers from one chart; prescribing questions are refused." className="border-white/10" sizes="(min-width: 1024px) 45vw, 100vw" />
         </div>
       </Section>
 
       <Section id="monitors" labelledBy="monitors-title">
-        <SectionIntro eyebrow="Automation monitors" id="monitors-title" title={`${MONITOR_COUNT} monitors watching for known problems.`}>
-          Each monitor is a predefined, rule-based check with thresholds an administrator can adjust. When its condition is true, it opens one case for the owning team.
-          Results appear in that team's <strong className="font-semibold text-heading">My work</strong> and on the <strong className="font-semibold text-heading">Command Center</strong>; administrators configure monitors under Automation.
+        <SectionIntro eyebrow="Automation monitors" id="monitors-title" title={`${MONITOR_COUNT} rule-based monitors watching for known problems.`}>
+          Each monitor is a predefined check with thresholds an administrator can adjust. When its condition is true it opens one case for the owning team. Monitors are not AI. For selected monitors, an agent can assist each new or escalated case once — within daily and monthly AI limits — and can only propose actions for approval.
         </SectionIntro>
         <p className="mt-5 flex flex-wrap items-center gap-2 text-table text-muted-foreground">
           <span className="inline-flex items-center gap-1 rounded-full border border-ai/30 bg-ai-soft px-2 py-0.5 text-label font-medium text-ai"><Sparkles className="size-3" aria-hidden />AI may assist</span>
-          New cases from these monitors can receive optional AI assistance when AI is enabled.
+          On by default for these six; seven more can be switched on per monitor; critical lab and imaging results and ED door-to-provider stay rule-based only.
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="monitor-groups">
           {MONITOR_GROUPS.map((g) => (
@@ -417,65 +421,39 @@ export function AiAutomationPage() {
             </section>
           ))}
         </div>
+        <div className="mt-12 rounded-2xl border bg-subtle p-6">
+          <h3 className="text-section font-semibold text-heading">How a problem is handled</h3>
+          <p className="mt-1 text-table text-muted-foreground">Dashed steps are optional: AI runs only for selected case types and only when an AI provider is enabled. Without it, the case and its tasks continue normally.</p>
+          <AutomationFlow className="mt-6" />
+        </div>
       </Section>
 
-      <Section id="assistants" tone="subtle" labelledBy="assistants-title">
-        <SectionIntro eyebrow="AI assistants" id="assistants-title" title={`${ASSISTANTS.length} specialized assistants, each with a narrow job.`}>
-          Assistants are not interchangeable and do not all run continuously. Each has its own permitted tools, the permission a user needs to use it, and a short list of actions it may propose.
-        </SectionIntro>
-        {([["Launched by staff", launched, "Staff open these from the Ask AI panel in their workspace or from Agent Studio. Some also assist automatically on selected new cases."],
-          ["Runs inside a workflow", embedded, "These work only inside a specific screen, as part of that task."]] as const).map(([title, list, note]) => (
-          <div key={title} className="mt-10">
-            <h3 className="text-xl font-semibold tracking-tight text-heading">{title} <span className="font-normal text-muted-foreground">({list.length})</span></h3>
-            <p className="mt-1 text-body text-muted-foreground">{note}</p>
-            <ul className="mt-5 grid gap-4 md:grid-cols-2" data-testid={title === "Launched by staff" ? "assistants-launched" : "assistants-embedded"}>
-              {list.map((a) => (
-                <li key={a.key} className="flex flex-col rounded-xl border bg-card p-5" data-assistant={a.key}>
-                  <p className="flex items-center gap-2.5 text-section font-semibold text-heading"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-ai-soft"><a.icon className="size-5 text-ai" aria-hidden /></span>
-                    <span className="min-w-0"><span className="block">{a.brand ?? a.name}</span>{a.brand && <span className="block text-label font-normal text-muted-foreground">{a.name}</span>}</span></p>
-                  <p className="mt-3 text-body leading-relaxed text-foreground">{a.does}</p>
-                  <dl className="mt-3 grid gap-1.5 text-table">
-                    <div className="grid gap-x-3 sm:grid-cols-[7.5rem_1fr]"><dt className="font-medium text-heading">Where</dt><dd className="text-muted-foreground">{a.where}</dd></div>
-                    <div className="grid gap-x-3 sm:grid-cols-[7.5rem_1fr]"><dt className="font-medium text-heading">May propose</dt><dd className="text-muted-foreground">{a.proposes}</dd></div>
-                    {a.auto && <div className="grid gap-x-3 sm:grid-cols-[7.5rem_1fr]"><dt className="font-medium text-heading">Also assists on</dt><dd className="text-muted-foreground">{a.auto}</dd></div>}
-                  </dl>
-                  <p className="mt-3 border-t pt-3 text-table text-muted-foreground"><ShieldAlert className="mr-1.5 inline size-3.5 -translate-y-px text-warning" aria-hidden />{a.never}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-        <p className="mt-8 text-table text-muted-foreground">A separate realtime voice receptionist is available for practising administrative calls. It has no tools: it cannot look up or change hospital records or book real appointments.</p>
-      </Section>
-
-      <Section id="responsible-ai" labelledBy="responsible-title">
+      <Section id="responsible-ai" tone="subtle" labelledBy="responsible-title">
         <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
           <div>
-            <SectionIntro eyebrow="Responsible AI" id="responsible-title" title="Controls built into how AI is used." />
+            <SectionIntro eyebrow="Governance" id="responsible-title" title="Controls built into how AI is used." />
             <ul className="mt-8 grid gap-6 sm:grid-cols-2">
               {RESPONSIBLE.map((r) => (
-                <li key={r.title} className="flex gap-3">
-                  <r.icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-                  <span><span className="block text-section font-semibold text-heading">{r.title}</span><span className="mt-1 block text-body leading-relaxed text-muted-foreground">{r.text}</span></span>
-                </li>
+                <li key={r.title} className="flex gap-3"><r.icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                  <span><span className="block text-section font-semibold text-heading">{r.title}</span><span className="mt-1 block text-body leading-relaxed text-muted-foreground">{r.text}</span></span></li>
               ))}
             </ul>
           </div>
           <div>
-            <ProductShot shot="agentStudio" caption="Agent Studio: what each assistant reads, what it may propose for approval, and its limits. Synthetic data." sizes="(min-width: 1024px) 45vw, 100vw" />
+            <ProductShot shot="agentStudio" caption="Agent Studio: departments, tools, connected monitors, run history and audited conversation review. Synthetic data." sizes="(min-width: 1024px) 45vw, 100vw" />
             <h3 className="mt-8 text-section font-semibold text-heading">Every result says where it came from</h3>
             <ul className="mt-3 space-y-2.5">
-              {([["live", "A live AI provider produced this; the model is named."], ["simulated", "No AI provider was used; a rule-based summary instead."],
+              {([["live", "A live AI provider produced this; the model is named."], ["simulated", "No AI provider was used; a rule-based answer instead."],
                 ["draft", "AI-generated text a person has not yet reviewed."], ["rule", "Found by a rule-based monitor, not by AI."],
-                ["pending", "A proposal waiting for a person with permission."], ["completed", "Approved by a named person and carried out."]] as const).map(([k, d]) => (
+                ["pending", "A proposal waiting for a different person with permission."], ["completed", "Approved by a named person and carried out."]] as const).map(([k, d]) => (
                 <li key={k} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4"><ProvenanceChip kind={k} className="w-fit sm:w-48 sm:justify-center" /><span className="text-table text-muted-foreground">{d}</span></li>
               ))}
             </ul>
           </div>
         </div>
-        <p className="mt-12 rounded-xl border border-dashed bg-subtle p-5 text-body leading-relaxed text-muted-foreground">
+        <p className="mt-12 rounded-xl border border-dashed bg-card p-5 text-body leading-relaxed text-muted-foreground">
           <strong className="font-semibold text-heading">What we do not claim.</strong> HMS Workflows is not certified for clinical use and is not represented as HIPAA-compliant.
-          AI output is assistance that requires human review. Live-provider verification is still in progress for several AI features — see the <Link to="/about#status" className="font-medium text-primary hover:underline">development status</Link>.
+          AI output is assistance that requires human review. Payer, clearinghouse and messaging connections are simulated. Agent names are product names, not people. See the <Link to="/about#status" className="font-medium text-primary hover:underline">development status</Link>.
         </p>
       </Section>
       <FinalCta secondary={{ to: "/platform#automation", label: "Where automation fits" }} />

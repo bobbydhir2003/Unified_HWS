@@ -29,7 +29,10 @@ export const SHOTS = {
   edBoard: { src: "ed-board", w: 1440, h: 900, alt: "Emergency department tracking board with acuity, time in department, provider and next actions (synthetic data)" },
   insuranceGuardian: { src: "insurance-guardian", w: 1440, h: 900, alt: "Insurance Guardian: coverage status of upcoming visits and open insurance cases, with the simulated payer labelled (synthetic data)" },
   patientPortal: { src: "patient-portal", w: 1440, h: 900, alt: "Patient portal: five sections, a single to-do list before the next visit, and upcoming appointments (synthetic data)" },
-  agentStudio: { src: "agent-studio", w: 1440, h: 900, alt: "AI Agent Studio: each assistant with what it reads, what it may propose for approval, and its limits (synthetic data)" },
+  agentStudio: { src: "agent-studio", w: 1440, h: 900, alt: "Agent Studio: the ten HMS Intelligence agents with their department, tools, connected monitors and limits (synthetic data)" },
+  assistCoverage: { src: "assist-coverage", w: 1440, h: 900, alt: "Aurelia, the insurance and coverage agent, in an insurance case: a grounded answer, a follow-up task proposal approved by a different person, and the created task (synthetic data)" },
+  assistChart: { src: "assist-chart", w: 1440, h: 900, alt: "Aster, the patient chart agent: a cited summary of one patient's chart and a refused prescribing question (synthetic data)" },
+  monitors: { src: "monitors", w: 1440, h: 900, alt: "Monitors and rules: rule-based checks with per-monitor AI assistance switches (synthetic data)" },
 } as const;
 export type ShotKey = keyof typeof SHOTS;
 
@@ -46,7 +49,7 @@ export const PROBLEMS: { title: string; problem: string; helps: string; icon: Lu
     helps: "22 automation monitors check hospital records on a schedule and open a case as soon as a defined condition is true." },
   { title: "Staff spend time chasing routine follow-ups", icon: MessageSquare,
     problem: "Reminders, status checks and hand-off calls take time away from clinical and administrative work.",
-    helps: "Monitors create the routine tasks and reminders, and AI assistants can summarize a case and propose the next step for a person to approve." },
+    helps: "Monitors create the routine tasks and reminders, and each department's AI agent can explain a case and prepare the next step for a person to confirm or approve." },
 ];
 
 // ------------------------------------------------------------------------------------------------ Home: four pillars
@@ -61,9 +64,9 @@ export const PILLARS: Pillar[] = [
   { id: "coordinated-work", title: "Coordinated Work", icon: ClipboardCheck, to: "/platform#workflows",
     text: "Work between departments is recorded, owned and followed through to a verified outcome.",
     includes: ["Cases with owners and deadlines", "Tasks and department hand-offs", "Approvals before sensitive actions", "Outcomes checked against the record"] },
-  { id: "ai-automation", title: "AI-Assisted Automation", icon: Bot, to: "/ai-automation",
-    text: "Rules watch for known problems; AI assistants help people understand them and prepare the next step.",
-    includes: ["22 predefined automation monitors", "10 specialized AI assistants", "Proposed actions wait for approval", "Every AI run is logged"] },
+  { id: "ai-automation", title: "HMS Intelligence", icon: Bot, to: "/ai-automation",
+    text: "Rules watch for known problems; ten department AI agents help people understand them and prepare the next step.",
+    includes: ["22 predefined automation monitors", "10 conversational AI agents in their departments", "Confirmation or independent approval before changes", "Every AI run and conversation logged"] },
 ];
 
 // ------------------------------------------------------------------------------------------------ Home: patient journeys
@@ -80,7 +83,7 @@ export const PATHWAYS: Pathway[] = [
       { title: "Appointment", team: "Front desk · patient", icon: CalendarDays, happens: "A visit is booked on a conflict-checked calendar; the patient completes the pre-visit questionnaire in the portal.", platform: "Coverage is checked before the visit.", monitor: "Pre-visit questionnaire missing" },
       { title: "Check-in", team: "Front desk", icon: ClipboardList, happens: "The patient arrives and is checked in.", platform: "Arrival appears on the clinic's front-desk board." },
       { title: "Nursing", team: "Nurse", icon: HeartPulse, happens: "The patient is roomed and vitals are recorded; abnormal values are flagged.", platform: "Vitals appear on the chart the doctor opens next." },
-      { title: "Doctor", team: "Doctor", icon: Stethoscope, happens: "The doctor reviews history, documents the encounter and places orders. An AI scribe can draft the note with consent.", platform: "The draft waits for the doctor to review and sign." },
+      { title: "Doctor", team: "Doctor", icon: Stethoscope, happens: "The doctor reviews history, documents the encounter and places orders. Sonara, the scribe agent, can draft the note with consent.", platform: "The draft waits for the doctor to review and sign." },
       { title: "Laboratory & pharmacy", team: "Lab · pharmacy", icon: FlaskConical, happens: "The lab collects and results the specimen; a second person verifies it. Pharmacists verify new medication orders.", platform: "Verified results return to the same chart.", monitor: "Lab turnaround / specimen delays" },
       { title: "Billing", team: "Billing", icon: Receipt, happens: "Charges become a claim that is reviewed before submission.", platform: "Held claims become cases for the billing team.", monitor: "Claims on hold" },
       { title: "Follow-up", team: "Front desk · patient", icon: CalendarDays, happens: "Released results and visit instructions reach the patient portal.", platform: "A case opens if a planned follow-up is never booked.", monitor: "Follow-up planned but not booked" },
@@ -117,7 +120,7 @@ export const PATHWAYS: Pathway[] = [
 export const GUARDIAN_STEPS: { title: string; text: string; who: "Automation" | "System" | "AI (optional)" | "Person" }[] = [
   { who: "Automation", title: "A monitor detects a coverage problem", text: "The insurance visit-readiness monitor checks coverage for upcoming visits and finds one that still can't be verified." },
   { who: "System", title: "HMS Workflows opens a case", text: "One case per visit, owned by the insurance team, with a deadline before the visit and a timeline of everything that happens." },
-  { who: "AI (optional)", title: "Insurance Guardian reviews the case", text: "If an administrator has enabled AI, the assistant reads the case and the patient's coverage — only information it is permitted to see." },
+  { who: "AI (optional)", title: "Aurelia reviews the case", text: "If an administrator has enabled AI, Aurelia — the insurance and coverage agent — reads the case and the patient's coverage, only information it is permitted to see." },
   { who: "AI (optional)", title: "It proposes a follow-up", text: "For example, a task for the insurance specialist to contact the patient. It never claims a payer confirmed anything." },
   { who: "Person", title: "An authorized employee approves", text: "The proposal waits in My work. Someone with the required permission approves, edits or rejects it." },
   { who: "System", title: "The backend creates the task", text: "The approved task is created on the case and assigned. The proposal, approval and task are all recorded." },
@@ -134,7 +137,7 @@ export const TEAMS: Team[] = [
     id: "front-desk", title: "Front Desk & Administration", icon: UserPlus,
     short: "Register patients, book and check in visits, and keep coverage ready.",
     struggle: "Front-desk teams juggle arrivals, phone calls, forms and insurance questions, and often learn about a problem when the patient is already at the desk.",
-    support: ["Registration with duplicate detection", "Conflict-checked scheduling, check-in and check-out", "Pre-visit questionnaires and reminders through the patient portal", "Insurance cases opened before the visit, not at the desk"],
+    support: ["Registration with duplicate detection", "Conflict-checked scheduling, check-in and check-out", "Pre-visit questionnaires and reminders through the patient portal", "Insurance cases opened before the visit, not at the desk", "Liora drafts administrative replies in a message thread; staff approve before anything is posted"],
     receives: "Insurance cases, missing-questionnaire reminders and follow-ups that still need booking.",
     handsOff: "A registered, checked-in patient whose record every clinical team uses.",
     shot: "patientPortal", shotCaption: "The patient portal: one to-do list before the next visit. Synthetic data.",
@@ -143,7 +146,7 @@ export const TEAMS: Team[] = [
     id: "clinical", title: "Doctors & Clinical Teams", icon: Stethoscope,
     short: "Work from one chart: history, documentation, orders and results.",
     struggle: "Clinicians need the full picture quickly, and too much of their time goes to documentation and chasing results across departments.",
-    support: ["A role Home with priorities grouped by patient", "One chart with allergies and abnormal vitals clearly marked", "Encounters with signing and addenda; an optional AI scribe draft with consent", "ICD-10-CM diagnosis search and validation; versioned order sets that create draft orders to review and sign", "Orders, results and critical-result acknowledgement", "Ask AI on the chart: answers drawn from that patient's record, with citations"],
+    support: ["A role Home with priorities grouped by patient", "One chart with allergies and abnormal vitals clearly marked", "Encounters with signing and addenda; an optional AI scribe draft with consent", "ICD-10-CM diagnosis search and validation; versioned order sets that create draft orders to review and sign", "Orders, results and critical-result acknowledgement", "Aster, the chart agent: answers drawn from that patient's record, with citations"],
     receives: "Vitals from nursing, verified results from the lab and radiology, and critical results that need acknowledgement.",
     handsOff: "Signed orders to the lab, radiology and pharmacy; admission requests; discharge decisions.",
     shot: "doctorHome",
@@ -152,7 +155,7 @@ export const TEAMS: Team[] = [
     id: "nursing", title: "Nursing & Inpatient Teams", icon: HeartPulse,
     short: "Triage, vitals, care tasks, beds, transfers and discharge.",
     struggle: "Nurses and bed managers coordinate many patients at once, and a single missing step can hold up a bed or a discharge.",
-    support: ["ED tracking board with nurse-recorded acuity", "Medication administration record: only pharmacist-verified orders can be given, with (simulated) wristband and dose-label checks", "Flowsheets with intake/output totals, signed nursing assessments and care plans", "Admission requests, live bed board and transfers", "A discharge checklist showing what each department still owes"],
+    support: ["ED tracking board with nurse-recorded acuity", "Medication administration record: only pharmacist-verified orders can be given, with (simulated) wristband and dose-label checks", "Flowsheets with intake/output totals, signed nursing assessments and care plans", "Admission requests, live bed board and transfers", "A discharge checklist showing what each department still owes", "Elara shows what each discharge still waits on and prepares coordination tasks"],
     receives: "Admission requests, discharge orders, and cases for boarding, bed turnover and delayed departures.",
     handsOff: "Vitals and observations to the chart; freed beds back to the bed board.",
     shot: "edBoard",
@@ -161,7 +164,7 @@ export const TEAMS: Team[] = [
     id: "diagnostics-pharmacy", title: "Diagnostics & Pharmacy", icon: FlaskConical,
     short: "Laboratory, radiology, medication verification and stock.",
     struggle: "Diagnostic and pharmacy teams receive work from every ward and must keep safety checks intact while working quickly.",
-    support: ["Specimen collection, receipt and independent result verification", "Imaging worklist with signed radiology reports", "Pharmacist verification required before an inpatient medication can be dispensed or given", "Dispensing labels linked to the verified order", "Lots, expiry and stock levels, with two-person approval for waste", "Purchase requests when stock runs low"],
+    support: ["Specimen collection, receipt and independent result verification", "Imaging worklist with signed radiology reports", "Pharmacist verification required before an inpatient medication can be dispensed or given", "Dispensing labels linked to the verified order", "Lots, expiry and stock levels, with two-person approval for waste", "Purchase requests when stock runs low", "Veyra explains stock alerts with on-hand, usage and reorder figures; Lucent explains document extractions"],
     receives: "Signed orders from clinicians, and cases for expiring stock, low stock, unusual usage and slow turnaround.",
     handsOff: "Verified results and signed reports back to the ordering clinician's chart.",
     example: { title: "Example: a lab result", steps: ["Doctor signs the order", "Lab collects and receives the specimen", "A second person verifies the result", "Result returns to the chart", "A critical value must be acknowledged"] },
@@ -170,7 +173,7 @@ export const TEAMS: Team[] = [
     id: "revenue", title: "Insurance & Revenue Teams", icon: Receipt,
     short: "Coverage readiness, prior authorizations, claims and balances.",
     struggle: "Coverage and claim problems found after the visit turn into rework, denials and surprise bills.",
-    support: ["Insurance Guardian: coverage checks before visits, with cases for problems", "Prior authorizations drafted when a signed order needs one", "Claims reviewed before submission; denials and appeals tracked", "Patient statements and balances in the portal"],
+    support: ["Insurance Guardian: coverage checks before visits, with cases for problems", "Prior authorizations drafted when a signed order needs one", "Claims reviewed before submission; denials and appeals tracked", "Patient statements and balances in the portal", "Aurelia and Valora explain coverage and claim problems and prepare follow-ups for approval"],
     receives: "Upcoming visits needing coverage, signed orders needing authorization, and claims on hold.",
     handsOff: "Ready coverage to the front desk; questions to patients through approved messages.",
     shot: "insuranceGuardian",
@@ -179,7 +182,7 @@ export const TEAMS: Team[] = [
     id: "leadership", title: "Hospital Leadership", icon: Radar,
     short: "Hospital-wide visibility, operational cases and accountability.",
     struggle: "Leaders need to know where the hospital is waiting and who owns each delay, without collecting reports from every department.",
-    support: ["Command Center: hospital status, grouped problems and department detail", "Every figure opens the records behind it", "Staffing gaps with eligible staff suggested; managers decide", "Approvals, escalations and an audit log of user actions"],
+    support: ["Command Center: hospital status, grouped problems and department detail", "Every figure opens the records behind it", "Staffing gaps with eligible staff suggested; managers decide", "Approvals, escalations and an audit log of user actions", "Orion and Nexa explain bottlenecks and staffing gaps from the Command Center and roster"],
     receives: "Escalated cases, staffing gaps and approvals that need a manager.",
     handsOff: "Decisions and re-assigned work back to the departments that own it.",
     shot: "commandCenter",
@@ -228,12 +231,12 @@ export const LAYERS: Layer[] = [
   },
   {
     id: "automation", n: 4, title: "Automation and AI", icon: Bot,
-    summary: "Monitors detect predefined problems; AI assistants help with permitted follow-ups.",
-    body: "22 rule-based monitors check hospital records on a schedule and open a case when a defined condition is true — and close it when the record shows the problem is gone. Ten specialized AI assistants can summarize, draft and propose actions within the user's permissions. Proposals wait for a person to approve.",
-    points: ["Monitors with administrator-set thresholds", "AI assistance on selected new cases, within daily limits", "Proposals approved by people with permission", "Every AI run logged with its tools, model and cost"],
-    example: "Low stock opens a case and a purchase request; Pharmacy Watchdog may propose adjusting the quantity for a pharmacist to approve.",
+    summary: "Monitors detect predefined problems; HMS Intelligence agents help staff with permitted follow-ups.",
+    body: "22 rule-based monitors check hospital records on a schedule and open a case when a defined condition is true — and close it when the record shows the problem is gone. Ten HMS Intelligence agents work inside their departments: staff talk to them from the record they are working on, and they explain, draft and propose actions within the user's permissions. Changes wait for the employee's confirmation or a different person's approval.",
+    points: ["Monitors with administrator-set thresholds", "AI assistance on selected cases, once per case, within daily and monthly limits", "Conversations bound to one record, re-checked every message", "Every AI run logged with its tools, model and estimated cost"],
+    example: "Low stock opens a case and a purchase request; Veyra, the pharmacy agent, may propose adjusting the quantity for a procurement approver.",
     shot: "agentStudio",
-    status: "AI uses a provider an administrator configures. Without one, assistants return a clearly labelled rule-based summary.",
+    status: "AI uses a provider an administrator configures. Without one, agents return a clearly labelled rule-based answer.",
   },
   {
     id: "visibility", n: 5, title: "Hospital-wide visibility", icon: Radar,
@@ -248,7 +251,7 @@ export const LAYERS: Layer[] = [
 // ------------------------------------------------------------------------------------------------ AI & Automation: building blocks
 export const BLOCKS: { id: string; title: string; icon: LucideIcon; kind: string; text: string }[] = [
   { id: "monitors", title: "Automation monitors", icon: Activity, kind: "Rule-based", text: "Predefined checks that run on a schedule and open a case when a defined condition is true. They are not AI." },
-  { id: "assistants", title: "AI assistants", icon: Bot, kind: "AI", text: "Specialized assistants that read permitted information, summarize, draft and propose allowed actions." },
+  { id: "assistants", title: "AI agents", icon: Bot, kind: "AI", text: "Ten department agents that read permitted information, explain it in conversation, and prepare or propose allowed actions." },
   { id: "cases", title: "Cases and tasks", icon: ClipboardList, kind: "Records", text: "Persistent records that organize each problem, assign an owner, set a deadline and keep a timeline." },
   { id: "approvals", title: "Human approvals", icon: UserCheck, kind: "People", text: "Proposed actions wait until an employee with the required permission approves or rejects them." },
   { id: "command", title: "Command Center", icon: Radar, kind: "Visibility", text: "Hospital-wide view of capacity, activity and open problems, with every figure traceable." },
@@ -257,6 +260,39 @@ export const BLOCKS: { id: string; title: string; icon: LucideIcon; kind: string
 export const FLOW: { title: string; optional?: boolean }[] = [
   { title: "Monitor detects issue" }, { title: "Case tracked" }, { title: "AI assists", optional: true },
   { title: "Action proposed", optional: true }, { title: "Human approval" }, { title: "Task executed" }, { title: "Outcome monitored" },
+];
+
+// ------------------------------------------------------------------------------------------------ Home: platform capabilities
+/** Implemented capabilities only (verified by backend tests and browser flows). External integrations are simulated. */
+export const CLINICAL: { title: string; text: string }[] = [
+  { title: "Patient chart", text: "One record with allergies, problems, medications, vitals, results, documents and a timeline." },
+  { title: "Encounters & documentation", text: "Visit notes signed by the clinician; corrections added as addenda. Optional AI scribe draft with recorded consent." },
+  { title: "Orders & results", text: "Laboratory, imaging, procedure and nursing orders; ICD-10-CM diagnoses; versioned order sets that create draft orders to sign." },
+  { title: "Closed-loop medications", text: "Doctor signs → pharmacist verifies → dispense → nurse documents on the eMAR with simulated barcode checks." },
+  { title: "Nursing documentation", text: "Flowsheets, structured assessments that freeze when signed, care plans, unit worklists and shift handoffs." },
+  { title: "Patient portal & telehealth", text: "Messages, results, pre-visit questionnaires, insurance updates and video visits for patients." },
+];
+export const OPERATIONS: { title: string; text: string }[] = [
+  { title: "Emergency department", text: "Tracking board, nurse-assigned triage (ESI), time in department and boarding." },
+  { title: "Inpatient & beds", text: "Admissions, live bed board, transfers, bed turnover and discharge checklists by department." },
+  { title: "Operating rooms", text: "OR schedule with case status." },
+  { title: "Pharmacy & inventory", text: "Stock by location and lot, expiry, purchase requests with approval, verification queue." },
+  { title: "Laboratory & radiology", text: "Specimens with second-person verification, imaging worklists, signed reports, critical-result acknowledgement." },
+  { title: "Staffing & Command Center", text: "Roster with eligibility rules and coverage gaps; one hospital-wide view where every figure opens its records." },
+];
+export const REVENUE: { title: string; text: string }[] = [
+  { title: "Insurance verification", text: "Every upcoming visit checked with the payer before arrival (payer connection simulated)." },
+  { title: "Prior authorizations", text: "Requests with checklists and expiry tracking." },
+  { title: "Charges & claims", text: "Charge capture, claim scrubbing, review findings and submission (clearinghouse simulated)." },
+  { title: "Denials & patient billing", text: "Denial work queues, appeals and patient invoices in the portal." },
+];
+export const SECURITY: { title: string; text: string; icon: LucideIcon }[] = [
+  { title: "Role-based access, enforced on the server", icon: ShieldCheck, text: "Every request is checked against the person's role, facility and department — not only the screen." },
+  { title: "Organization isolation", icon: Landmark, text: "Each hospital's data is separated in the database itself (row-level security)." },
+  { title: "Restricted charts", icon: UserCheck, text: "Sensitive charts are hidden from worklists and require a documented break-the-glass reason." },
+  { title: "Independent approvals", icon: ClipboardCheck, text: "Sensitive actions need a second person; nobody — and no workspace switch — can approve their own AI-assisted request." },
+  { title: "Audit trail", icon: Activity, text: "Sign-ins, record access, approvals, AI runs and conversation reviews are recorded." },
+  { title: "AI limits and switches", icon: Bot, text: "Per-user, per-agent and organization limits; a monthly budget reserved before each call; switches per agent, monitor and platform." },
 ];
 
 // ------------------------------------------------------------------------------------------------ the 22 monitors
@@ -316,34 +352,34 @@ export type AssistantInfo = {
   where: string; proposes: string; auto?: string; never: string;
 };
 export const ASSISTANTS: AssistantInfo[] = [
-  { brand: "HMS Assist · Coverage", key: "insurance_guardian", name: "Insurance Guardian", icon: ShieldCheck, start: "Launched by staff", where: "Chat panel in each insurance case and the Insurance workspace",
+  { brand: "Aurelia", key: "insurance_guardian", name: "Insurance Guardian", icon: ShieldCheck, start: "Launched by staff", where: "Chat panel in each insurance case and the Insurance workspace",
     does: "Reviews coverage problems before visits and explains what is blocking each one.", proposes: "Staff tasks, patient messages, insurance update requests",
     auto: "New visit-readiness cases", never: "Never claims a payer confirmed coverage." },
-  { brand: "HMS Assist · Chart", key: "doctor_assistant", name: "Doctor Assistant", icon: Stethoscope, start: "Runs inside a workflow", where: "The patient chart's Ask AI conversation",
+  { brand: "Aster", key: "doctor_assistant", name: "Doctor Assistant", icon: Stethoscope, start: "Runs inside a workflow", where: "The patient chart's Ask AI conversation",
     does: "Answers questions about one patient's chart, citing the records it used.", proposes: "Nothing — answers only",
     never: "Never diagnoses, prescribes or writes to the chart." },
-  { brand: "HMS Assist · Scribe", key: "medical_scribe", name: "Medical Scribe", icon: ClipboardList, start: "Runs inside a workflow", where: "The visit's Scribe panel, with patient consent; ask questions about the draft",
+  { brand: "Sonara", key: "medical_scribe", name: "Medical Scribe", icon: ClipboardList, start: "Runs inside a workflow", where: "The visit's Scribe panel, with patient consent; ask questions about the draft",
     does: "Drafts a structured visit note from a consented conversation.", proposes: "A draft note for the clinician",
     never: "Never signs; nothing is saved to the chart until the clinician signs." },
-  { brand: "HMS Assist · Documents", key: "document_intelligence", name: "Document Intelligence", icon: FileSearch, start: "Runs inside a workflow", where: "When a document is uploaded; ask questions in document review",
+  { brand: "Lucent", key: "document_intelligence", name: "Document Intelligence", icon: FileSearch, start: "Runs inside a workflow", where: "When a document is uploaded; ask questions in document review",
     does: "Classifies incoming documents and extracts key details.", proposes: "A classification and extracted details for staff review",
     never: "Its output is reviewed by staff before it is relied on." },
-  { brand: "HMS Assist · Pharmacy", key: "pharmacy_watchdog", name: "Pharmacy Watchdog", icon: Pill, start: "Launched by staff", where: "Pharmacy cases, item details and the Pharmacy workspace",
+  { brand: "Veyra", key: "pharmacy_watchdog", name: "Pharmacy Watchdog", icon: Pill, start: "Launched by staff", where: "Pharmacy cases, item details and the Pharmacy workspace",
     does: "Explains stock alerts — low, expiring or unusual usage — and prepares staff actions.", proposes: "Staff tasks; adjusting a drafted purchase quantity",
     auto: "New low-stock and expiring-stock cases", never: "Never prescribes, dispenses or wastes stock." },
-  { brand: "HMS Assist · Discharge", key: "discharge_coordination", name: "Discharge Coordination", icon: ClipboardCheck, start: "Launched by staff", where: "Each stay's discharge checklist and discharge cases",
+  { brand: "Elara", key: "discharge_coordination", name: "Discharge Coordination", icon: ClipboardCheck, start: "Launched by staff", where: "Each stay's discharge checklist and discharge cases",
     does: "Summarizes what is still outstanding for a discharge and who owns it.", proposes: "Coordination tasks",
     auto: "New discharge-not-departed cases", never: "Never decides clinical readiness for discharge." },
-  { brand: "HMS Assist · Operations", key: "hospital_operations", name: "Hospital Operations", icon: Hospital, start: "Launched by staff", where: "Command Center and operational case drawers",
+  { brand: "Orion", key: "hospital_operations", name: "Hospital Operations", icon: Hospital, start: "Launched by staff", where: "Command Center and operational case drawers",
     does: "Explains operational issues using current figures, open cases and staffing gaps.", proposes: "Administrative tasks",
     never: "Never changes operational records directly." },
-  { brand: "HMS Assist · Claims", key: "claims_review", name: "Claims Review", icon: Receipt, start: "Launched by staff", where: "Each claim, billing cases and the Revenue workspace",
+  { brand: "Valora", key: "claims_review", name: "Claims Review", icon: Receipt, start: "Launched by staff", where: "Each claim, billing cases and the Revenue workspace",
     does: "Identifies possibly missing billing information on claims.", proposes: "Review tasks for the billing team",
     auto: "New claims-on-hold cases", never: "Never edits, codes or submits claims." },
-  { brand: "HMS Assist · Patient Messages", key: "patient_communication", name: "Patient Communication", icon: MessageSquare, start: "Launched by staff", where: "Each message thread and the Messages workspace",
+  { brand: "Liora", key: "patient_communication", name: "Patient Communication", icon: MessageSquare, start: "Launched by staff", where: "Each message thread and the Messages workspace",
     does: "Drafts routine administrative messages to patients.", proposes: "Patient messages for staff approval",
     never: "Never sends a message without approval; never gives clinical advice." },
-  { brand: "HMS Assist · Staffing", key: "staff_scheduling", name: "Staff Scheduling", icon: UsersRound, start: "Launched by staff", where: "Staffing cases and the Roster workspace",
+  { brand: "Nexa", key: "staff_scheduling", name: "Staff Scheduling", icon: UsersRound, start: "Launched by staff", where: "Staffing cases and the Roster workspace",
     does: "Explains staffing gaps and the eligible alternatives the scheduler found.", proposes: "Tasks for a manager",
     auto: "Escalated coverage-gap cases", never: "Never changes assignments — managers decide." },
 ];
@@ -351,10 +387,10 @@ export const ASSISTANTS: AssistantInfo[] = [
 // ------------------------------------------------------------------------------------------------ responsible AI
 export const RESPONSIBLE: { title: string; text: string; icon: LucideIcon }[] = [
   { title: "Conversations inside the work", icon: MessageSquare, text: "Staff open the department assistant from the case, claim, stay, thread or chart they are working on, ask follow-up questions, and pick up the same conversation later. The record is checked against their access on every message." },
-  { title: "Authorized tool access", icon: ShieldCheck, text: "Each assistant has its own list of allowed tools, and every tool call is checked again on the server against the user's permissions." },
+  { title: "Authorized tool access", icon: ShieldCheck, text: "Each agent has its own list of allowed tools, and every tool call is checked again on the server against the user's permissions." },
   { title: "Human approval", icon: UserCheck, text: "Anything that would change data — a task, a patient message, a purchase quantity — waits for a different person with permission, and the conversation shows the real outcome. Small internal steps, like a case note, run only after the employee confirms." },
   { title: "Execution logging", icon: ClipboardList, text: "Every AI run records its trigger, the tools it used, the model, tokens and estimated cost, and appears in the audit log." },
-  { title: "Model configuration", icon: Wrench, text: "Administrators choose the AI provider and models, set per-run limits, and can disable any assistant." },
+  { title: "Model configuration", icon: Wrench, text: "Administrators choose the AI provider and models, set per-run and organization limits, and can disable any agent per facility." },
   { title: "Live or simulated, always labelled", icon: Activity, text: "Each answer shows whether a live AI provider produced it or a rule-based simulation did." },
   { title: "Clinical decisions stay with clinicians", icon: Stethoscope, text: "AI does not diagnose, prescribe, sign notes, change claims or message patients on its own." },
 ];
@@ -364,7 +400,7 @@ export type StatusRow = { label: string; tone: "success" | "info" | "warning" | 
 export const PRODUCT_STATUS: StatusRow[] = [
   { label: "Implemented", tone: "success", text: "The workflows described on this site — patient records, scheduling, emergency and inpatient care, closed-loop inpatient medication management with an eMAR, nursing flowsheets, assessments and care plans, ICD-10-CM diagnosis coding, versioned order sets, pharmacy, laboratory, radiology, insurance and billing workflows, the 22 monitors, cases and approvals, the Command Center and the patient portal — run end to end on a real database with automated tests." },
   { label: "Synthetic data", tone: "info", text: "All testing and every screenshot on this site use synthetic patients. No real patient information is used." },
-  { label: "AI verification", tone: "info", text: "An AI agent run has completed against a live provider (OpenAI) in development. The scribe's transcription, document reading, chart assistant and realtime voice have not yet been verified end to end with a live provider." },
+  { label: "AI verification", tone: "info", text: "Conversations, tools, approvals and limits are verified by automated tests with the rule-based mode and a mocked model; an earlier agent run completed against a live provider (OpenAI) in development. Live-provider answer quality for every agent, scribe transcription, document reading and realtime voice is not yet verified end to end." },
   { label: "Simulated", tone: "neutral", text: "Payer eligibility, the claims clearinghouse, payer decisions, card payments, supplier orders, the imaging archive (PACS), e-prescribing transmission, email/text delivery and barcode scanning on the medication administration record are simulated and labelled in the application." },
   { label: "Not licensed", tone: "warning", text: "CPT procedure codes, SNOMED CT and a commercial drug-interaction knowledge base are not included. Interaction screening is shown as unavailable — never as \"no interactions\" — and pharmacists confirm a manual review." },
   { label: "In development", tone: "warning", text: "HMS Workflows is a developing healthcare software system. It has not been deployed in a hospital." },

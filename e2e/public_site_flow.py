@@ -50,14 +50,17 @@ with sync_playwright() as p:
 
     # Home: problem-first story, no sign-in form, sign-in CTA, tagline preserved.
     pg.goto(f"{BASE}/")
-    expect(pg.get_by_role("heading", level=1)).to_contain_text("One Patient. One Connected Hospital.")
-    expect(pg.get_by_test_id("hero-tagline")).to_have_text("Your Entire Hospital. Working as One.")
+    expect(pg.get_by_role("heading", level=1)).to_contain_text("Your Entire Hospital. Working as One.")
     expect(pg.locator("input[type=password]")).to_have_count(0)
-    expect(pg.get_by_text("A hospital has many teams. The patient journey is one connected process.")).to_be_visible()
+    expect(pg.get_by_text("Hospitals don't fail for lack of data. They fail at the hand-offs.")).to_be_visible()
     expect(pg.get_by_test_id("problems").locator(":scope > li")).to_have_count(4)
     expect(pg.get_by_test_id("pillars").locator(":scope > li")).to_have_count(4)
-    expect(pg.get_by_test_id("guardian-steps").locator(":scope > li")).to_have_count(7)
-    expect(pg.get_by_test_id("team-cards").locator(":scope > li")).to_have_count(6)
+    expect(pg.get_by_test_id("agent-team").locator(":scope > li")).to_have_count(10)              # HMS Intelligence: ten agents
+    expect(pg.get_by_test_id("action-flow").locator(":scope > li")).to_have_count(5)
+    for band in ("clinical-features", "operations-features", "revenue-features"):
+        expect(pg.get_by_test_id(band).locator(":scope > li").first).to_be_visible()
+    expect(pg.get_by_test_id("security").locator(":scope > li")).to_have_count(6)
+    expect(pg.locator("img[src*='/images/product/assist-coverage']").first).to_be_attached()
     expect(pg.locator("img[src*='/images/product/command-center']").first).to_be_visible()
     expect(pg.get_by_test_id("public-copyright")).to_have_text(NOTICE)
     expect(pg.get_by_test_id("demo-roles")).to_have_count(0)
@@ -78,8 +81,8 @@ with sync_playwright() as p:
     # Primary navigation.
     nav = pg.get_by_role("navigation", name="Primary")
     for label, path, heading in [("How It Works", "/platform", "Five connected layers"), ("Solutions", "/solutions", "Built around the work"),
-                                 ("AI & Automation", "/ai-automation", "Rules find the problem"), ("About", "/about", "Why HMS Workflows exists"),
-                                 ("Home", "/", "One Patient")]:
+                                 ("AI & Automation", "/ai-automation", "Meet your hospital's AI team"), ("About", "/about", "Why HMS Workflows exists"),
+                                 ("Home", "/", "Your Entire Hospital")]:
         nav.get_by_role("link", name=label, exact=True).click()
         pg.wait_for_url(re.compile(re.escape(BASE + path) + "$"))
         expect(pg.get_by_role("heading", level=1)).to_contain_text(heading)
@@ -88,8 +91,15 @@ with sync_playwright() as p:
     pg.goto(f"{BASE}/ai-automation")
     expect(pg.locator("[data-monitor]")).to_have_count(22)
     expect(pg.get_by_test_id("monitor-groups").locator(":scope > section")).to_have_count(10)
-    expect(pg.get_by_test_id("assistants-launched").locator("[data-assistant]")).to_have_count(7)
-    expect(pg.get_by_test_id("assistants-embedded").locator("[data-assistant]")).to_have_count(3)
+    expect(pg.get_by_test_id("agent-explorer").locator("[data-agent]")).to_have_count(10)
+    for name in ("Aurelia", "Veyra", "Elara", "Orion", "Valora", "Liora", "Nexa", "Aster", "Sonara", "Lucent"):
+        expect(pg.get_by_test_id("agent-explorer").get_by_role("button", name=re.compile(name))).to_be_visible()
+    pg.get_by_test_id("agent-explorer").get_by_role("button", name=re.compile("Nexa")).click()
+    expect(pg.get_by_test_id("agent-detail")).to_contain_text("Staff Scheduling AI")
+    expect(pg.get_by_test_id("agent-detail")).to_contain_text("Never does")
+    pg.goto(f"{BASE}/ai-automation#agent-claims_review")                                       # deep link selects the agent
+    expect(pg.get_by_test_id("agent-detail")).to_contain_text("Valora")
+    pg.goto(f"{BASE}/ai-automation")
     expect(pg.get_by_test_id("automation-flow").locator(":scope > li")).to_have_count(7)
     expect(pg.get_by_test_id("automation-flow")).to_contain_text("optional")
 
@@ -112,7 +122,7 @@ with sync_playwright() as p:
 
     # Cross-page anchors used by the site exist on their target pages.
     for target in ["/platform#records", "/platform#workspaces", "/platform#workflows", "/platform#automation", "/platform#visibility",
-                   "/solutions#front-desk", "/solutions#leadership", "/ai-automation#monitors", "/ai-automation#assistants", "/about#status", "/about#legal"]:
+                   "/solutions#front-desk", "/solutions#leadership", "/ai-automation#monitors", "/ai-automation#assistants", "/ai-automation#agents", "/about#status", "/about#legal"]:
         route, frag = target.split("#")
         pg.goto(BASE + target)
         expect(pg.locator(f"[id='{frag}']")).to_have_count(1)

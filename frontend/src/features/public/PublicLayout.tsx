@@ -89,7 +89,7 @@ function Footer() {
           <Link to="/platform" className={a}>How it works</Link>
           <Link to="/platform#visibility" className={a}>Command Center</Link>
           <Link to="/ai-automation#monitors" className={a}>Automation monitors</Link>
-          <Link to="/ai-automation#assistants" className={a}>AI assistants</Link>
+          <Link to="/ai-automation#agents" className={a}>HMS Intelligence agents</Link>
         </nav>
         <nav aria-label="Company" className={col}>
           <p className="font-semibold text-heading">Company</p>
