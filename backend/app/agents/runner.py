@@ -121,11 +121,16 @@ def display_name(key: str, fallback: str | None = None) -> str:
     return DISPLAY.get(key, fallback or key.replace("_", " ").title())
 
 
-DISPLAY = {"insurance_guardian": "HMS Assist · Coverage", "pharmacy_watchdog": "HMS Assist · Pharmacy",
-           "discharge_coordination": "HMS Assist · Discharge", "hospital_operations": "HMS Assist · Operations",
-           "claims_review": "HMS Assist · Claims", "patient_communication": "HMS Assist · Patient Messages",
-           "staff_scheduling": "HMS Assist · Staffing", "doctor_assistant": "HMS Assist · Chart",
-           "medical_scribe": "HMS Assist · Scribe", "document_intelligence": "HMS Assist · Documents"}
+# HMS Intelligence display identities (marketing names, not trademark-cleared). Display only: agent keys, stored
+# configurations, conversations and approvals keep the internal keys.
+DISPLAY = {"insurance_guardian": "Aurelia", "pharmacy_watchdog": "Veyra", "discharge_coordination": "Elara",
+           "hospital_operations": "Orion", "claims_review": "Valora", "patient_communication": "Liora",
+           "staff_scheduling": "Nexa", "doctor_assistant": "Aster", "medical_scribe": "Sonara", "document_intelligence": "Lucent"}
+ROLE = {"insurance_guardian": "Insurance & Coverage AI", "pharmacy_watchdog": "Pharmacy & Inventory AI",
+        "discharge_coordination": "Discharge Coordination AI", "hospital_operations": "Hospital Operations AI",
+        "claims_review": "Billing & Claims AI", "patient_communication": "Patient Communication AI",
+        "staff_scheduling": "Staff Scheduling AI", "doctor_assistant": "Patient Chart AI", "medical_scribe": "Medical Scribe AI",
+        "document_intelligence": "Document Intelligence AI"}
 
 
 def load_policy(db: Session, org_id, key: str, facility_id=None):

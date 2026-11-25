@@ -52,7 +52,7 @@ export function AgentStudio() {
   const manage = can("ai:manage");
   return (
     <>
-      <PageHeader title="Agent Studio" description="Each agent works only through backend tools, under your permissions. Anything that would change data becomes a proposal in the approval queue."
+      <PageHeader title="Agent Studio" description="HMS Intelligence — ten department AI agents. Each works only through backend tools, under the user's permissions; anything that changes data needs the employee's confirmation or a different person's approval."
         actions={provider.data && (provider.data.live ? <ProvenanceChip kind="live" label={`Live: ${provider.data.active === "openai" ? "OpenAI" : titleCase(provider.data.active)}`} /> : <ProvenanceChip kind="simulated" label="No AI provider — rule-based summaries" />)} />
       <Tabs defaultValue="agents">
         <TabsList className="mb-4"><TabsTrigger value="agents">Agents</TabsTrigger><TabsTrigger value="runs">Run history</TabsTrigger>
@@ -65,7 +65,7 @@ export function AgentStudio() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{agents.data?.map((a) => (
           <Card key={a.key} className="flex flex-col">
             <CardHeader className="flex-row items-start justify-between gap-2">
-              <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><Bot className="size-4" /></span><div><CardTitle className="text-section">{assistName(a.key, a.name)}</CardTitle><p className="text-xs text-muted-foreground">{a.department ?? ASSIST[a.key]?.previous ?? a.name} · v{a.version} · {a.enabled ? "enabled" : "disabled"}{a.model ? ` · ${a.model}` : ""}</p></div></div>
+              <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><Bot className="size-4" /></span><div><CardTitle className="text-section">{assistName(a.key, a.name)}</CardTitle><p className="text-xs text-muted-foreground">{ASSIST[a.key]?.role ?? a.department} · formerly {ASSIST[a.key]?.previous ?? a.name} · v{a.version} · {a.enabled ? "enabled" : "disabled"}{a.model ? ` · ${a.model}` : ""}</p></div></div>
               {manage && <Switch checked={a.enabled} aria-label={`Enable ${assistName(a.key, a.name)}`} onCheckedChange={async (v) => { try { await put(`/agents/${a.key}`, { enabled: v }); qc.invalidateQueries({ queryKey: ["ai", "agents"] }); } catch (e) { toastError(e); } }} />}
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-3 text-table">

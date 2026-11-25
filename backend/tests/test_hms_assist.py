@@ -87,7 +87,7 @@ def test_coverage_case_workflow_end_to_end(as_user):
     ins, front = as_user(INS), as_user(FRONT)
     cid, num, pid = _case()
     conv = _open(ins, "insurance_guardian", "case", cid)
-    assert conv["context_label"].startswith(f"Case C{num}") and conv["agent_name"] == "HMS Assist · Coverage"
+    assert conv["context_label"].startswith(f"Case C{num}") and conv["agent_name"] == "Aurelia"
     conv = _say(ins, conv, "Why is this patient's insurance not verified?")
     a = _last(conv)
     tools = {t["tool"] for t in a["tool_activity"]}
@@ -542,9 +542,9 @@ def test_assist_agents_capabilities_follow_permissions(as_user):
     ins, nurse = as_user(INS), as_user("nurse.kim@harborview.dev")
     a = {x["key"]: x for x in ins.get("/assist/agents").json()["agents"]}
     cov = a["insurance_guardian"]
-    assert cov["name"] == "HMS Assist · Coverage" and cov["can_use"] and "case" in cov["contexts"]
+    assert cov["name"] == "Aurelia" and cov["role"] == "Insurance & Coverage AI" and cov["can_use"] and "case" in cov["contexts"]
     assert {c["tool"] for c in cov["capabilities"]["proposals"]} >= {"propose_task", "propose_insurance_update"}
-    assert a["patient_communication"]["name"] == "HMS Assist · Patient Messages" and a["doctor_assistant"]["name"] == "HMS Assist · Chart"
+    assert a["patient_communication"]["name"] == "Liora" and a["doctor_assistant"]["name"] == "Aster"
     n = {x["key"]: x for x in nurse.get("/assist/agents").json()["agents"]}
     assert not n["claims_review"]["can_use"]
     studio = {x["key"]: x for x in as_user(ADMIN).get("/agents").json()}

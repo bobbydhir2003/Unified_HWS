@@ -1,20 +1,24 @@
-# HMS Assist — conversational department agents
+# HMS Intelligence (HMS Assist) — conversational department agents
 
 Ten agents, one conversation runtime. Employees open the agent from the record they are working on; administrators
 configure and review agents in Agent Studio.
 
+Display names are marketing names (not trademark-cleared) defined in `backend/app/agents/runner.py` (`DISPLAY`, `ROLE`),
+`frontend/src/lib/assist.ts` and `frontend/src/features/public/agents.ts`; agent keys, stored configurations,
+conversations and approvals use the internal keys, so renaming never needs a migration.
+
 | Agent (display) | Key | Opens on | Entry points |
 |---|---|---|---|
-| HMS Assist · Coverage | `insurance_guardian` | insurance case, patient, workspace | Case drawer, Insurance Guardian header, Home |
-| HMS Assist · Pharmacy | `pharmacy_watchdog` | pharmacy/inventory case, inventory item, workspace | Case drawer, item drawer, Pharmacy header |
-| HMS Assist · Discharge | `discharge_coordination` | discharge case, inpatient stay, workspace | Discharge checklist, case drawer |
-| HMS Assist · Operations | `hospital_operations` | any case, workspace | Command Center, case drawer (fallback agent) |
-| HMS Assist · Claims | `claims_review` | billing case, claim, workspace | Revenue claim detail, Billing claim drawer, case drawer |
-| HMS Assist · Patient Messages | `patient_communication` | message thread, patient, case, workspace | Message thread, Messages header |
-| HMS Assist · Staffing | `staff_scheduling` | staffing case, workspace | Roster header, case drawer |
-| HMS Assist · Chart | `doctor_assistant` | patient | Chart / encounter "Ask AI" |
-| HMS Assist · Scribe | `medical_scribe` | scribe session | Scribe panel ("Ask about this draft") |
-| HMS Assist · Documents | `document_intelligence` | document | Document review |
+| Aurelia — Insurance & Coverage AI | `insurance_guardian` | insurance case, patient, workspace | Case drawer, Insurance Guardian header, Home |
+| Veyra — Pharmacy & Inventory AI | `pharmacy_watchdog` | pharmacy/inventory case, inventory item, workspace | Case drawer, item drawer, Pharmacy header |
+| Elara — Discharge Coordination AI | `discharge_coordination` | discharge case, inpatient stay, workspace | Discharge checklist, case drawer |
+| Orion — Hospital Operations AI | `hospital_operations` | any case, workspace | Command Center, case drawer (fallback agent) |
+| Valora — Billing & Claims AI | `claims_review` | billing case, claim, workspace | Revenue claim detail, Billing claim drawer, case drawer |
+| Liora — Patient Communication AI | `patient_communication` | message thread, patient, case, workspace | Message thread, Messages header |
+| Nexa — Staff Scheduling AI | `staff_scheduling` | staffing case, workspace | Roster header, case drawer |
+| Aster — Patient Chart AI | `doctor_assistant` | patient | Chart / encounter "Ask AI" |
+| Sonara — Medical Scribe AI | `medical_scribe` | scribe session | Scribe panel ("Ask about this draft") |
+| Lucent — Document Intelligence AI | `document_intelligence` | document | Document review |
 
 ## How a turn works (`backend/app/services/assist.py`)
 1. The browser sends only `{agent_key, context_type, context_id}` and the message text.

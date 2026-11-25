@@ -35,7 +35,7 @@ def cfg_out(c, ctx) -> dict:
     for t in c.allowed_tools or []:
         if t in T.REGISTRY:
             kinds[T.REGISTRY[t].kind].append(t)
-    out = {"key": c.key, "display_name": R.display_name(c.key, c.name), "department": PROFILES.get(c.key, {}).get("department"),
+    out = {"key": c.key, "display_name": R.display_name(c.key, c.name), "role": R.ROLE.get(c.key), "department": PROFILES.get(c.key, {}).get("department"),
            "contexts": sorted(AGENT_CONTEXTS.get(c.key, set())), "tool_kinds": kinds, "monitors": _monitors_for(ctx, c.key),
            "never": PROFILES.get(c.key, {}).get("never", []), "name": c.name, "purpose": c.purpose, "instructions": c.instructions, "allowed_tools": c.allowed_tools, "model": c.model,
             "trigger": c.trigger, "required_permission": c.required_permission, "max_tool_calls": c.max_tool_calls, "timeout_seconds": c.timeout_seconds,

@@ -166,7 +166,7 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
   const header = (
     <CardHeader className="border-b pb-3">
       <div className="flex flex-wrap items-center gap-2">
-        <CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-ai" />HMS Assist · Scribe</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-ai" />Sonara · AI scribe</CardTitle>
         {active && <Badge variant="outline">Consent: {active.consent_method}</Badge>}
         {active?.transcript_source === "synthetic_demo" && <SimulatedBadge label="Synthetic demo conversation" />}
         {active?.status === "ready" && <HMSAssistButton agent="medical_scribe" context={{ type: "scribe_session", id: active.id }} label="Ask about this draft" size="xs" testId="scribe-assist" />}

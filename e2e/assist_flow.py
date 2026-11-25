@@ -1,5 +1,5 @@
 """HMS Assist in the browser (synthetic data): an insurance specialist opens Ava Brightwater's insurance case, opens
-HMS Assist · Coverage in the case drawer, asks why coverage is unverified, asks for a follow-up task → a proposal card
+Aurelia (coverage agent) in the case drawer, asks why coverage is unverified, asks for a follow-up task → a proposal card
 (pending) → a DIFFERENT person approves it in My Work → the open panel updates to Executed with a link to the real task.
 Then each department entry point is checked: Chart (cited answer), Messages thread, Claims, Pharmacy item, Discharge,
 Agent Studio tabs. Works with or without a live AI provider (the panel labels rule-based answers)."""
@@ -49,7 +49,7 @@ with sync_playwright() as pw:
     ins.get_by_test_id("case-assist").click()
     panel = ins.get_by_test_id("assist-panel")
     expect(panel.get_by_test_id("assist-context")).to_contain_text(f"C{case['number']}", timeout=15000)
-    expect(panel.get_by_role("heading", name="HMS Assist · Coverage")).to_be_visible()
+    expect(panel.get_by_role("heading", name="Aurelia")).to_be_visible()
     panel.get_by_test_id("assist-input").fill("Why is this patient's insurance not verified?")
     panel.get_by_test_id("assist-send").click()
     expect(panel.locator("[data-role=assistant]").last).to_contain_text(f"C{case['number']}", timeout=60000)
@@ -85,7 +85,7 @@ with sync_playwright() as pw:
     doc.goto(f"{BASE}/patients?q=Elena%20Moreau"); doc.locator("tbody tr").first.click(); doc.wait_for_selector("text=MRN")
     doc.get_by_role("button", name="Ask AI").click()
     dlg = doc.get_by_role("dialog")
-    expect(dlg.get_by_role("heading", name="HMS Assist · Chart")).to_be_visible(timeout=15000)
+    expect(dlg.get_by_role("heading", name="Aster")).to_be_visible(timeout=15000)
     dlg.get_by_role("button", name="Summarize this patient's history").click()
     expect(dlg.get_by_text("From the chart").last).to_be_visible(timeout=30000)
     expect(dlg.locator("a", has_text="S1").first).to_be_visible()

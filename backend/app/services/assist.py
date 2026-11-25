@@ -87,7 +87,8 @@ def capabilities(ctx, cfg) -> dict:
 def agent_card(ctx, cfg) -> dict:
     prof = PROFILES.get(cfg.key, {})
     can_use = ctx.can(P.AI_USE) and ctx.can(cfg.required_permission)
-    return {"key": cfg.key, "name": R.display_name(cfg.key, cfg.name), "previous_name": cfg.name, "department": prof.get("department"),
+    return {"key": cfg.key, "name": R.display_name(cfg.key, cfg.name), "role": R.ROLE.get(cfg.key), "previous_name": cfg.name,
+            "department": prof.get("department"),
             "purpose": cfg.purpose, "enabled": cfg.enabled, "can_use": bool(can_use), "required_permission": cfg.required_permission,
             "contexts": sorted(CX.AGENT_CONTEXTS.get(cfg.key, set())), "prompts": prof.get("prompts", {}),
             "never": prof.get("never", []), "capabilities": capabilities(ctx, cfg)}

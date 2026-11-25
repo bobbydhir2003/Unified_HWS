@@ -110,7 +110,7 @@ function ClaimReview() {
       {!sel ? <Card className="grid place-items-center p-10 text-table text-muted-foreground">Select a claim to review</Card> : (
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2"><CardTitle>{sel.claim_number} — findings</CardTitle>
-            <span className="ml-auto"><HMSAssistButton agent="claims_review" context={{ type: "claim", id: sel.id }} label="Ask HMS Assist · Claims" testId="claim-assist" /></span>
+            <span className="ml-auto"><HMSAssistButton agent="claims_review" context={{ type: "claim", id: sel.id }} testId="claim-assist" /></span>
             {can("billing:write") && <Button size="sm" loading={busy} onClick={async () => { setBusy(true); try { await post(`/claims/${sel.id}/review`); toast.success("Review complete"); qc.invalidateQueries({ queryKey: ["revenue", "findings", sel.id] }); } catch (e) { toastError(e); } finally { setBusy(false); } }}><FileSearch />Run review</Button>}</CardHeader>
           <CardContent className="space-y-3">
             {sel.scrub_errors.length > 0 && <div className="rounded-lg border border-warning/40 bg-warning-soft/40 p-3 text-table"><p className="mb-1 font-medium">Scrubber</p><ul className="list-disc pl-5">{sel.scrub_errors.map((e) => <li key={e}>{e}</li>)}</ul></div>}

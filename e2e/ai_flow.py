@@ -24,10 +24,10 @@ with sync_playwright() as pw:
     doc.get_by_role("button", name="Ask AI").click()
     dlg = doc.get_by_role("dialog")
     dlg.get_by_role("button", name="Summarize this patient's history").click()
-    expect(dlg.get_by_text("From the chart")).to_be_visible(timeout=10000)
+    expect(dlg.get_by_text("From the chart").last).to_be_visible(timeout=10000)  # conversations persist across runs
     expect(dlg.locator("a", has_text="S1").first).to_be_visible()
     dlg.get_by_label("Question").fill("Should I prescribe amoxicillin?"); dlg.get_by_label("Question").press("Enter")
-    expect(dlg.get_by_text("Can't help with that")).to_be_visible(timeout=10000)
+    expect(dlg.get_by_text("Can't help with that").last).to_be_visible(timeout=10000)
     doc.screenshot(path=f"{OUT}/ai-01-assistant.png")
     print("assistant: cited summary + refusal")
     doc.keyboard.press("Escape")

@@ -115,7 +115,7 @@ function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose: () =>
               <p className="mt-0.5 text-xs text-muted-foreground">Method: {d.data.recommendation.method}. A simple statistical baseline — not a validated forecast.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <HMSAssistButton agent="pharmacy_watchdog" context={{ type: "inventory_item", id: itemId! }} label="Ask HMS Assist · Pharmacy" testId="item-assist" />
+              <HMSAssistButton agent="pharmacy_watchdog" context={{ type: "inventory_item", id: itemId! }} testId="item-assist" />
               {can("inventory:write") && <Button size="sm" variant="outline" onClick={() => setAction({ kind: "receive" })}><PackagePlus />Receive</Button>}
               {can("inventory:write") && <Button size="sm" variant="outline" onClick={() => { setF({ quantity: String(d.data!.recommendation.recommended_qty) }); setAction({ kind: "request" }); }}><ShoppingCart />Request purchase</Button>}
             </div>

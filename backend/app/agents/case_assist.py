@@ -290,7 +290,7 @@ def assist(db: Session, case_id: uuid.UUID, trigger: str) -> AgentRun | None:
         run.approvals = [str(approval.id)] if approval else []
         run.tool_calls = [{"tool": f"propose:{s.action}", "ok": approval is not None or s.action == "none", "arguments": {"reason": s.reason[:200]}}]
         run.status = "succeeded"
-        log_event(db, case, "ai_assist", f"AI assisted ({agent.replace('_', ' ').title()}): {s.summary[:300]}", actor_kind="agent",
+        log_event(db, case, "ai_assist", f"AI assisted ({_display(agent)}): {s.summary[:300]}", actor_kind="agent",
                   data={"agent": agent, "run_id": str(run.id), "model": meta.model, "source": run.ai_source, "trigger": trigger,
                         "action": s.action, "approval_id": str(approval.id) if approval else None})
         _mark(db, case, status="proposed" if approval else "no_action", run_id=str(run.id), approval_id=str(approval.id) if approval else None)
@@ -307,6 +307,12 @@ def assist(db: Session, case_id: uuid.UUID, trigger: str) -> AgentRun | None:
         run.latency_ms, run.finished_at = int((time.perf_counter() - start) * 1000), now()
         db.commit()
     return run
+
+
+def _display(agent: str) -> str:
+    from app.agents.runner import DISPLAY, ROLE
+
+    return f"{DISPLAY.get(agent, agent)}, {ROLE.get(agent, '')}".rstrip(", ")
 
 
 class _Invalid(ValueError):

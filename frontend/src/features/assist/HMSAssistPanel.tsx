@@ -1,5 +1,5 @@
 /**
- * HMS Assist — ONE conversation panel for all ten department agents.
+ * HMS Intelligence — ONE conversation panel for all ten department agents (Aurelia, Veyra, … Lucent).
  *
  * The panel sends only the agent key and a stable record reference ({type, id}); the server resolves the record and
  * re-checks access on every turn, pins the agent's tools to that record, and returns persisted messages. Every status
@@ -25,7 +25,7 @@ export type AssistContextType = "workspace" | "case" | "patient" | "stay" | "cla
 export type AssistContext = { type: AssistContextType; id?: string | null };
 
 type Cap = { tool: string; description: string; reason?: string };
-export type AssistAgent = { key: string; name: string; previous_name: string; department: string | null; purpose: string; enabled: boolean; can_use: boolean;
+export type AssistAgent = { key: string; name: string; role: string | null; previous_name: string; department: string | null; purpose: string; enabled: boolean; can_use: boolean;
   contexts: string[]; prompts: Record<string, string[]>; never: string[]; capabilities: { reads: Cap[]; proposals: Cap[]; confirm: Cap[]; unavailable: Cap[] } };
 type AgentsResp = { feature_enabled: boolean; agents: AssistAgent[] };
 type Citation = { id: string; type: string; title: string; date: string | null; snippet: string; link: string };
@@ -263,7 +263,7 @@ export function HMSAssistSheet({ agent, context, open, onOpenChange, autoAsk, te
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <DialogTitle className="flex items-center gap-2 text-section font-semibold text-heading"><Bot className="size-4 text-primary" aria-hidden />{agent.name}</DialogTitle>
-              <p className="text-label text-muted-foreground">AI agent · {agent.department ?? agent.previous_name}</p>
+              <p className="text-label text-muted-foreground">{agent.role ?? "AI agent"} · {agent.department ?? agent.previous_name} · HMS Intelligence</p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <Button size="icon-sm" variant="ghost" aria-label="Conversation history" onClick={() => setShowHistory((v) => !v)}><History /></Button>
@@ -300,7 +300,7 @@ export function HMSAssistSheet({ agent, context, open, onOpenChange, autoAsk, te
         )}
         <form className="space-y-1.5 border-t px-4 py-3" onSubmit={(e) => { e.preventDefault(); if (conv) void send(conv, text); }}>
           <div className="flex items-end gap-2">
-            <Textarea rows={2} value={text} maxLength={2000} onChange={(e) => setText(e.target.value)} placeholder={`Ask ${agent.name.replace("HMS Assist · ", "")}…`} aria-label="Question" data-testid="assist-input"
+            <Textarea rows={2} value={text} maxLength={2000} onChange={(e) => setText(e.target.value)} placeholder={`Ask ${agent.name}…`} aria-label="Question" data-testid="assist-input"
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (conv) void send(conv, text); } }} className="min-h-0 resize-none" disabled={!conv || conv.status !== "active"} />
             <Button type="submit" size="icon" aria-label="Send" disabled={!text.trim() || busy || !conv || conv.status !== "active"} data-testid="assist-send"><Send /></Button>
           </div>

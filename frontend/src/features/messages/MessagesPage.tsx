@@ -83,7 +83,7 @@ export function MessagesPage() {
                   <p className="font-semibold">{thread.data.subject} <Badge variant="outline" className="ml-1">{titleCase(thread.data.category)}</Badge></p>
                   {thread.data.patient && <p className="text-xs text-muted-foreground tabular"><Link to={`/patients/${thread.data.patient.id}`} className="font-medium text-primary hover:underline">{thread.data.patient.name}</Link> · DOB {fmtDob(thread.data.patient.date_of_birth)} · MRN {thread.data.patient.mrn}</p>}
                 </div>
-                <span className="ml-auto"><HMSAssistButton agent="patient_communication" context={{ type: "message_thread", id: thread.data.id }} label="Ask HMS Assist" size="sm" testId="thread-assist" /></span>
+                <span className="ml-auto"><HMSAssistButton agent="patient_communication" context={{ type: "message_thread", id: thread.data.id }} size="sm" testId="thread-assist" /></span>
                 {thread.data.status === "open" && <Button size="sm" variant="outline" onClick={async () => { try { await post(`/messages/${threadId}/close`); thread.refetch(); qc.invalidateQueries({ queryKey: ["inbox"] }); } catch (e) { toastError(e); } }}><CheckCircle2 />Mark resolved</Button>}
               </div>
               <ol className="flex-1 space-y-3 overflow-y-auto p-5">

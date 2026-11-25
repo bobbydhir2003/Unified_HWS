@@ -133,7 +133,7 @@ export function DocumentReview() {
         <h1 className="text-xl font-semibold tracking-tight">{doc.title ?? doc.filename}</h1>
         <DocStatusBadge status={doc.status} />
         <Badge variant="outline">{sourceLabel(doc.source)}</Badge>
-        <HMSAssistButton agent="document_intelligence" context={{ type: "document", id: doc.id }} label="Ask HMS Assist · Documents" size="xs" testId="document-assist" />
+        <HMSAssistButton agent="document_intelligence" context={{ type: "document", id: doc.id }} size="xs" testId="document-assist" />
         <span className="text-table text-muted-foreground">Received {fmtDateTime(doc.created_at)}{doc.uploaded_by_name ? ` · by ${doc.uploaded_by_name}` : ""}{doc.sender ? ` · from ${doc.sender}` : ""}</span>
       </div>
       {doc.duplicate_of && (
