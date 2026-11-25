@@ -9,6 +9,7 @@ import { Dialog, DialogDescription, DialogTitle, SheetContent } from "@/componen
 import { Skeleton } from "@/components/ui/misc";
 import { get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { type AssistContext, HMSAssistButton, useAssistAgent } from "@/features/assist/HMSAssistPanel";
 
 type AgentRow = { key: string; name: string; can_run: boolean };
 export type AgentRun = { status: string; mode: "openai" | "rule_based" | string; model: string | null; output: string | null; error: string | null;
@@ -62,7 +63,17 @@ export function AIRunResult({ run }: { run: AgentRun }) {
  * Contextual AI: runs an existing agent (Agent Studio) with a preset question from inside a workspace, in a side panel so
  * the record stays visible. Shown only when the user may run that agent (server `can_run`). Proposals wait in My work.
  */
-export function AskAI({ agent, question, label, size = "sm", variant = "ai" }: {
+export function AskAI({ agent, question, label, size = "sm", variant = "ai", context }: {
+  agent: string; question: string; label: string; size?: "sm" | "xs"; variant?: "ai" | "soft" | "outline" | "ghost"; context?: AssistContext;
+}) {
+  // HMS Assist conversations available → the same button opens the shared conversational panel (the preset question is
+  // asked automatically in a new conversation, then the employee can follow up). Otherwise: the original one-shot run.
+  const assist = useAssistAgent(agent, context);
+  if (assist.agent) return <HMSAssistButton agent={agent} context={context} label={label} size={size} variant={variant} autoAsk={question} testId={`ask-ai-${agent}`} panelTestId="ai-panel" />;
+  return <LegacyAskAI agent={agent} question={question} label={label} size={size} variant={variant} />;
+}
+
+function LegacyAskAI({ agent, question, label, size = "sm", variant = "ai" }: {
   agent: string; question: string; label: string; size?: "sm" | "xs"; variant?: "ai" | "soft" | "outline" | "ghost";
 }) {
   const { can } = useAuth();

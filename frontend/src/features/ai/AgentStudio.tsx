@@ -19,14 +19,20 @@ import { get, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime } from "@/lib/format";
 import { titleCase } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HMSAssistButton, type Conversation } from "@/features/assist/HMSAssistPanel";
 
-type Agent = { key: string; name: string; purpose: string; instructions: string; allowed_tools: string[]; model: string | null; trigger: string; required_permission: string;
+type Agent = { key: string; display_name?: string; department?: string | null; contexts?: string[]; never?: string[];
+  tool_kinds?: { read: string[]; propose: string[]; prepare: string[] }; monitors?: { monitor: string; name: string; trigger: string; actions: string[]; enabled: boolean }[];
+  name: string; purpose: string; instructions: string; allowed_tools: string[]; model: string | null; trigger: string; required_permission: string;
   max_tool_calls: number; timeout_seconds: number; max_cost_usd: number; enabled: boolean; version: number; can_run: boolean; runs_30d: number; failed_30d: number; cost_30d_usd: number; demo_override?: boolean };
 type ToolT = { name: string; description: string; permission: string; kind: string };
 type Run = { id: string; agent_key: string; mode: string; model: string | null; status: string; input: string; output: string | null; tool_calls: { tool: string; ok: boolean; arguments: unknown; result_preview: string }[];
-  approvals: string[]; cost_usd: number | null; latency_ms: number | null; error: string | null; started_at: string; trigger?: string; ai_source?: string | null };
+  approvals: string[]; cost_usd: number | null; latency_ms: number | null; error: string | null; started_at: string; trigger?: string; ai_source?: string | null;
+  user_name?: string | null; context_type?: string | null; context_id?: string | null; conversation_id?: string | null };
+type ConvAdmin = { id: string; agent_key: string; agent_name: string; user: string; acting_role: string | null; context_type: string; context_label: string | null; status: string; last_message_at: string };
 
-const TRIGGER_LABEL: Record<string, string> = { manual: "Run by staff", case_open: "Case opened (automatic)", case_escalation: "Case escalated (automatic)" };
+const TRIGGER_LABEL: Record<string, string> = { conversation: "Conversation", manual: "Run by staff", case_open: "Case opened (automatic)", case_escalation: "Case escalated (automatic)" };
 const SOURCE_LABEL: Record<string, string> = { platform: "Platform AI", "owner-demo": "Former demo AI (retired)", "visitor-key": "Former demo visitor key (retired)", "demo-project": "Former demo key (retired)", rules: "Rules (no AI)" };
 
 const usd = (n: number | null | undefined) => (n == null ? "—" : n > 0 && n < 0.01 ? "< $0.01" : "$" + n.toFixed(2));
@@ -48,27 +54,39 @@ export function AgentStudio() {
     <>
       <PageHeader title="Agent Studio" description="Each agent works only through backend tools, under your permissions. Anything that would change data becomes a proposal in the approval queue."
         actions={provider.data && (provider.data.live ? <ProvenanceChip kind="live" label={`Live: ${provider.data.active === "openai" ? "OpenAI" : titleCase(provider.data.active)}`} /> : <ProvenanceChip kind="simulated" label="No AI provider — rule-based summaries" />)} />
+      <Tabs defaultValue="agents">
+        <TabsList className="mb-4"><TabsTrigger value="agents">Agents</TabsTrigger><TabsTrigger value="runs">Run history</TabsTrigger>
+          {manage && <TabsTrigger value="conversations">Conversations</TabsTrigger>}</TabsList>
+        <TabsContent value="runs"><RunHistory /></TabsContent>
+        {manage && <TabsContent value="conversations"><ConversationReview /></TabsContent>}
+        <TabsContent value="agents">
+      <p className="mb-3 text-table text-muted-foreground">Employees use these agents inside their workspaces (case drawers, claims, stays, message threads, charts, scribe and document review). Here administrators configure, test and monitor them. Mandatory safety controls are added to every run and can't be edited away.</p>
       {agents.isLoading ? <LoadingRows rows={6} /> : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{agents.data?.map((a) => (
           <Card key={a.key} className="flex flex-col">
             <CardHeader className="flex-row items-start justify-between gap-2">
-              <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><Bot className="size-4" /></span><div><CardTitle className="text-section">{assistName(a.key, a.name)}</CardTitle><p className="text-xs text-muted-foreground">{ASSIST[a.key]?.previous ?? a.name} · v{a.version} · {a.trigger === "feature" ? "runs in its workflow" : "on demand"}{a.demo_override ? " · edited in this demo session" : ""}</p></div></div>
+              <div className="flex items-center gap-2"><span className="rounded-lg bg-ai-soft p-2 text-ai"><Bot className="size-4" /></span><div><CardTitle className="text-section">{assistName(a.key, a.name)}</CardTitle><p className="text-xs text-muted-foreground">{a.department ?? ASSIST[a.key]?.previous ?? a.name} · v{a.version} · {a.enabled ? "enabled" : "disabled"}{a.model ? ` · ${a.model}` : ""}</p></div></div>
               {manage && <Switch checked={a.enabled} aria-label={`Enable ${assistName(a.key, a.name)}`} onCheckedChange={async (v) => { try { await put(`/agents/${a.key}`, { enabled: v }); qc.invalidateQueries({ queryKey: ["ai", "agents"] }); } catch (e) { toastError(e); } }} />}
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-3 text-table">
               <p className="text-muted-foreground">{a.purpose}</p>
-              <div className="flex flex-wrap gap-1">{a.allowed_tools.map((t) => <Badge key={t} variant={t.startsWith("propose") ? "warning" : "neutral"} title={t.startsWith("propose") ? "Creates an approval request — a person must approve" : "Reads data only"}>{t.startsWith("propose") ? "Proposes: " + t.replace(/^propose_/, "").replace(/_/g, " ") + " (needs approval)" : "Reads: " + t.replace(/^(get|list)_/, "").replace(/_/g, " ")}</Badge>)}
-                {!a.allowed_tools.length && <span className="text-xs text-muted-foreground">Uses its feature's own pipeline</span>}</div>
+              <div className="flex flex-wrap gap-1">{a.allowed_tools.map((t) => <Badge key={t} variant={t.startsWith("propose") ? "warning" : t.startsWith("prepare") ? "primary" : "neutral"} title={t.startsWith("propose") ? "Creates an approval request — a different person must approve" : t.startsWith("prepare") ? "Prepares an action the employee confirms" : "Reads data only"}>{t.startsWith("propose") ? "Proposes: " + t.replace(/^propose_/, "").replace(/_/g, " ") + " (needs approval)" : t.startsWith("prepare") ? "Prepares: " + t.replace(/^prepare_/, "").replace(/_/g, " ") + " (user confirms)" : "Reads: " + t.replace(/^(get|list)_/, "").replace(/_/g, " ")}</Badge>)}
+                {a.key === "doctor_assistant" && <span className="text-xs text-muted-foreground">Cited chart sources (read-only)</span>}</div>
+              {!!a.contexts?.length && <p className="text-label text-muted-foreground">Opens on: {a.contexts.map((c) => c.replace(/_/g, " ")).join(", ")}</p>}
+              {!!a.monitors?.length && <p className="text-label text-muted-foreground" data-testid="agent-monitors">Automation: {a.monitors.map((m) => `${m.name} (${m.enabled ? "AI on" : "AI off"})`).join("; ")}</p>}
               <p className="text-label text-muted-foreground">{a.runs_30d} runs in 30 days · {a.failed_30d} failed · cost {usd(a.cost_30d_usd)}</p>
               <p className="text-label text-muted-foreground">Limits: up to {a.max_tool_calls} steps, {a.timeout_seconds} s, ${a.max_cost_usd.toFixed(2)} per run</p>
               <div className="mt-auto flex gap-2">
-                {a.can_run && <Button size="sm" variant="outline" onClick={() => { setRunFor(a); setInput(""); setResult(null); }}><Play />Run</Button>}
+                {a.can_run && <Button size="sm" variant="outline" onClick={() => { setRunFor(a); setInput(""); setResult(null); }}><Play />Test run</Button>}
+                {a.contexts?.includes("workspace") && <HMSAssistButton agent={a.key} label="Chat" size="sm" variant="outline" testId={`studio-chat-${a.key}`} />}
                 {a.trigger === "feature" && <Button size="sm" variant="outline" asChild><Link to={a.key === "document_intelligence" ? "/documents" : a.key === "medical_scribe" ? "/encounters" : "/patients"}>Open</Link></Button>}
                 {manage && <Button size="sm" variant="ghost" onClick={() => { setEdit(a); setDraft({ instructions: a.instructions, allowed_tools: a.allowed_tools, model: a.model, max_tool_calls: a.max_tool_calls, timeout_seconds: a.timeout_seconds, max_cost_usd: a.max_cost_usd }); }}><Settings2 />Configure</Button>}
               </div>
             </CardContent>
           </Card>))}</div>
       )}
+        </TabsContent>
+      </Tabs>
       <Dialog open={!!runFor} onOpenChange={(o) => !o && setRunFor(null)}>
         <DialogContent size="lg"><DialogHeader><DialogTitle>{runFor?.name}</DialogTitle><DialogDescription>{runFor?.purpose}</DialogDescription></DialogHeader>
           <Field label="Request"><Textarea rows={3} value={input} onChange={(e) => setInput(e.target.value)} placeholder="e.g. What needs attention on Med-Surg this shift?" /></Field>
@@ -89,11 +107,11 @@ export function AgentStudio() {
         </DialogContent>
       </Dialog>
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
-        <DialogContent size="lg"><DialogHeader><DialogTitle>Configure {edit?.name}</DialogTitle><DialogDescription>Saving creates a new version (v{(edit?.version ?? 0) + 1}). Tools still check the invoking user's permissions.</DialogDescription></DialogHeader>
+        <DialogContent size="lg"><DialogHeader><DialogTitle>Configure {edit?.name}</DialogTitle><DialogDescription>Saving creates a new version (v{(edit?.version ?? 0) + 1}). Tools still check the invoking user's permissions; mandatory clinical and security controls are appended to every run and can't be removed here.</DialogDescription></DialogHeader>
           <Field label="Instructions"><Textarea rows={5} value={draft.instructions ?? ""} onChange={(e) => setDraft({ ...draft, instructions: e.target.value })} /></Field>
           <Field label="Allowed tools"><div className="grid gap-1 sm:grid-cols-2">{tools.data?.map((t) => (
             <label key={t.name} className="flex items-start gap-2 text-table"><Checkbox className="mt-0.5" checked={draft.allowed_tools?.includes(t.name)} onCheckedChange={(v) => setDraft({ ...draft, allowed_tools: v ? [...(draft.allowed_tools ?? []), t.name] : (draft.allowed_tools ?? []).filter((x) => x !== t.name) })} />
-              <span><code>{t.name}</code>{t.kind === "propose" && <Badge variant="warning" className="ml-1 px-1 py-0 text-label">approval</Badge>}<span className="block text-xs text-muted-foreground">{t.description} · needs {t.permission}</span></span></label>))}</div></Field>
+              <span><code>{t.name}</code>{t.kind === "propose" && <Badge variant="warning" className="ml-1 px-1 py-0 text-label">approval</Badge>}{t.kind === "prepare" && <Badge variant="primary" className="ml-1 px-1 py-0 text-label">user confirms</Badge>}<span className="block text-xs text-muted-foreground">{t.description} · needs {t.permission}</span></span></label>))}</div></Field>
           <div className="grid grid-cols-4 gap-3">
             <Field label="Model"><Input value={draft.model ?? ""} placeholder="default" onChange={(e) => setDraft({ ...draft, model: e.target.value || null })} /></Field>
             <Field label="Max tool calls"><Input inputMode="numeric" value={draft.max_tool_calls ?? ""} onChange={(e) => setDraft({ ...draft, max_tool_calls: Number(e.target.value) })} /></Field>
@@ -213,5 +231,58 @@ function EvaluationsCard() {
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+
+/** Every agent execution: staff conversations, test runs and automatic case assistance. Non-managers see their own runs. */
+function RunHistory() {
+  const [agent, setAgent] = React.useState("");
+  const runs = useQuery({ queryKey: ["ai", "runs", agent], queryFn: () => get<Run[]>("/agents/runs/list", agent ? { agent } : undefined) });
+  if (runs.isLoading) return <LoadingRows rows={6} />;
+  return (
+    <Card className="overflow-hidden" data-testid="run-history">
+      <div className="flex items-center gap-2 border-b p-3 text-table"><span className="text-muted-foreground">Agent</span>
+        <select className="h-8 rounded-md border bg-card px-2" value={agent} onChange={(e) => setAgent(e.target.value)} aria-label="Filter by agent">
+          <option value="">All</option>{Object.keys(ASSIST).map((k) => <option key={k} value={k}>{assistName(k)}</option>)}</select></div>
+      {!runs.data?.length ? <EmptyState title="No agent runs yet" /> : (
+        <Table><THead><TR><TH>When</TH><TH>Agent</TH><TH>By</TH><TH>Trigger</TH><TH>Context</TH><TH>Model</TH><TH>Tools</TH><TH className="text-right">Duration</TH><TH>Status</TH><TH className="text-right">Cost</TH><TH>Outcome</TH></TR></THead>
+          <TBody>{runs.data.map((r) => (
+            <TR key={r.id}><TD className="whitespace-nowrap text-xs">{fmtDateTime(r.started_at)}</TD><TD>{assistName(r.agent_key)}</TD><TD>{r.user_name ?? "—"}</TD>
+              <TD className="text-xs">{TRIGGER_LABEL[r.trigger ?? "manual"] ?? r.trigger}</TD><TD className="text-xs">{r.context_type ? `${r.context_type.replace(/_/g, " ")}${r.context_id ? ` ${r.context_id.slice(0, 8)}` : ""}` : "—"}</TD>
+              <TD className="text-xs">{r.mode === "openai" ? r.model : "rules"}</TD><TD className="text-xs" title={r.tool_calls.map((c) => `${c.tool}${c.ok ? "" : " (failed)"}`).join(", ")}>{r.tool_calls.length}</TD>
+              <TD className="text-right tabular text-xs">{r.latency_ms != null ? `${r.latency_ms} ms` : "—"}</TD>
+              <TD><Badge variant={r.status === "succeeded" ? "success" : r.status === "limit_reached" ? "warning" : "danger"}>{r.status.replace("_", " ")}</Badge></TD>
+              <TD className="text-right tabular text-xs">{usd(r.cost_usd)}</TD>
+              <TD className="max-w-[16rem] truncate text-xs" title={r.error ?? r.output ?? ""}>{r.approvals.length ? `${r.approvals.length} proposal(s)` : r.error ?? (r.output ?? "").slice(0, 80)}</TD></TR>))}</TBody></Table>)}
+    </Card>
+  );
+}
+
+/** Administrator review of employee conversations (audited server-side; restricted charts excluded). */
+function ConversationReview() {
+  const list = useQuery({ queryKey: ["assist", "admin", "conversations"], queryFn: () => get<ConvAdmin[]>("/admin/assist/conversations") });
+  const [open, setOpen] = React.useState<Conversation & { user?: string } | null>(null);
+  if (list.isLoading) return <LoadingRows rows={6} />;
+  return (
+    <>
+      <Card className="overflow-hidden" data-testid="conversation-review">
+        <p className="border-b p-3 text-table text-muted-foreground">Opening a conversation is recorded in the audit log. Conversations are operational records, not part of the chart; content is redacted after the retention period.</p>
+        {!list.data?.length ? <EmptyState title="No conversations yet" /> : (
+          <Table><THead><TR><TH>Last activity</TH><TH>Agent</TH><TH>Employee</TH><TH>Workspace</TH><TH>Record</TH><TH>Status</TH><TH /></TR></THead>
+            <TBody>{list.data.map((c) => (
+              <TR key={c.id}><TD className="whitespace-nowrap text-xs">{fmtDateTime(c.last_message_at)}</TD><TD>{c.agent_name}</TD><TD>{c.user}</TD><TD className="text-xs">{c.acting_role?.replace(/_/g, " ") ?? "—"}</TD>
+                <TD className="max-w-[18rem] truncate text-xs">{c.context_label}</TD><TD><Badge variant="outline">{c.status}</Badge></TD>
+                <TD className="text-right"><Button size="xs" variant="outline" onClick={async () => { try { setOpen(await get(`/admin/assist/conversations/${c.id}`)); } catch (e) { toastError(e); } }}>Review</Button></TD></TR>))}</TBody></Table>)}
+      </Card>
+      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
+        <DialogContent size="lg"><DialogHeader><DialogTitle>{open?.agent_name} — {open?.user}</DialogTitle><DialogDescription>{open?.context_label}</DialogDescription></DialogHeader>
+          <ol className="max-h-[60vh] space-y-2 overflow-y-auto text-table">{open?.messages.map((m) => (
+            <li key={m.id} className="rounded-md border p-2"><p className="text-label font-medium text-muted-foreground">{m.role} · {fmtDateTime(m.created_at)}{m.tool_activity.length ? ` · ${m.tool_activity.length} tool call(s)` : ""}</p>
+              <p className="whitespace-pre-wrap">{m.content}</p>{m.actions.map((a) => <p key={a.id} className="text-label text-muted-foreground">{a.type === "approval" ? `Proposal #${a.id.slice(0, 8)}` : "Prepared action"}: {a.title} — {a.status}</p>)}</li>))}</ol>
+          <DialogFooter><Button variant="outline" onClick={() => setOpen(null)}>Close</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

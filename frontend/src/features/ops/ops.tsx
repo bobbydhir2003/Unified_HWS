@@ -17,6 +17,7 @@ import { fmtDateTime, fromNow } from "@/lib/format";
 import { ROLE_LABELS, STAFF_ROLES, type Role } from "@/lib/types";
 import { dueLabel, StatusChip, toWorkStatus } from "@/components/common/Status";
 import { cn, titleCase } from "@/lib/utils";
+import { HMSAssistButton, useAssistAgent } from "@/features/assist/HMSAssistPanel";
 
 export type CaseT = {
   id: string; number: number; category: string; kind: string; title: string; summary: string | null; severity: Severity; status: string;
@@ -164,6 +165,21 @@ const EVENT_ICON: Record<string, React.ElementType> = {
 };
 
 /** Case detail drawer: evidence, timeline (append-only), tasks, notifications, approvals and actions. */
+const CASE_AGENT: Record<string, string> = {
+  insurance: "insurance_guardian", pharmacy: "pharmacy_watchdog", inventory: "pharmacy_watchdog", discharge: "discharge_coordination",
+  billing: "claims_review", staffing: "staff_scheduling", patient_followup: "patient_communication",
+};
+
+/** HMS Assist for one case: the department agent for the case category, else Operations (whichever this user may use). */
+function CaseAssist({ caseId, category }: { caseId: string; category: string }) {
+  const ctx = { type: "case" as const, id: caseId };
+  const preferred = useAssistAgent(CASE_AGENT[category] ?? "hospital_operations", ctx);
+  const ops = useAssistAgent("hospital_operations", ctx);
+  const a = preferred.agent ?? ops.agent;
+  if (!a) return null;
+  return <HMSAssistButton agent={a.key} context={ctx} label={`Ask ${a.name}`} testId="case-assist" />;
+}
+
 export function CaseDrawer({ caseId, onClose }: { caseId: string | null; onClose: () => void }) {
   const qc = useQueryClient();
   const { can, me } = useAuth();
@@ -188,7 +204,8 @@ export function CaseDrawer({ caseId, onClose }: { caseId: string | null; onClose
             <div className="border-b p-5 pr-12">
               <p className="text-xs text-muted-foreground">Case #{c.number} · {CATEGORY_LABEL[c.category] ?? c.category}{c.rule_key ? ` · rule ${c.rule_key} v${c.rule_version ?? 0}` : ""}</p>
               <DialogTitle className="mt-1 text-section font-semibold leading-snug">{c.title}</DialogTitle>
-              <div className="mt-2 flex flex-wrap items-center gap-2"><SeverityBadge severity={c.severity} category={c.category} /><CaseStatusBadge status={c.status} /><SlaBadge c={c} /></div>
+              <div className="mt-2 flex flex-wrap items-center gap-2"><SeverityBadge severity={c.severity} category={c.category} /><CaseStatusBadge status={c.status} /><SlaBadge c={c} />
+                <span className="ml-auto"><CaseAssist caseId={c.id} category={c.category} /></span></div>
               {c.summary && <p className="mt-3 text-body text-muted-foreground">{c.summary}</p>}
               <dl className="mt-3 grid grid-cols-2 gap-3 text-table">
                 <div><dt className="text-xs text-muted-foreground">Owner</dt><dd className="font-medium">{ownerLabel(c)}</dd></div>

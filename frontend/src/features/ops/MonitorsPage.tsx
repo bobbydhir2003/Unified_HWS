@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/misc";
+import { assistName } from "@/lib/assist";
 import { get, patch, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime, fromNow } from "@/lib/format";
@@ -16,8 +17,8 @@ import { titleCase } from "@/lib/utils";
 import { CATEGORY_LABEL } from "./ops";
 
 /** Case kinds that may receive optional AI assistance (backend/app/agents/case_assist.py RULES). */
-const AI_ASSISTED = new Set(["inventory.low_stock", "pharmacy.expiring", "insurance.visit_readiness", "discharge.not_departed", "billing.claims_on_hold", "staffing.coverage_gap"]);
-type MonitorT = { key: string; name: string; description: string; category: string; is_enabled: boolean; config: Record<string, unknown>; config_help: Record<string, string>; version: number; open_cases: number; last_run: { at: string; status: string; found: number; opened: number; closed: number; duration_ms: number; error: string | null } | null };
+type MonitorT = { key: string; name: string; description: string; category: string; is_enabled: boolean; config: Record<string, unknown>; config_help: Record<string, string>; version: number; open_cases: number;
+  ai_assist?: { available: boolean; enabled: boolean; agent: string | null; trigger: string | null; actions: string[]; safety_rule_only: boolean } | null; last_run: { at: string; status: string; found: number; opened: number; closed: number; duration_ms: number; error: string | null } | null };
 export type EngineHealth = { status: string; pending_events: number; retrying_events: number; oldest_pending_seconds: number; processed_24h: number; dead_events: { id: string; event_type: string; attempts: number; last_error: string; occurred_at: string }[]; monitor_failures_24h: number; last_monitor_run: string | null; notification_failures_24h: number };
 
 export function EngineHealthCard() {
@@ -88,10 +89,18 @@ function MonitorCard({ m }: { m: MonitorT }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-2 text-xs"><Badge variant="outline">{CATEGORY_LABEL[m.category] ?? m.category}</Badge><Badge variant="neutral">Rule v{m.version}</Badge><Badge variant="neutral">Trigger: scheduled check · rule-based</Badge>
-          {AI_ASSISTED.has(m.key) && <Badge variant="ai">AI may assist new cases (approval required)</Badge>}<Badge variant={m.open_cases ? "warning" : "success"}>{m.open_cases} open case{m.open_cases === 1 ? "" : "s"}</Badge>
+          {m.ai_assist?.enabled && <Badge variant="ai">{assistName(m.ai_assist.agent)} assists {m.ai_assist.trigger === "case_escalation" ? "escalated" : "new"} cases (approval required)</Badge>}
+          {m.ai_assist?.safety_rule_only && <Badge variant="neutral">Safety-critical: rule-based only, no AI</Badge>}<Badge variant={m.open_cases ? "warning" : "success"}>{m.open_cases} open case{m.open_cases === 1 ? "" : "s"}</Badge>
           {m.last_run && <span className="text-muted-foreground">Last run {fmtDateTime(m.last_run.at)} · {m.last_run.status} · {m.last_run.found} found · {m.last_run.duration_ms} ms</span>}
         </div>
         {m.last_run?.error && <p className="text-xs text-destructive">{m.last_run.error}</p>}
+        {m.ai_assist?.available && (
+          <label className="flex items-center gap-2 rounded-md border bg-subtle px-3 py-2 text-table" data-testid={`monitor-ai-${m.key}`}>
+            <Switch checked={m.ai_assist.enabled} disabled={!manage} aria-label={`AI assistance for ${m.name}`}
+              onCheckedChange={async (v) => { try { await patch(`/monitors/${m.key}`, { ai_assist: v }); toast.success(v ? "AI assistance on for this monitor" : "AI assistance off for this monitor"); qc.invalidateQueries({ queryKey: ["monitors"] }); } catch (e) { toastError(e); } }} />
+            <span>AI assistance by {assistName(m.ai_assist.agent)} — once per {m.ai_assist.trigger === "case_escalation" ? "escalation" : "new case"}, within daily and monthly AI limits; it can only propose {m.ai_assist.actions.map((a) => a.replace(/_/g, " ")).join(" or ")} for approval.</span>
+          </label>
+        )}
         <div className="grid gap-3 sm:grid-cols-2">{Object.keys(m.config).map((k) => (
           <Field key={k} label={titleCase(k.replace(/_/g, " "))} hint={m.config_help[k]}>
             <Input value={cfg[k]} disabled={!manage} onChange={(e) => setCfg({ ...cfg, [k]: e.target.value })} />

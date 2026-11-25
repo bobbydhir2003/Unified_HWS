@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { HMSAssistButton } from "@/features/assist/HMSAssistPanel";
 import { AlertTriangle, FlaskConical, Keyboard, Loader2, Mic, MicOff, Pause, Pill, Play, RefreshCw, Sparkles, Square, Trash2, Wand2 } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
@@ -165,9 +166,10 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
   const header = (
     <CardHeader className="border-b pb-3">
       <div className="flex flex-wrap items-center gap-2">
-        <CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-ai" />AI scribe</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-ai" />HMS Assist · Scribe</CardTitle>
         {active && <Badge variant="outline">Consent: {active.consent_method}</Badge>}
         {active?.transcript_source === "synthetic_demo" && <SimulatedBadge label="Synthetic demo conversation" />}
+        {active?.status === "ready" && <HMSAssistButton agent="medical_scribe" context={{ type: "scribe_session", id: active.id }} label="Ask about this draft" size="xs" testId="scribe-assist" />}
       </div>
       <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
     </CardHeader>

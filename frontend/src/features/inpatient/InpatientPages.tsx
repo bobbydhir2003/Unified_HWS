@@ -160,7 +160,7 @@ function DischargePanel({ stay, data, onChange }: { stay: StayT; data?: Discharg
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2"><CardTitle>Discharge checklist</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
-          <AskAI agent="discharge_coordination" size="xs" label="What's this waiting on?" question={`Summarize what the discharge for ${stay.patient.name} (stay ${stay.id}) is waiting on, which team owns each step, and what should happen next.`} />
+          <AskAI agent="discharge_coordination" size="xs" label="What's this waiting on?" context={{ type: "stay", id: stay.id }} question="What is this discharge waiting on, which team owns each step, and what should happen next?" />
           <StatusChip status={r.ready ? "done" : "waiting"} label={r.ready ? "Ready to discharge" : `${r.blocking.length} step${r.blocking.length === 1 ? "" : "s"} left`} /></div></CardHeader>
         <CardContent>
         {(() => {

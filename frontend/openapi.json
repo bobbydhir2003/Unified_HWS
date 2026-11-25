@@ -1154,6 +1154,11 @@
       "title": "Can Decide",
       "type": "boolean"
      },
+     "can_retry": {
+      "default": false,
+      "title": "Can Retry",
+      "type": "boolean"
+     },
      "case_id": {
       "anyOf": [
        {
@@ -1165,6 +1170,18 @@
        }
       ],
       "title": "Case Id"
+     },
+     "conversation_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Conversation Id"
      },
      "created_at": {
       "format": "date-time",
@@ -1228,6 +1245,18 @@
        }
       ],
       "title": "Executed At"
+     },
+     "facility_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Facility Id"
      },
      "id": {
       "format": "uuid",
@@ -6647,6 +6676,21 @@
     "title": "Message",
     "type": "object"
    },
+   "MessageIn": {
+    "properties": {
+     "text": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ],
+    "title": "MessageIn",
+    "type": "object"
+   },
    "MfaChallengeOut": {
     "properties": {
      "mfa_token": {
@@ -6739,6 +6783,18 @@
    },
    "MonitorOut": {
     "properties": {
+     "ai_assist": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ai Assist"
+     },
      "category": {
       "title": "Category",
       "type": "string"
@@ -6807,6 +6863,17 @@
    },
    "MonitorPatch": {
     "properties": {
+     "ai_assist": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ai Assist"
+     },
      "config": {
       "anyOf": [
        {
@@ -7185,6 +7252,53 @@
      "values"
     ],
     "title": "ObservationsIn",
+    "type": "object"
+   },
+   "OpenIn": {
+    "properties": {
+     "agent_key": {
+      "maxLength": 40,
+      "title": "Agent Key",
+      "type": "string"
+     },
+     "context_id": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Context Id"
+     },
+     "context_type": {
+      "default": "workspace",
+      "enum": [
+       "workspace",
+       "case",
+       "patient",
+       "stay",
+       "claim",
+       "inventory_item",
+       "message_thread",
+       "scribe_session",
+       "document"
+      ],
+      "title": "Context Type",
+      "type": "string"
+     },
+     "new": {
+      "default": false,
+      "title": "New",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "agent_key"
+    ],
+    "title": "OpenIn",
     "type": "object"
    },
    "OrderIn": {
@@ -13669,6 +13783,146 @@
     ]
    }
   },
+  "/api/v1/admin/assist/conversations": {
+   "get": {
+    "operationId": "admin_conversations_api_v1_admin_assist_conversations_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "agent_key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Agent Key"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 100,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Admin Conversations",
+    "tags": [
+     "assist"
+    ]
+   }
+  },
+  "/api/v1/admin/assist/conversations/{cid}": {
+   "get": {
+    "operationId": "admin_conversation_api_v1_admin_assist_conversations__cid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Admin Conversation",
+    "tags": [
+     "assist"
+    ]
+   }
+  },
   "/api/v1/adt/board": {
    "get": {
     "operationId": "bed_board_api_v1_adt_board_get",
@@ -17626,6 +17880,70 @@
     ]
    }
   },
+  "/api/v1/approvals/{aid}": {
+   "get": {
+    "operationId": "get_approval_api_v1_approvals__aid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ApprovalOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Get Approval",
+    "tags": [
+     "operations"
+    ]
+   }
+  },
   "/api/v1/approvals/{aid}/decide": {
    "post": {
     "operationId": "decide_approval_api_v1_approvals__aid__decide_post",
@@ -17697,6 +18015,603 @@
     "summary": "Decide Approval",
     "tags": [
      "operations"
+    ]
+   }
+  },
+  "/api/v1/approvals/{aid}/retry": {
+   "post": {
+    "operationId": "retry_approval_api_v1_approvals__aid__retry_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ApprovalOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Retry Approval",
+    "tags": [
+     "operations"
+    ]
+   }
+  },
+  "/api/v1/assist/agents": {
+   "get": {
+    "description": "The ten agents as THIS user sees them now: enabled, usable, contexts, prompts, capabilities (allowed tools \u2229 permissions).",
+    "operationId": "assist_agents_api_v1_assist_agents_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Assist Agents",
+    "tags": [
+     "assist"
+    ]
+   }
+  },
+  "/api/v1/assist/conversations": {
+   "get": {
+    "operationId": "my_conversations_api_v1_assist_conversations_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "agent_key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Agent Key"
+      }
+     },
+     {
+      "in": "query",
+      "name": "context_type",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Context Type"
+      }
+     },
+     {
+      "in": "query",
+      "name": "context_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Context Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "My Conversations",
+    "tags": [
+     "assist"
+    ]
+   },
+   "post": {
+    "operationId": "open_conversation_api_v1_assist_conversations_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OpenIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Open Conversation",
+    "tags": [
+     "assist"
+    ]
+   }
+  },
+  "/api/v1/assist/conversations/{cid}": {
+   "get": {
+    "operationId": "get_conversation_api_v1_assist_conversations__cid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Get Conversation",
+    "tags": [
+     "assist"
+    ]
+   }
+  },
+  "/api/v1/assist/conversations/{cid}/close": {
+   "post": {
+    "operationId": "close_conversation_api_v1_assist_conversations__cid__close_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Close Conversation",
+    "tags": [
+     "assist"
+    ]
+   }
+  },
+  "/api/v1/assist/conversations/{cid}/messages": {
+   "post": {
+    "operationId": "send_message_api_v1_assist_conversations__cid__messages_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MessageIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Send Message",
+    "tags": [
+     "assist"
+    ]
+   }
+  },
+  "/api/v1/assist/drafts/{did}/confirm": {
+   "post": {
+    "operationId": "confirm_api_v1_assist_drafts__did__confirm_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Confirm",
+    "tags": [
+     "assist"
+    ]
+   }
+  },
+  "/api/v1/assist/drafts/{did}/discard": {
+   "post": {
+    "operationId": "discard_api_v1_assist_drafts__did__discard_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Discard",
+    "tags": [
+     "assist"
     ]
    }
   },
@@ -39785,7 +40700,6 @@
   },
   "/api/v1/scribe/{sid}/transcript": {
    "post": {
-    "description": "Typed/pasted conversation, or clinician corrections to a transcript. Triggers a fresh draft.",
     "operationId": "set_transcript_api_v1_scribe__sid__transcript_post",
     "parameters": [
      {

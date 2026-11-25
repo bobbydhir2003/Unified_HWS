@@ -18,6 +18,7 @@ import { fmtDate, fmtDateTime, fmtMoney, fromNow } from "@/lib/format";
 import { cn, titleCase } from "@/lib/utils";
 import { CaseDrawer, CaseRow, type CaseT } from "../ops/ops";
 import { AskAI } from "@/features/ai/AskAI";
+import { HMSAssistButton } from "@/features/assist/HMSAssistPanel";
 import { PharmacyMedicationQueue } from "@/features/medication/Medication";
 
 type Item = { id: string; name: string; sku: string; ndc: string | null; kind: string; unit: string; strength: string | null; form: string | null; is_controlled: boolean; on_hand: number; reorder_point: number; avg_daily_use: number; days_of_supply: number | null; nearest_expiry: string | null; expiring_soon: boolean; stock_status: string };
@@ -114,6 +115,7 @@ function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose: () =>
               <p className="mt-0.5 text-xs text-muted-foreground">Method: {d.data.recommendation.method}. A simple statistical baseline — not a validated forecast.</p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <HMSAssistButton agent="pharmacy_watchdog" context={{ type: "inventory_item", id: itemId! }} label="Ask HMS Assist · Pharmacy" testId="item-assist" />
               {can("inventory:write") && <Button size="sm" variant="outline" onClick={() => setAction({ kind: "receive" })}><PackagePlus />Receive</Button>}
               {can("inventory:write") && <Button size="sm" variant="outline" onClick={() => { setF({ quantity: String(d.data!.recommendation.recommended_qty) }); setAction({ kind: "request" }); }}><ShoppingCart />Request purchase</Button>}
             </div>

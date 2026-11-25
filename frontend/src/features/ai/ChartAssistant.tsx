@@ -8,6 +8,7 @@ import { Dialog, SheetContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/menu";
 import { post } from "@/lib/api";
+import { HMSAssistSheet, useAssistAgent } from "@/features/assist/HMSAssistPanel";
 import { cn, titleCase } from "@/lib/utils";
 
 type Citation = { id: string; type: string; title: string; date: string | null; snippet: string; link: string };
@@ -35,7 +36,17 @@ function AnswerText({ text, citations }: { text: string; citations: Citation[] }
   );
 }
 
-export function ChartAssistant({ patientId, patientName, open, onOpenChange }: { patientId: string; patientName: string; open: boolean; onOpenChange: (o: boolean) => void }) {
+/** HMS Assist · Chart: the shared conversational panel bound to this patient (persistent, cited). Falls back to the original
+ * in-memory assistant only when HMS Assist conversations are not enabled for the organization. */
+export function ChartAssistant(props: { patientId: string; patientName: string; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const ctx = { type: "patient" as const, id: props.patientId };
+  const { agent, loading } = useAssistAgent("doctor_assistant", ctx);
+  if (agent) return props.open ? <HMSAssistSheet agent={agent} context={ctx} open={props.open} onOpenChange={props.onOpenChange} /> : null;
+  if (loading && props.open) return null;
+  return <LegacyChartAssistant {...props} />;
+}
+
+function LegacyChartAssistant({ patientId, patientName, open, onOpenChange }: { patientId: string; patientName: string; open: boolean; onOpenChange: (o: boolean) => void }) {
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [q, setQ] = React.useState("");
   const [busy, setBusy] = React.useState(false);

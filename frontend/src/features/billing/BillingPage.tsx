@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { HMSAssistButton } from "@/features/assist/HMSAssistPanel";
 import { AlertTriangle, Ban, CheckCircle2, CircleDollarSign, FileText, FlaskConical, Gavel, Plus, RefreshCw, Send, Trash2, Wallet } from "lucide-react";
 import { Dialog as D } from "radix-ui";
 import * as React from "react";
@@ -277,6 +278,7 @@ export function ClaimDrawer({ claim: c, onOpenChange }: { claim: ClaimT | null; 
             <div className="flex h-full flex-col">
               <div className="border-b px-6 py-5">
                 <D.Title className="flex items-center gap-2 text-base font-semibold"><span className="font-mono">{c.claim_number}</span><ClaimBadge s={c.status} /></D.Title>
+                <div className="mt-2"><HMSAssistButton agent="claims_review" context={{ type: "claim", id: c.id }} label="Ask HMS Assist · Claims" size="xs" testId="claim-assist" /></div>
                 <p className="mt-1 text-table text-muted-foreground"><Link to={`/patients/${c.patient_id}`} className="text-primary hover:underline">{c.patient?.name}</Link> · {c.payer_name} · member {c.member_id} · DOS {fmtDate(c.service_date)}</p>
               </div>
               <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5 text-table">
