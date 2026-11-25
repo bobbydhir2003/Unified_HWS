@@ -63,7 +63,8 @@ def my_conversations(agent_key: str | None = None, context_type: str | None = No
         q = q.where(AssistConversation.context_id == context_id)
     rows = ctx.db.scalars(q.order_by(AssistConversation.last_message_at.desc()).limit(30)).all()
     return [{"id": str(c.id), "agent_key": c.agent_key, "agent_name": R.display_name(c.agent_key), "context_type": c.context_type,
-             "context_label": c.context_label, "status": c.status, "last_message_at": c.last_message_at, "created_at": c.created_at} for c in rows]
+             "context_id": c.context_id, "context_label": c.context_label, "status": c.status, "last_message_at": c.last_message_at,
+             "created_at": c.created_at} for c in rows]
 
 
 @router.get("/assist/conversations/{cid}")

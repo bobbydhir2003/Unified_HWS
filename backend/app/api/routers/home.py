@@ -242,5 +242,12 @@ def _today(ctx: TenantContext, profile: str) -> dict:
 def home(ctx: TenantContext = Depends(get_ctx)):
     profile = profile_for(list(ctx.roles))
     priorities, counts = _priorities(ctx)
-    return {"profile": profile, "role_label": _role_label(profile if profile != "radiologist" else "radiologist"),
-            "priorities": priorities, "counts": counts, "today": _today(ctx, profile)}
+    from app.api.routers.home_dashboard import build
+
+    roles = list(ctx.roles)
+    dash_profile = "radiology_tech" if profile == "radiologist" and "radiologist" not in roles else profile
+    return {"profile": profile, "dashboard_profile": dash_profile, "role_label": _role_label(dash_profile),
+            "priorities": priorities, "counts": counts, "today": _today(ctx, profile), "dashboard": build(ctx, dash_profile, counts),
+            "identity": {"name": ctx.user.display_name, "first_name": ctx.user.first_name, "title": ctx.user.title,
+                         "is_platform_admin": bool(ctx.user.is_superadmin), "has_provider_profile": bool(ctx.provider),
+                         "acting_role": getattr(ctx.request.state, "acting_role", None)}}
