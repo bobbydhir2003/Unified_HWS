@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { LoginForm } from "@/features/auth/LoginForm";
 import { CODE_SET_NOTICES, COPYRIGHT_NOTICE, PRODUCT_TAGLINE, THIRD_PARTY } from "@/lib/legal";
 import { cn } from "@/lib/utils";
+import { HomeHero } from "./hero";
 import { AgentExplorer, AgentTeamGrid, Conversation, ConversationToAction } from "./intelligence";
 import { AGENTS, INTELLIGENCE } from "./agents";
 import {
@@ -55,25 +56,7 @@ export function HomePage() {
   return (
     <PublicLayout>
       {/* 1. Hero */}
-      <section className="relative overflow-hidden bg-brand-navy px-4 pb-20 pt-14 text-white sm:px-6 lg:pb-28 lg:pt-20" aria-labelledby="home-title">
-        <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] [background-size:48px_48px]" aria-hidden />
-        <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
-          <div>
-            <p className="mb-4 flex items-center gap-2 text-label font-semibold uppercase tracking-[0.14em] text-white/70"><BrandMark className="size-5" />HMS Workflows</p>
-            <h1 id="home-title" className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl lg:leading-[1.05]">Your Entire Hospital. <span className="text-sky-300">Working as One.</span></h1>
-            <p className="mt-6 max-w-xl text-lead leading-relaxed text-white/85 text-pretty">Clinical care, hospital operations, revenue, automation and ten department AI agents on one platform — so every team works from the same patient, sees what is waiting, and knows who owns the next step.</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <AccessButton className="bg-white text-brand-navy hover:bg-white/90" />
-              <Button asChild size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"><Link to="/ai-automation">Meet HMS Intelligence<ArrowRight /></Link></Button>
-            </div>
-            <p className="mt-6 text-table text-white/65">Real screens with synthetic data: the Command Center and Aurelia working on an insurance case. In development; not certified for clinical use.</p>
-          </div>
-          <div className="relative lg:pb-10">
-            <ProductShot shot="commandCenter" priority caption={false} sizes="(min-width: 1024px) 56vw, 100vw" className="border-white/10" />
-            <ProductShot shot="assistCoverage" caption={false} sizes="380px" className="absolute -bottom-6 -left-10 hidden w-[46%] border-white/10 ring-1 ring-black/20 lg:block" />
-          </div>
-        </div>
-      </section>
+      <HomeHero />
 
       {/* 2. The problem */}
       <Section tone="subtle" labelledBy="problem-title">
