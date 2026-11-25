@@ -431,7 +431,8 @@ export function AiAutomationPage() {
             <ul className="mt-5 grid gap-4 md:grid-cols-2" data-testid={title === "Launched by staff" ? "assistants-launched" : "assistants-embedded"}>
               {list.map((a) => (
                 <li key={a.key} className="flex flex-col rounded-xl border bg-card p-5" data-assistant={a.key}>
-                  <p className="flex items-center gap-2.5 text-section font-semibold text-heading"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-ai-soft"><a.icon className="size-5 text-ai" aria-hidden /></span>{a.name}</p>
+                  <p className="flex items-center gap-2.5 text-section font-semibold text-heading"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-ai-soft"><a.icon className="size-5 text-ai" aria-hidden /></span>
+                    <span className="min-w-0"><span className="block">{a.brand ?? a.name}</span>{a.brand && <span className="block text-label font-normal text-muted-foreground">{a.name}</span>}</span></p>
                   <p className="mt-3 text-body leading-relaxed text-foreground">{a.does}</p>
                   <dl className="mt-3 grid gap-1.5 text-table">
                     <div className="grid gap-x-3 sm:grid-cols-[7.5rem_1fr]"><dt className="font-medium text-heading">Where</dt><dd className="text-muted-foreground">{a.where}</dd></div>

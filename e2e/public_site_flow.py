@@ -100,7 +100,8 @@ with sync_playwright() as p:
     # Every page: no demo CTAs, internal links and same-page anchors resolve, all images load; desktop screenshots.
     for i, path in enumerate(PAGES):
         pg.goto(BASE + path)
-        pg.wait_for_load_state("networkidle")
+        expect(pg.get_by_role("heading", level=1).first).to_be_attached(timeout=15000)
+        pg.wait_for_timeout(500)
         no_demo_links(pg, path)
         no_broken_internal_links(pg, path)
         pg.evaluate("Promise.all([...document.images].map(i => { i.loading = 'eager'; return i.decode().catch(() => {}); }))")
