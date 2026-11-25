@@ -122,8 +122,20 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
   }
   if (opts.raw) return res as unknown as T;
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new ApiError(res.status, data?.detail ?? data);
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // A proxy/server error page or other non-JSON body: never surface a parser message to the user.
+      if (!res.ok) throw new ApiError(res.status, { code: "non_json_error", message: res.status >= 500
+        ? `The server couldn't complete this request (error ${res.status}). Nothing was changed — please try again.`
+        : `The request failed (error ${res.status}).` });
+      throw new ApiError(res.status, { code: "invalid_response", message: "The server sent an unexpected response. Please try again." });
+    }
+  }
+  const body = data as { detail?: Detail } | null;
+  if (!res.ok) throw new ApiError(res.status, body?.detail ?? (body as Detail));
   return data as T;
 }
 

@@ -200,8 +200,8 @@ function MessageView({ m, chart, onChange }: { m: Msg; chart: boolean; onChange:
  * The panel itself (controlled). Opens/reuses the user's conversation for this agent + record when `open` turns true.
  * `autoAsk`: a first question sent automatically into a NEW, empty conversation (keeps the old one-click summaries).
  */
-export function HMSAssistSheet({ agent, context, open, onOpenChange, autoAsk, testId = "assist-panel" }: {
-  agent: AssistAgent; context: AssistContext; open: boolean; onOpenChange: (o: boolean) => void; autoAsk?: string; testId?: string;
+export function HMSAssistSheet({ agent, context, open, onOpenChange, autoAsk, askAlways = false, testId = "assist-panel" }: {
+  agent: AssistAgent; context: AssistContext; open: boolean; onOpenChange: (o: boolean) => void; autoAsk?: string; askAlways?: boolean; testId?: string;
 }) {
   const qc = useQueryClient();
   const [conv, setConv] = React.useState<Conversation | null>(null);
@@ -233,9 +233,9 @@ export function HMSAssistSheet({ agent, context, open, onOpenChange, autoAsk, te
       const c = await post<Conversation>("/assist/conversations", { agent_key: agent.key, context_type: context.type, context_id: context.id ?? null, new: fresh });
       setConv(c);
       setBusy(false);
-      if (autoAsk && !asked.current && c.messages.length === 0) { asked.current = true; await send(c, autoAsk); }
+      if (autoAsk && !asked.current && (askAlways || c.messages.length === 0)) { asked.current = true; await send(c, autoAsk); }
     } catch (e) { setErr(e instanceof Error ? e.message : "Could not open the assistant."); setBusy(false); }
-  }, [agent.key, context.type, context.id, autoAsk, send]);
+  }, [agent.key, context.type, context.id, autoAsk, askAlways, send]);
 
   React.useEffect(() => { if (open && (!conv || `${conv.context_type}:${conv.context_id ?? ""}` !== ctxKey && context.type !== "workspace")) void openConv(false); }, [open, ctxKey]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => { pane.current?.scrollTo({ top: pane.current.scrollHeight }); }, [conv?.messages.length, busy]);
@@ -272,6 +272,8 @@ export function HMSAssistSheet({ agent, context, open, onOpenChange, autoAsk, te
             </div>
           </div>
           <DialogDescription id="assist-context" className="flex flex-wrap items-center gap-1.5 text-label" data-testid="assist-context">
+            <span className={cn("rounded px-1.5 py-0.5 font-semibold", context.type === "workspace" ? "bg-accent text-accent-foreground" : "bg-warning-soft text-warning-foreground")} data-testid="assist-mode">
+              {context.type === "workspace" ? "General" : context.type === "patient" ? "Patient context" : "Record context"}</span>
             <span className="rounded border bg-subtle px-1.5 py-0.5 font-medium text-foreground">{conv?.context_label ?? (context.type === "workspace" ? "Your workspace" : "Loading record…")}</span>
             {lastMode === "openai" ? <ProvenanceChip kind="live" /> : lastMode === "rule_based" ? <ProvenanceChip kind="simulated" label="Rule-based (no AI provider)" /> : null}
           </DialogDescription>

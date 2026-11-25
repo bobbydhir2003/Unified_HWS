@@ -545,6 +545,67 @@ def get_document_review(ctx, a: _Doc, s: Scope) -> dict:
             "note": "Extraction is a draft. Staff confirm identity and details before anything is filed."}
 
 
+# ---------------------------------------------------------------------------------------------- the clinician's own day
+
+def _today_bounds(ctx):
+    from datetime import datetime
+    from datetime import time as dtime
+    from zoneinfo import ZoneInfo
+
+    from app.models import Clinic
+
+    q = select(Clinic.timezone).where(Clinic.organization_id == ctx.org_id)
+    if ctx.facility_ids is not None:
+        q = q.where(Clinic.id.in_(ctx.facility_ids))
+    tz = ZoneInfo(ctx.db.scalar(q.limit(1)) or "America/New_York")
+    start = datetime.combine(now().astimezone(tz).date(), dtime(0), tz)
+    return start, start + timedelta(days=1), tz
+
+
+@tool("get_my_schedule", "Today's appointments for you (your clinician profile), or for your clinics if you have no clinician profile.", _None,
+      P.SCHEDULE_READ)
+def get_my_schedule(ctx, a: _None, s: Scope) -> dict:
+    from app.models import Appointment
+
+    start, end, tz = _today_bounds(ctx)
+    q = (select(Appointment, Patient).join(Patient, Patient.id == Appointment.patient_id)
+         .where(Appointment.organization_id == ctx.org_id, Appointment.start_at >= start, Appointment.start_at < end,
+                Appointment.status != "cancelled", Patient.is_restricted.is_(False)))
+    if ctx.facility_ids is not None:
+        q = q.where(Appointment.clinic_id.in_(ctx.facility_ids))
+    mine = getattr(ctx, "provider", None)
+    if mine:
+        q = q.where(Appointment.provider_id == mine.id)
+    rows = ctx.db.execute(q.order_by(Appointment.start_at).limit(25)).all()
+    return {"scope": "your appointments" if mine else "your clinics' appointments (you have no clinician profile)",
+            "appointments": [{"time": ap.start_at.astimezone(tz).strftime("%H:%M"), "patient": p.full_name, "reason": ap.reason, "status": ap.status}
+                             for ap, p in rows]}
+
+
+@tool("get_my_open_encounters", "Your visits that are still open (not completed), with whether the note is unsigned.", _None, P.CLINICAL_READ)
+def get_my_open_encounters(ctx, a: _None, s: Scope) -> dict:
+    from app.models import ClinicalNote, Encounter
+
+    mine = getattr(ctx, "provider", None)
+    if not mine:
+        return {"encounters": [], "note": "You have no clinician profile, so no visits are assigned to you."}
+    rows = ctx.db.execute(select(Encounter, Patient).join(Patient, Patient.id == Encounter.patient_id).where(
+        Encounter.organization_id == ctx.org_id, Encounter.provider_id == mine.id, Encounter.status == "in_progress",
+        Patient.is_restricted.is_(False)).order_by(Encounter.started_at).limit(20)).all()
+    notes = dict(ctx.db.execute(select(ClinicalNote.encounter_id, ClinicalNote.status).where(ClinicalNote.encounter_id.in_([e.id for e, _ in rows]))).all()) if rows else {}
+    return {"encounters": [{"patient": p.full_name, "started": e.started_at.isoformat(), "reason": e.chief_complaint,
+                            "note": notes.get(e.id) or "not started", "link": f"/encounters/{e.id}"} for e, p in rows]}
+
+
+@tool("get_my_tasks", "Your open tasks (assigned to you or your role), most urgent first.", _None, P.PATIENTS_READ)
+def get_my_tasks(ctx, a: _None, s: Scope) -> dict:
+    from app.api.routers.ai import list_tasks
+
+    rows = list_tasks(scope="mine", status="open", ctx=ctx)
+    return {"tasks": [{"title": t["title"], "priority": t["priority"], "status": t["status"], "patient": t.get("patient_name"),
+                       "due": t["due_at"].isoformat() if t.get("due_at") else None} for t in rows[:15]]}
+
+
 # ---------------------------------------------------------------------------------------------- proposal status
 
 class _Prop(_Args):

@@ -53,7 +53,7 @@ class Task(UUIDPk, Timestamps, OrgScoped, Base):
     assigned_role: Mapped[str | None] = mapped_column(String(30))
     assigned_user_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL")
     priority: Mapped[str] = mapped_column(String(10), default="normal")
-    status: Mapped[str] = mapped_column(String(10), default="open")
+    status: Mapped[str] = mapped_column(String(20), default="open")
     link: Mapped[str | None] = mapped_column(String(300))
     source: Mapped[str] = mapped_column(String(20), default="manual")  # manual | automation | receptionist
     run_id: Mapped[uuid.UUID | None] = fk("automation_runs.id", nullable=True, ondelete="SET NULL")

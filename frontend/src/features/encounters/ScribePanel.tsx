@@ -106,18 +106,27 @@ function Recorder({ onDone }: { onDone: (blob: Blob, seconds: number) => void })
     if (!r) return;
     r.onstop = () => {
       cleanup();
-      onDone(new Blob(chunks.current, { type: r.mimeType || "audio/webm" }), seconds);
+      const blob = new Blob(chunks.current, { type: r.mimeType || "audio/webm" });
       setState("idle");
+      if (seconds < 1 || blob.size < 512) { setError("The recording was empty — nothing was captured. Check the microphone and try again."); return; }
+      onDone(blob, seconds);
     };
     r.stop();
   };
 
+  const [perm, setPerm] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (!navigator.mediaDevices?.getUserMedia) { setPerm("unsupported"); return; }
+    navigator.permissions?.query({ name: "microphone" as PermissionName }).then((p) => { setPerm(p.state); p.onchange = () => setPerm(p.state); }).catch(() => setPerm(null));
+  }, []);
+
   return (
     <div className="space-y-3">
+      {perm && <p className="text-label text-muted-foreground" data-testid="mic-permission">Microphone: {perm === "granted" ? "allowed" : perm === "denied" ? "blocked — allow it in the browser's site settings, or type the conversation" : perm === "unsupported" ? "not available in this browser — type the conversation instead" : "the browser will ask when you start"}</p>}
       {error && <p role="alert" className="flex items-start gap-1.5 text-table text-destructive"><MicOff className="mt-0.5 size-4 shrink-0" />{error}</p>}
       <div className="flex items-center gap-3">
         {state === "idle" ? (
-          <Button onClick={start}><Mic />Start recording</Button>
+          <Button onClick={start} disabled={perm === "unsupported"} data-testid="scribe-start-recording"><Mic />Start recording</Button>
         ) : (
           <>
             <span className={cn("flex items-center gap-2 rounded-full px-3 py-1 text-table font-medium tabular", state === "recording" ? "bg-destructive-soft text-destructive" : "bg-muted text-muted-foreground")}>
@@ -249,6 +258,25 @@ export function ScribePanel({ encounterId, patientId, chartAllergies, noteId, no
           </Tabs>
         )}
 
+        {active.status === "transcribed" && (
+          <section aria-label="Review transcript" className="space-y-2" data-testid="scribe-review">
+            <p className="text-table text-muted-foreground">The recording was transcribed. Review it before drafting: the speech-to-text service doesn't identify speakers, so change “Other:” to “Clinician:” or “Patient:” where you can, and correct anything misheard. Nothing is added to the chart yet.</p>
+            <Textarea rows={9} value={typed || toText(active.transcript ?? [])} onChange={(e) => setTyped(e.target.value)} aria-label="Transcript" />
+            <div className="flex flex-wrap gap-2">
+              <Button loading={busy === "draft"} disabled={parseTranscript(typed || toText(active.transcript ?? [])).length === 0} data-testid="scribe-generate"
+                onClick={() => run("draft", () => post(`/scribe/${active.id}/transcript`, { segments: parseTranscript(typed || toText(active.transcript ?? [])) }))}>
+                <Wand2 />Generate draft note
+              </Button>
+              <Button variant="ghost" loading={busy === "discard"} onClick={() => run("discard", () => post(`/scribe/${active.id}/discard`))}>Discard session</Button>
+            </div>
+          </section>
+        )}
+        {!processing && !capture && active.status !== "transcribed" && !(active.status === "ready" && active.draft) && (
+          <div className="space-y-2 text-table" data-testid="scribe-unknown">
+            <p className="text-muted-foreground">This scribe session is in an unexpected state ({active.status}). You can discard it and start again — nothing has been added to the chart.</p>
+            <Button variant="outline" loading={busy === "discard"} onClick={() => run("discard", () => post(`/scribe/${active.id}/discard`))}>Discard session</Button>
+          </div>
+        )}
         {active.status === "ready" && active.draft && sections && (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <section aria-label="Transcript" className="min-w-0">

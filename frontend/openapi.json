@@ -30177,6 +30177,75 @@
     ]
    }
   },
+  "/api/v1/my-visits": {
+   "get": {
+    "operationId": "my_visits_api_v1_my_visits_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "view",
+      "required": false,
+      "schema": {
+       "default": "today",
+       "enum": [
+        "today",
+        "upcoming",
+        "in_progress",
+        "completed",
+        "documentation"
+       ],
+       "title": "View",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-organization-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Organization-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "My Visits",
+    "tags": [
+     "visits"
+    ]
+   }
+  },
   "/api/v1/notes/{note_id}": {
    "get": {
     "operationId": "get_note_api_v1_notes__note_id__get",

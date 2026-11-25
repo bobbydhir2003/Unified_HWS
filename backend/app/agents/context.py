@@ -27,7 +27,7 @@ AGENT_CONTEXTS: dict[str, set[str]] = {
     "claims_review": {"workspace", "case", "claim"},
     "patient_communication": {"workspace", "message_thread", "patient", "case"},
     "staff_scheduling": {"workspace", "case"},
-    "doctor_assistant": {"patient"},
+    "doctor_assistant": {"workspace", "patient"},  # general chat by default; patient context only when explicitly chosen
     "medical_scribe": {"scribe_session"},
     "document_intelligence": {"document"},
 }

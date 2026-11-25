@@ -155,7 +155,7 @@ function Attention({ items, total }: { items: Priority[]; total: number }) {
   );
 }
 
-type Opener = (agent: AssistAgent, ctx: AssistContext) => void;
+type Opener = (agent: AssistAgent, ctx: AssistContext, ask?: string) => void;
 
 /** The role's primary agent: identity, real availability, verified capabilities, direct conversation entry. */
 function Companion({ primary, agents, patients, open, live, featureOn }: {
@@ -177,10 +177,13 @@ function Companion({ primary, agents, patients, open, live, featureOn }: {
   const caps = [...prof.helps, ...(a.capabilities.proposals.length ? prof.approval.map((x) => `Proposes: ${x}`) : []),
     ...(a.capabilities.confirm.length ? prof.confirm.map((x) => `Prepares for you to confirm: ${x}`) : [])].slice(0, 5);
   const readOnly = !a.capabilities.proposals.length && !a.capabilities.confirm.length;
-  const needsPatient = !a.contexts.includes("workspace");
+  const general = a.contexts.includes("workspace");
+  const patientCtx = a.contexts.includes("patient");
   const choices = [...patients, ...(search.data?.items ?? []).map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name} (${p.mrn})` }))]
     .filter((p, i, arr) => arr.findIndex((x) => x.id === p.id) === i);
+  const chosen = choices.find((p) => p.id === pid);
   const recent = (history.data ?? []).filter((h) => h.status === "active").slice(0, 3);
+  const prompts = (a.prompts.workspace ?? []).slice(0, 3);
   return (
     <Card className="overflow-hidden border-0 bg-gradient-to-b from-brand-navy to-indigo-950 text-white shadow-lg" data-testid="ai-companion" data-agent={primary}>
       <div className="flex items-center gap-2 px-4 pt-4 text-table font-medium text-white/75"><Sparkles className="size-4 text-cyan-300" aria-hidden />Your AI agent · HMS Intelligence</div>
@@ -198,27 +201,43 @@ function Companion({ primary, agents, patients, open, live, featureOn }: {
         <ul className="mt-1.5 space-y-1 text-table text-white/85">{caps.map((c) => <li key={c} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-cyan-300" aria-hidden />{c}</li>)}</ul>
         {!readOnly && <p className="mt-2 text-label text-white/60">Changes need your confirmation or a different authorized person's approval.</p>}
       </div>
-      <div className="space-y-2 p-4">
-        {needsPatient && usable && (
-          <div className="space-y-1.5">
+      <div className="space-y-2.5 p-4">
+        {general && (
+          <>
+            <Button className="w-full justify-between bg-white text-brand-navy hover:bg-white/90" disabled={!usable} data-testid="companion-ask"
+              onClick={() => open(a, { type: "workspace" })}>
+              <span className="flex min-w-0 items-center gap-2 truncate"><MessageSquare />Chat with {a.name}</span>
+              <span className="rounded bg-brand-navy/10 px-1.5 py-0.5 text-label font-medium">General</span>
+            </Button>
+            {usable && !!prompts.length && (
+              <div className="flex flex-wrap gap-1.5" data-testid="companion-prompts">
+                {prompts.map((p) => <button key={p} type="button" onClick={() => open(a, { type: "workspace" }, p)} className="rounded-full border border-white/20 bg-white/5 px-2.5 py-1 text-label text-white/85 hover:bg-white/15">{p}</button>)}
+              </div>
+            )}
+          </>
+        )}
+        {patientCtx && usable && (
+          <div className="space-y-1.5 rounded-lg border border-white/15 bg-white/5 p-2.5" data-testid="companion-patient-context">
+            <p className="text-label font-semibold uppercase tracking-wider text-white/60">Optional · patient context</p>
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a patient (name or MRN)…" aria-label={`Find a patient for ${a.name}`} className="h-8 border-white/20 bg-white/10 text-white placeholder:text-white/50" />
             <select value={pid} onChange={(e) => setPid(e.target.value)} aria-label="Patient" className="h-8 w-full rounded-md border border-white/20 bg-white/10 px-2 text-table text-white" data-testid="companion-patient">
               <option value="" className="text-foreground">Choose a patient…</option>
               {choices.map((p) => <option key={p.id} value={p.id} className="text-foreground">{p.name}</option>)}
             </select>
+            <Button size="sm" variant="outline" className="w-full justify-between border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white" disabled={!pid}
+              data-testid="companion-ask-patient" onClick={() => open(a, { type: "patient", id: pid })}>
+              <span className="truncate">Ask about {chosen ? chosen.name.split(" (")[0] : "this patient"}</span><ArrowRight />
+            </Button>
+            <p className="text-label text-white/55">Answers then come only from that chart, with sources. Access is checked on every message.</p>
           </div>
         )}
-        <Button className="w-full justify-between bg-white text-brand-navy hover:bg-white/90" disabled={!usable || (needsPatient && !pid)} data-testid="companion-ask"
-          onClick={() => open(a, needsPatient ? { type: "patient", id: pid } : { type: "workspace" })}>
-          <span className="flex min-w-0 items-center gap-2 truncate"><MessageSquare />Ask {a.name}{needsPatient && pid ? ` about ${choices.find((p) => p.id === pid)?.name.split(" (")[0] ?? "this patient"}` : ""}</span><ArrowRight />
-        </Button>
         {!!recent.length && (
           <div className="rounded-lg bg-white/5 px-3 py-2" data-testid="companion-history">
             <p className="text-label font-semibold uppercase tracking-wider text-white/60">Continue a conversation</p>
             <ul className="mt-1 space-y-0.5">{recent.map((h) => (
               <li key={h.id}><button type="button" className="w-full truncate text-left text-table text-white/85 hover:text-white hover:underline"
                 onClick={() => open(a, { type: h.context_type as AssistContext["type"], id: h.context_id })}>
-                {h.context_label ?? "Your workspace"} · {ago(h.last_message_at)}</button></li>))}</ul>
+                <span className="mr-1 rounded bg-white/10 px-1 text-label">{h.context_type === "workspace" ? "General" : "Patient"}</span>{h.context_type === "workspace" ? "General conversation" : h.context_label} · {ago(h.last_message_at)}</button></li>))}</ul>
           </div>
         )}
       </div>
@@ -279,7 +298,7 @@ export function RoleHome() {
   const q = useQuery({ queryKey: ["home"], queryFn: () => get<HomeData>("/home"), refetchInterval: 60_000 });
   const ag = useAssistAgents();
   const provider = useQuery({ queryKey: ["ai", "provider"], queryFn: () => get<{ live: boolean }>("/ai/provider"), enabled: can("ai:use"), staleTime: 5 * 60_000 });
-  const [sheet, setSheet] = React.useState<{ agent: AssistAgent; ctx: AssistContext } | null>(null);
+  const [sheet, setSheet] = React.useState<{ agent: AssistAgent; ctx: AssistContext; ask?: string } | null>(null);
   const d = q.data;
   const dash = d?.dashboard;
   const tz = dash?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -291,7 +310,7 @@ export function RoleHome() {
     for (const s of [dash?.queue, dash?.extra]) for (const i of s?.items ?? []) if (i.patient_id && !out.some((p) => p.id === i.patient_id)) out.push({ id: i.patient_id, name: i.title });
     return out.slice(0, 12);
   }, [dash]);
-  const open: Opener = (agent, ctx) => setSheet({ agent, ctx });
+  const open: Opener = (agent, ctx, ask) => setSheet({ agent, ctx, ask });
   const totalWork = d ? d.counts.cases + d.counts.tasks + d.counts.approvals + d.counts.critical_results : 0;
   const date = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", timeZone: tz });
   const id = d?.identity;
@@ -372,7 +391,7 @@ export function RoleHome() {
           {dash && <Team keys={dash.agents.secondary} agents={agents} open={open} />}
         </aside>
       </div>
-      {sheet && <HMSAssistSheet agent={sheet.agent} context={sheet.ctx} open onOpenChange={(o) => !o && setSheet(null)} />}
+      {sheet && <HMSAssistSheet key={`${sheet.agent.key}:${sheet.ctx.type}:${sheet.ctx.id ?? ""}`} agent={sheet.agent} context={sheet.ctx} open autoAsk={sheet.ask} askAlways onOpenChange={(o) => !o && setSheet(null)} />}
     </div>
   );
 }

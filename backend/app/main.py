@@ -51,6 +51,7 @@ from app.api.routers import (
     scheduling,
     scribe,
     telehealth,
+    visits,
     workspace,
 )
 from app.core.config import settings
@@ -97,6 +98,7 @@ app.add_middleware(
 @app.middleware("http")
 async def request_context(request: Request, call_next):
     rid = request.headers.get("x-request-id") or uuid.uuid4().hex[:16]
+    request.state.request_id = rid
     start = time.perf_counter()
     bucket = rate_limit_bucket(request.url.path) if settings.rate_limit_enabled and request.method == "POST" else None
     if bucket:
@@ -142,6 +144,17 @@ async def integrity_handler(request: Request, exc: IntegrityError):
     return JSONResponse(status_code=409, content={"detail": msg})
 
 
+@app.exception_handler(Exception)
+async def unhandled_error(request: Request, exc: Exception):
+    """Any unexpected failure still returns the API's JSON error shape (never a plain-text page) with a request id the
+    operator can find in the logs; internal details are logged, not returned."""
+    rid = getattr(request.state, "request_id", None)
+    log.exception("unhandled error", extra={"path": request.url.path, "request_id": rid})
+    return JSONResponse(status_code=500, content={"detail": {"code": "internal_error", "request_id": rid,
+                                                             "message": "Something went wrong on the server. Nothing was changed. "
+                                                                        "Try again; if it keeps happening, report reference " + str(rid or "-") + "."}})
+
+
 @app.get("/api/metrics", include_in_schema=False)
 async def prometheus_metrics(request: Request):
     """Prometheus scrape endpoint. Restrict at the network layer (internal only) in production."""
@@ -150,7 +163,7 @@ async def prometheus_metrics(request: Request):
     return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
 
 
-ROUTERS = [health, auth, assist, mar, ordersets, nursing_docs, admin, facilities, home, live, operations, insurance, command, adt, inpatient_care, ed, ai_admin, pharmacy, lab, radiology, revenue, or_roster, portal_ext, equipment, agents, insights, patients, scheduling, clinical, workspace, documents, scribe, orders, portal, messages,
+ROUTERS = [health, auth, assist, visits, mar, ordersets, nursing_docs, admin, facilities, home, live, operations, insurance, command, adt, inpatient_care, ed, ai_admin, pharmacy, lab, radiology, revenue, or_roster, portal_ext, equipment, agents, insights, patients, scheduling, clinical, workspace, documents, scribe, orders, portal, messages,
            telehealth, billing, ai, analytics]
 
 # Versioned API (documented). The unversioned /api prefix remains as a hidden compatibility alias so existing

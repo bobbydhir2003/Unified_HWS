@@ -57,7 +57,9 @@ PROFILES: dict[str, dict] = {
     "doctor_assistant": {
         "department": "Patient chart", "default_role": None,
         "prompts": {"patient": ["Summarize this patient's history", "List current medications", "What allergies are recorded?",
-                                "What happened at the last visit?", "Show recent lab results"]},
+                                "What happened at the last visit?", "Show recent lab results"],
+                    "workspace": ["What can you help me with?", "What appointments do I have today?", "How can I find my unfinished encounters?",
+                                  "Explain the difference between a draft and a signed note"]},
         "never": ["Diagnose, prescribe or order", "Sign or change documentation", "Use information outside this chart"],
     },
     "medical_scribe": {
