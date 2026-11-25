@@ -218,6 +218,10 @@ class ApprovalRequest(UUIDPk, Timestamps, OrgScoped, Base):
     facility_id: Mapped[uuid.UUID | None] = fk("clinics.id", nullable=True, ondelete="SET NULL", index=False)
     requested_by_user_id: Mapped[uuid.UUID | None] = fk("users.id", nullable=True, ondelete="SET NULL", index=False)
     requested_by_agent: Mapped[str | None] = mapped_column(String(60))
+    # HMS Assist provenance: the conversation/turn that produced an agent proposal, and a dedupe key (one pending per key).
+    conversation_id: Mapped[uuid.UUID | None] = fk("assist_conversations.id", nullable=True, ondelete="SET NULL", index=False)
+    agent_run_id: Mapped[uuid.UUID | None] = fk("agent_runs.id", nullable=True, ondelete="SET NULL", index=False)
+    dedupe_key: Mapped[str | None] = mapped_column(String(200))
     required_permission: Mapped[str] = mapped_column(String(40))
     payload: Mapped[dict] = mapped_column(JSONB, default=dict)
     status: Mapped[str] = mapped_column(String(10), default="pending")
@@ -231,5 +235,7 @@ class ApprovalRequest(UUIDPk, Timestamps, OrgScoped, Base):
     __table_args__ = (
         CheckConstraint("status in ('pending','approved','rejected','executed','failed','expired')", name="status"),
         Index("ix_approvals_org_status", "organization_id", "status", "created_at"),
+        Index("uq_approvals_pending_dedupe", "organization_id", "dedupe_key", unique=True,
+              postgresql_where=text("status = 'pending' AND dedupe_key IS NOT NULL")),
     )
 

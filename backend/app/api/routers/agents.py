@@ -19,8 +19,25 @@ from app.models import AgentConfig, AgentConfigVersion, AgentRun, AIFeedback, AI
 router = APIRouter(tags=["agents"])
 
 
+def _monitors_for(ctx, key: str) -> list[dict]:
+    import app.monitors  # noqa: F401
+    from app.agents.case_assist import RULES, ai_enabled_for
+    from app.engine.monitors import REGISTRY
+    return [{"monitor": k, "name": REGISTRY[k].name if k in REGISTRY else k, "trigger": r["trigger"], "actions": r["actions"],
+             "enabled": ai_enabled_for(ctx.db, ctx.org_id, k)} for k, r in RULES.items() if r["agent"] == key]
+
+
 def cfg_out(c, ctx) -> dict:
-    out = {"key": c.key, "name": c.name, "purpose": c.purpose, "instructions": c.instructions, "allowed_tools": c.allowed_tools, "model": c.model,
+    from app.agents.context import AGENT_CONTEXTS
+    from app.agents.profiles import PROFILES
+
+    kinds = {"read": [], "propose": [], "prepare": []}
+    for t in c.allowed_tools or []:
+        if t in T.REGISTRY:
+            kinds[T.REGISTRY[t].kind].append(t)
+    out = {"key": c.key, "display_name": R.display_name(c.key, c.name), "department": PROFILES.get(c.key, {}).get("department"),
+           "contexts": sorted(AGENT_CONTEXTS.get(c.key, set())), "tool_kinds": kinds, "monitors": _monitors_for(ctx, c.key),
+           "never": PROFILES.get(c.key, {}).get("never", []), "name": c.name, "purpose": c.purpose, "instructions": c.instructions, "allowed_tools": c.allowed_tools, "model": c.model,
             "trigger": c.trigger, "required_permission": c.required_permission, "max_tool_calls": c.max_tool_calls, "timeout_seconds": c.timeout_seconds,
             "max_cost_usd": c.max_cost_usd, "enabled": c.enabled, "facility_overrides": c.facility_overrides, "version": c.version,
             "can_run": c.trigger != "feature" and ctx.can(c.required_permission) and c.enabled}
@@ -93,7 +110,9 @@ def run_out(r: AgentRun) -> dict:
     return {"id": r.id, "agent_key": r.agent_key, "agent_version": r.agent_version, "mode": r.mode, "model": r.model, "status": r.status, "input": r.input,
             "output": r.output, "tool_calls": r.tool_calls, "approvals": r.approvals, "input_tokens": r.input_tokens, "output_tokens": r.output_tokens,
             "cost_usd": float(r.cost_usd) if r.cost_usd is not None else None, "latency_ms": r.latency_ms, "error": r.error, "started_at": r.started_at,
-            "user_id": r.user_id, "trigger": r.trigger, "ai_source": r.ai_source, "subject_type": r.subject_type, "subject_id": r.subject_id}
+            "user_id": r.user_id, "trigger": r.trigger, "ai_source": r.ai_source, "subject_type": r.subject_type, "subject_id": r.subject_id,
+            "conversation_id": r.conversation_id, "context_type": r.context_type, "context_id": r.context_id, "facility_id": r.facility_id,
+            "finished_at": r.finished_at}
 
 
 @router.post("/agents/{key}/run")
@@ -119,7 +138,12 @@ def runs(agent: str | None = None, status: str | None = None, ctx: TenantContext
         q = q.where(AgentRun.agent_key == agent)
     if status:
         q = q.where(AgentRun.status == status)
-    return [run_out(r) for r in ctx.db.scalars(q.order_by(AgentRun.started_at.desc()).limit(100))]
+    rows = list(ctx.db.scalars(q.order_by(AgentRun.started_at.desc()).limit(100)))
+    from app.models import User
+
+    ids = {r.user_id for r in rows if r.user_id}
+    names = {u.id: u.display_name for u in ctx.db.scalars(select(User).where(User.id.in_(ids)))} if ids else {}
+    return [{**run_out(r), "user_name": names.get(r.user_id) if r.user_id else "Automation"} for r in rows]
 
 
 @router.post("/agents/runs/{rid}/retry")

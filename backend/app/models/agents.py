@@ -64,6 +64,9 @@ class AgentRun(UUIDPk, OrgScoped, Base):
     subject_type: Mapped[str | None] = mapped_column(String(40))
     subject_id: Mapped[str | None] = mapped_column(String(64))
     patient_id: Mapped[uuid.UUID | None] = mapped_column(index=True)
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(index=True)
+    context_type: Mapped[str | None] = mapped_column(String(30))
+    context_id: Mapped[str | None] = mapped_column(String(80))
     input: Mapped[str | None] = mapped_column(Text)
     mode: Mapped[str] = mapped_column(String(12))  # openai | rule_based
     trigger: Mapped[str] = mapped_column(String(30), default="manual", server_default="manual")  # manual | case_open | case_escalation

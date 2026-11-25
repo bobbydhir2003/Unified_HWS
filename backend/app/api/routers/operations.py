@@ -121,7 +121,10 @@ class ApprovalOut(ORM):
     result: dict
     error: str | None
     created_at: datetime
+    facility_id: uuid.UUID | None = None
+    conversation_id: uuid.UUID | None = None
     can_decide: bool = False
+    can_retry: bool = False
 
 
 class CaseDetail(BaseModel):
@@ -407,6 +410,7 @@ def _other_approvals(ctx: TenantContext) -> list[dict]:
 def _approval_out(ctx: TenantContext, a: ApprovalRequest) -> ApprovalOut:
     o = ApprovalOut.model_validate(a)
     o.can_decide = a.status == "pending" and ctx.can(a.required_permission) and a.requested_by_user_id != ctx.user.id
+    o.can_retry = a.status == "failed" and ctx.can(a.required_permission) and a.requested_by_user_id != ctx.user.id
     return o
 
 
@@ -419,6 +423,8 @@ def list_approvals(status: Literal["pending", "decided", "all"] = "pending", ctx
         q = q.where(ApprovalRequest.status != "pending")
     if ctx.facility_ids is not None:
         q = q.where(or_(ApprovalRequest.facility_id.is_(None), ApprovalRequest.facility_id.in_(ctx.facility_ids)))
+    # Restricted (VIP) charts never leak through approval queues either.
+    q = q.outerjoin(Patient, Patient.id == ApprovalRequest.patient_id).where(or_(Patient.id.is_(None), Patient.is_restricted.is_(False)))
     rows = ctx.db.scalars(q.order_by(ApprovalRequest.created_at.desc()).limit(200)).all()
     return [_approval_out(ctx, a) for a in rows if a.status != "pending" or ctx.can(a.required_permission) or status != "pending"]
 
@@ -430,12 +436,37 @@ class DecideIn(BaseModel):
 
 @router.post("/approvals/{aid}/decide", response_model=ApprovalOut)
 def decide_approval(aid: uuid.UUID, body: DecideIn, ctx: TenantContext = Depends(require(P.CASES_WORK))):
-    a = ctx.db.get(ApprovalRequest, aid)
-    if not a or a.organization_id != ctx.org_id:
-        raise not_found("Approval request")
-    ctx.require_facility(a.facility_id)
+    a = _approval_for(ctx, aid)
     try:
         A.decide(ctx.db, a, approve=body.approve, actor_id=ctx.user.id, actor_permissions=ctx.permissions, note=body.note)
+    except A.ApprovalError as e:
+        ctx.db.rollback()
+        raise bad_request(str(e)) from None
+    ctx.db.commit()
+    return _approval_out(ctx, a)
+
+
+def _approval_for(ctx: TenantContext, aid: uuid.UUID) -> ApprovalRequest:
+    a = ctx.db.get(ApprovalRequest, aid)
+    if not a or a.organization_id != ctx.org_id or not ctx.facility_allowed(a.facility_id):
+        raise not_found("Approval request")
+    if a.patient_id:
+        p = ctx.db.get(Patient, a.patient_id)
+        if p and p.is_restricted:
+            raise not_found("Approval request")
+    return a
+
+
+@router.get("/approvals/{aid}", response_model=ApprovalOut)
+def get_approval(aid: uuid.UUID, ctx: TenantContext = Depends(require(P.CASES_READ))):
+    return _approval_out(ctx, _approval_for(ctx, aid))
+
+
+@router.post("/approvals/{aid}/retry", response_model=ApprovalOut)
+def retry_approval(aid: uuid.UUID, ctx: TenantContext = Depends(require(P.CASES_WORK))):
+    a = _approval_for(ctx, aid)
+    try:
+        A.retry(ctx.db, a, actor_id=ctx.user.id, actor_permissions=ctx.permissions)
     except A.ApprovalError as e:
         ctx.db.rollback()
         raise bad_request(str(e)) from None
@@ -456,6 +487,7 @@ class MonitorOut(BaseModel):
     version: int
     open_cases: int
     last_run: dict | None
+    ai_assist: dict | None = None  # {"available", "enabled", "agent", "trigger", "actions", "safety_rule_only"}
 
 
 @router.get("/monitors", response_model=list[MonitorOut])
@@ -464,21 +496,31 @@ def list_monitors(ctx: TenantContext = Depends(require(P.CASES_READ))):
 
     counts = dict(ctx.db.execute(select(Case.rule_key, func.count()).where(Case.organization_id == ctx.org_id, Case.status.in_(CASE_OPEN))
                                  .group_by(Case.rule_key)).all())
+    from app.agents.case_assist import RULES as AI_RULES
+    from app.agents.case_assist import SAFETY_RULE_ONLY, ai_enabled_for
+
     out = []
     for key, m in REGISTRY.items():
         enabled, cfg, version = get_config(ctx.db, ctx.org_id, key)
+        rule = AI_RULES.get(key)
+        ai = {"available": bool(rule) and key not in SAFETY_RULE_ONLY, "enabled": ai_enabled_for(ctx.db, ctx.org_id, key),
+              "agent": rule["agent"] if rule else None, "trigger": rule["trigger"] if rule else None,
+              "actions": rule["actions"] if rule else [], "safety_rule_only": key in SAFETY_RULE_ONLY}
+        cfg = {k: v for k, v in cfg.items() if k != "ai_assist"}
         last = ctx.db.scalar(select(MonitorRun).where(MonitorRun.organization_id == ctx.org_id, MonitorRun.monitor_key == key)
                              .order_by(MonitorRun.started_at.desc()).limit(1))
         out.append(MonitorOut(key=key, name=m.name, description=m.description, category=m.category, is_enabled=enabled, config=cfg,
                               config_help=m.config_help, version=version, open_cases=counts.get(key, 0),
                               last_run={"at": last.started_at, "status": last.status, "found": last.found, "opened": last.opened,
-                                        "closed": last.closed, "duration_ms": last.duration_ms, "error": last.error} if last else None))
+                                        "closed": last.closed, "duration_ms": last.duration_ms, "error": last.error} if last else None,
+                              ai_assist=ai))
     return out
 
 
 class MonitorPatch(BaseModel):
     is_enabled: bool | None = None
     config: dict | None = None
+    ai_assist: bool | None = None  # per-monitor AI assistance switch (only monitors with an AI rule; never safety-critical ones)
 
 
 @router.patch("/monitors/{key}", response_model=MonitorOut)
@@ -488,6 +530,14 @@ def update_monitor(key: str, body: MonitorPatch, ctx: TenantContext = Depends(re
     m = REGISTRY.get(key)
     if not m:
         raise not_found("Monitor")
+    if body.ai_assist is not None:
+        from app.agents.case_assist import RULES as AI_RULES
+        from app.agents.case_assist import SAFETY_RULE_ONLY
+
+        if key in SAFETY_RULE_ONLY:
+            raise bad_request("This safety-critical monitor stays rule-based; AI assistance can't be enabled for it.")
+        if key not in AI_RULES:
+            raise bad_request("This monitor has no AI assistance rule.")
     if body.config:
         unknown = set(body.config) - set(m.default_config)
         if unknown:
@@ -504,9 +554,11 @@ def update_monitor(key: str, body: MonitorPatch, ctx: TenantContext = Depends(re
         row.is_enabled = body.is_enabled
     if body.config:
         row.config = {**(row.config or {}), **body.config}
+    if body.ai_assist is not None:
+        row.config = {**(row.config or {}), "ai_assist": body.ai_assist}
     row.version, row.updated_by_id = (row.version or 0) + 1, ctx.user.id
     ctx.audit("monitor.configured", resource_type="monitor", resource_id=key,
-              details={"enabled": row.is_enabled, "config": row.config, "version": row.version})
+              details={"enabled": row.is_enabled, "config": row.config, "version": row.version, "ai_assist": body.ai_assist})
     ctx.db.commit()
     return next(x for x in list_monitors(ctx=ctx) if x.key == key)
 

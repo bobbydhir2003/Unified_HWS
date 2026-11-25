@@ -73,6 +73,19 @@ class Settings(BaseSettings):
     demo_ai_shared_max_requests_per_hour: int = 300  # all sessions together, when using DEMO_OPENAI_API_KEY
     demo_ai_disabled: bool = False                   # operator kill switch for ALL shared demo AI (owner-managed + env key)
     ai_auto_assist_daily_limit: int = 60             # automatic case-assist AI runs per organization per day
+    # Staff AI limits (live provider calls only; enforced BEFORE the call — app/ai/limits.py)
+    ai_user_daily_requests: int = 150                # per user per day, all assistants
+    ai_agent_daily_requests: int = 1500              # per organization per assistant per day
+    ai_org_daily_requests: int = 3000                # per organization per day (staff + automatic)
+    ai_org_monthly_budget_usd: float = 50.0          # estimated spend per organization per month (reserved before each call)
+    ai_user_concurrency: int = 2                     # simultaneous AI requests per user
+    ai_max_output_tokens: int = 2000                 # output ceiling per model call for staff assistants
+    # HMS Assist conversations: off | synthetic (only organizations flagged synthetic_data) | all
+    assist_conversations: Literal["off", "synthetic", "all"] = "synthetic"
+    assist_retention_days: int = 90                  # message content is redacted after this (metadata kept)
+    assist_history_messages: int = 8                 # prior messages sent to the model per turn (bounded tokens)
+    assist_auto_actions: bool = False                # policy auto-execution of low-risk internal actions (off by default)
+    approval_expiry_days: int = 7                    # pending agent proposals expire after this
     ai_realtime_max_seconds: int = 300               # staff voice sessions end after this (client timer + short-lived secret)
     rls_enabled: bool = True
     credentials_encryption_key: str | None = None  # Fernet key for stored secrets (AI keys); required in production

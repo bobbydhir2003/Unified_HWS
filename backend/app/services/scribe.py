@@ -59,9 +59,21 @@ def _phi(db: Session, org_id) -> bool:
     return contains_phi(db, org_id)
 
 
+def _disabled(db: Session, s: ScribeSession) -> str | None:
+    """Background re-validation of the assistant's enabled state (Agent Studio) before any AI work."""
+    from app.agents.runner import is_enabled
+
+    ok, why = is_enabled(db, s.organization_id, "medical_scribe")
+    return None if ok else why
+
+
 def transcribe(db: Session, session_id: uuid.UUID) -> None:
     s = db.get(ScribeSession, session_id)
     if not s or s.status != "transcribing" or not s.audio_storage_key:
+        return
+    if (why := _disabled(db, s)):
+        s.status, s.error = "failed", why
+        db.commit()
         return
     t = get_transcriber()
     job = _job(db, s, "scribe_transcription", t.name)
@@ -83,6 +95,10 @@ def transcribe(db: Session, session_id: uuid.UUID) -> None:
 def draft(db: Session, session_id: uuid.UUID) -> None:
     s = db.get(ScribeSession, session_id)
     if not s or s.status != "drafting" or not s.transcript:
+        return
+    if (why := _disabled(db, s)):
+        s.status, s.error = "failed", why
+        db.commit()
         return
     enc = db.get(Encounter, s.encounter_id)
     d = get_drafter()

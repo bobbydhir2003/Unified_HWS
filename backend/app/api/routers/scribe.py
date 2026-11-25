@@ -61,6 +61,17 @@ class ScribeOut(BaseModel):
     created_at: datetime
 
 
+def _require_enabled(ctx: TenantContext) -> None:
+    """HMS Assist · Scribe honors its Agent Studio on/off switch (applying an existing draft stays available)."""
+    from fastapi import HTTPException
+
+    from app.agents.runner import is_enabled
+
+    ok, why = is_enabled(ctx.db, ctx.org_id, "medical_scribe")
+    if not ok:
+        raise HTTPException(403, {"code": "agent_disabled", "message": why})
+
+
 def _encounter(ctx: TenantContext, encounter_id: uuid.UUID) -> Encounter:
     e = ctx.db.get(Encounter, encounter_id)
     if not e or e.organization_id != ctx.org_id:
@@ -101,6 +112,7 @@ def current_session(encounter_id: uuid.UUID, ctx: TenantContext = Depends(requir
 
 @router.post("/encounters/{encounter_id}/scribe", response_model=ScribeOut, status_code=201)
 def start_session(encounter_id: uuid.UUID, body: StartIn, ctx: TenantContext = Depends(require(*SCRIBE_PERMS))):
+    _require_enabled(ctx)
     e = _encounter(ctx, encounter_id)
     if e.status != "in_progress":
         raise bad_request("The scribe can only be used during an open visit")
@@ -123,6 +135,7 @@ def start_session(encounter_id: uuid.UUID, body: StartIn, ctx: TenantContext = D
 @router.post("/scribe/{sid}/audio", response_model=ScribeOut)
 async def upload_audio(sid: uuid.UUID, file: UploadFile = File(...), seconds: int = Form(0),
                        ctx: TenantContext = Depends(require(*SCRIBE_PERMS))):
+    _require_enabled(ctx)
     s, _ = _session(ctx, sid)
     if s.status not in ("recording", "failed"):
         raise bad_request("Audio can only be added before transcription")
@@ -148,6 +161,7 @@ async def upload_audio(sid: uuid.UUID, file: UploadFile = File(...), seconds: in
 
 @router.post("/scribe/{sid}/transcript", response_model=ScribeOut)
 def set_transcript(sid: uuid.UUID, body: TranscriptIn, ctx: TenantContext = Depends(require(*SCRIBE_PERMS))):
+    _require_enabled(ctx)
     """Typed/pasted conversation, or clinician corrections to a transcript. Triggers a fresh draft."""
     s, _ = _session(ctx, sid)
     if s.status in ("transcribing", "drafting"):
@@ -166,6 +180,7 @@ def set_transcript(sid: uuid.UUID, body: TranscriptIn, ctx: TenantContext = Depe
 
 @router.post("/scribe/{sid}/demo", response_model=ScribeOut)
 def use_demo(sid: uuid.UUID, ctx: TenantContext = Depends(require(*SCRIBE_PERMS))):
+    _require_enabled(ctx)
     s, e = _session(ctx, sid)
     org = ctx.db.get(Organization, ctx.org_id)
     if not (org.settings or {}).get("synthetic_data"):
@@ -181,6 +196,7 @@ def use_demo(sid: uuid.UUID, ctx: TenantContext = Depends(require(*SCRIBE_PERMS)
 
 @router.post("/scribe/{sid}/regenerate", response_model=ScribeOut)
 def regenerate(sid: uuid.UUID, ctx: TenantContext = Depends(require(*SCRIBE_PERMS))):
+    _require_enabled(ctx)
     s, _ = _session(ctx, sid)
     if not s.transcript or s.status in ("transcribing", "drafting"):
         raise bad_request("Nothing to regenerate yet")

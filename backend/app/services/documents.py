@@ -172,6 +172,14 @@ def process_document(db: Session, doc_id: uuid.UUID) -> None:
         job = AIJob(organization_id=doc.organization_id, kind="document_analysis", provider=active_provider(),
                     subject_type="document", subject_id=doc.id)
         db.add(job)
+    from app.agents.runner import is_enabled
+
+    ok, why = is_enabled(db, doc.organization_id, "document_intelligence")
+    if not ok:  # assistant turned off: no AI extraction; the document waits for fully manual staff review
+        job.status, job.error, job.finished_at = "failed", "assistant disabled", now()
+        doc.status, doc.processing_error = "needs_review", f"{why} Review and enter the details manually."
+        db.commit()
+        return
     job.status = "running"
     doc.status, doc.processing_error = "processing", None
     db.commit()

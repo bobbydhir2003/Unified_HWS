@@ -35,6 +35,30 @@ router = APIRouter(tags=["ai"])
 
 # ======================= Chart assistant =======================
 
+def answer_with_limits(ctx, question: str, sources, history):
+    """Chart Q&A through the configured assistant; a LIVE provider call passes staff AI limits first (app/ai/limits.py)."""
+    from app.ai import limits
+    from app.ai.policy import contains_phi
+    from app.ai.provider import AIPolicyError
+
+    assistant = get_assistant()
+    if assistant.name in ("simulated",):
+        return assistant.answer(question, sources, history, contains_phi=contains_phi(ctx.db, ctx.org_id))
+    try:
+        adm = limits.admit(ctx.org_id, ctx.user.id, "doctor_assistant", reserve_usd=0.05)
+    except limits.LimitError as e:
+        raise HTTPException(429, str(e)) from None
+    try:
+        a = assistant.answer(question, sources, history, contains_phi=contains_phi(ctx.db, ctx.org_id))
+        adm.settle(getattr(a, "cost_usd", None), a.input_tokens, a.output_tokens)
+        return a
+    except AIPolicyError:
+        adm.refund()
+        raise
+    finally:
+        adm.release()
+
+
 class AskIn(BaseModel):
     question: str = Field(min_length=2, max_length=1000)
     history: list[dict] = Field(default_factory=list, max_length=12)
@@ -43,6 +67,11 @@ class AskIn(BaseModel):
 @router.post("/patients/{patient_id}/assistant")
 def ask_chart(patient_id: uuid.UUID, body: AskIn, ctx: TenantContext = Depends(require(P.AI_USE, P.CLINICAL_READ))):
     p = get_patient(ctx, patient_id, P.CLINICAL_READ)  # restricted charts, tenant and role checks apply first
+    from app.agents.runner import is_enabled
+
+    ok, why = is_enabled(ctx.db, ctx.org_id, "doctor_assistant")
+    if not ok:
+        raise HTTPException(403, {"code": "agent_disabled", "message": why})
     job = AIJob(organization_id=ctx.org_id, kind="chart_qa", provider=active_provider(), subject_type="patient", subject_id=p.id,
                 patient_id=p.id, status="running", created_by_id=ctx.user.id)
     ctx.db.add(job)
@@ -54,9 +83,8 @@ def ask_chart(patient_id: uuid.UUID, body: AskIn, ctx: TenantContext = Depends(r
         return {"answer": refused_text, "citations": [], "refused": True, "insufficient": False, "provider": "policy"}
     sources = build_sources(ctx.db, p)
     try:
-        from app.ai.policy import contains_phi
 
-        a = get_assistant().answer(body.question, sources, body.history, contains_phi=contains_phi(ctx.db, ctx.org_id))
+        a = answer_with_limits(ctx, body.question, sources, body.history)
     except AIError as e:
         job.status, job.error, job.finished_at = "failed", str(e), now()
         ctx.db.commit()

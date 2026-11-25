@@ -59,6 +59,63 @@ RULES: dict[str, dict] = {
                               "brief": "Escalated staffing gap. Suggest a task for a manager to review options. Never change "
                                        "assignments — managers decide."},
 }
+# Monitors integrated later (Phase 6). Available per monitor but OFF until an administrator enables them.
+RULES.update({
+    "pharmacy.unusual_usage": {"agent": "pharmacy_watchdog", "trigger": "case_open", "actions": ["create_task"], "roles": ["pharmacist"],
+                               "default": False,
+                               "brief": "Unusual consumption of a medication. Suggest a review task for a pharmacist (reconcile counts, check "
+                                        "for diversion signals per policy). Never accuse anyone; never change stock."},
+    "adt.pending_admission": {"agent": "hospital_operations", "trigger": "case_escalation", "actions": ["create_task"],
+                              "roles": ["bed_manager", "hospital_admin"], "default": False,
+                              "brief": "Escalated: an admitted patient is still waiting for a bed. Suggest a bed-management task. Never "
+                                       "assign beds or move patients."},
+    "beds.cleaning_delay": {"agent": "hospital_operations", "trigger": "case_escalation", "actions": ["create_task"],
+                            "roles": ["bed_manager", "hospital_admin"], "default": False,
+                            "brief": "Escalated: a bed is waiting for cleaning. Suggest a follow-up task for bed management / EVS. Never "
+                                     "change bed status."},
+    "ed.boarding": {"agent": "hospital_operations", "trigger": "case_escalation", "actions": ["create_task"],
+                    "roles": ["bed_manager", "hospital_admin"], "default": False,
+                    "brief": "Escalated: an ED patient admitted but boarding. Suggest an operational task (bed placement review). The "
+                             "clinical team keeps all clinical decisions."},
+    "billing.prior_auth_required": {"agent": "claims_review", "trigger": "case_open", "actions": ["create_task"],
+                                    "roles": ["billing", "insurance_specialist"], "default": False,
+                                    "brief": "A service needs prior authorization. Suggest a task to start or chase the authorization. Never "
+                                             "submit anything to a payer."},
+    "billing.prior_auth_expiring": {"agent": "claims_review", "trigger": "case_open", "actions": ["create_task"],
+                                    "roles": ["billing", "insurance_specialist"], "default": False,
+                                    "brief": "A prior authorization expires before the service. Suggest a renewal/extension task. Never "
+                                             "submit anything to a payer."},
+    "journey.follow_up_not_booked": {"agent": "patient_communication", "trigger": "case_open", "actions": ["create_task", "patient_message"],
+                                     "roles": ["receptionist"], "default": False,
+                                     "brief": "A planned follow-up visit is not booked. Suggest a scheduling task or a short administrative "
+                                              "portal reminder. No clinical advice, no urgency claims."},
+})
+# Safety-critical monitors stay strictly rule-based: AI is never in (or enabled for) their path.
+SAFETY_RULE_ONLY = {"lab.critical_unacknowledged", "radiology.critical_unacknowledged", "ed.door_to_provider"}
+
+
+def ai_enabled_for(db: Session, org_id: uuid.UUID, rule_key: str) -> bool:
+    """Per-monitor AI switch (MonitorConfig.config['ai_assist']; default from RULES). Safety-critical monitors: always False."""
+    rule = RULES.get(rule_key)
+    if not rule or rule_key in SAFETY_RULE_ONLY:
+        return False
+    from app.models import MonitorConfig
+
+    row = db.scalar(select(MonitorConfig).where(MonitorConfig.organization_id == org_id, MonitorConfig.monitor_key == rule_key,
+                                                MonitorConfig.facility_id.is_(None)))
+    v = (row.config or {}).get("ai_assist") if row else None
+    return bool(rule.get("default", True) if v is None else v)
+
+
+def _agent_ok(db: Session, org_id: uuid.UUID, agent: str, facility_id=None) -> tuple[object | None, str | None]:
+    from app.agents.runner import AgentError, load_policy
+
+    try:
+        return load_policy(db, org_id, agent, facility_id), None
+    except AgentError as e:
+        return None, str(e)
+
+
 MAX_PER_SWEEP = 4          # per organization per sweep — keeps cost and queue bounded
 OPEN_WINDOW = timedelta(hours=24)
 RETRY_AFTER = timedelta(minutes=30)
@@ -99,6 +156,8 @@ def _claim(db: Session, case_id: uuid.UUID, trigger: str) -> bool:
 def candidates(db: Session, org_id: uuid.UUID) -> list[tuple[uuid.UUID, str]]:
     out: list[tuple[uuid.UUID, str]] = []
     for key, rule in RULES.items():
+        if not ai_enabled_for(db, org_id, key) or _agent_ok(db, org_id, rule["agent"])[0] is None:
+            continue  # monitor AI off, or the assistant is disabled — no claim, no call
         q = select(Case.id, Case.data).where(Case.organization_id == org_id, Case.rule_key == key, Case.status.in_(CASE_OPEN))
         if rule["trigger"] == "case_open":
             q = q.where(Case.created_at > now() - OPEN_WINDOW)
@@ -182,11 +241,18 @@ def assist(db: Session, case_id: uuid.UUID, trigger: str) -> AgentRun | None:
         db.commit()
         return None
     agent = rule["agent"]
+    # Background re-validation: the monitor's AI switch and the assistant's enabled state are checked again at execution.
+    cfg, why = _agent_ok(db, case.organization_id, agent, case.facility_id)
+    if cfg is None or not ai_enabled_for(db, case.organization_id, case.rule_key):
+        _mark(db, case, status="disabled", error=(why or "AI assistance is turned off for this monitor")[:200])
+        db.commit()
+        return None
     eff, token, reason = _provider(db, case.organization_id, agent)
-    run = AgentRun(organization_id=case.organization_id, agent_key=agent, agent_version=1, facility_id=case.facility_id,
+    run = AgentRun(organization_id=case.organization_id, agent_key=agent, agent_version=cfg.version, facility_id=case.facility_id,
                    subject_type="case", subject_id=str(case.id), patient_id=case.patient_id, input=f"C{case.number} {case.title}"[:4000],
                    mode="openai" if eff else "rule_based", trigger=trigger, ai_source=ai_source(eff) if eff else "rules",
-                   model=eff.model_for(agent) if eff else "rules-v1", status="running")
+                   model=(cfg.model or eff.model_for(agent)) if eff else "rules-v1", status="running",
+                   context_type="case", context_id=f"C{case.number}")
     db.add(run)
     db.flush()
     start = time.perf_counter()
@@ -204,6 +270,12 @@ def assist(db: Session, case_id: uuid.UUID, trigger: str) -> AgentRun | None:
             return unavailable(reason)
         if not usage.take_request(f"auto:{case.organization_id}:day:{usage.day_key()}", settings.ai_auto_assist_daily_limit):
             return unavailable(f"today's automatic AI limit ({settings.ai_auto_assist_daily_limit}) is reached")
+        from app.ai import limits
+
+        reserve = float(cfg.max_cost_usd or 0.25)
+        if not usage.reserve_cost(limits.org_month_key(case.organization_id), reserve, settings.ai_org_monthly_budget_usd):
+            return unavailable(f"the organization's estimated monthly AI budget (${settings.ai_org_monthly_budget_usd:.2f}) is reached")
+        reserved = reserve
         with demo_scope.use(token, eff if token else None):
             s, meta = OpenAICore(cfg=eff).structured(
                 system=f"{INSTRUCTIONS}\n\nThis case kind: {rule['brief']}\nAllowed actions: {', '.join(['none', *rule['actions']])}. "
@@ -211,6 +283,8 @@ def assist(db: Session, case_id: uuid.UUID, trigger: str) -> AgentRun | None:
                 content=[{"type": "input_text", "text": f"<case>{_context(db, case)}</case>"}], schema=Suggestion,
                 contains_phi=contains_phi(db, case.organization_id), model=run.model, max_output_tokens=1200, name="case_suggestion")
         run.input_tokens, run.output_tokens, run.cost_usd, run.model = meta.input_tokens, meta.output_tokens, meta.cost_usd, meta.model
+        if meta.cost_usd is not None:
+            usage.adjust(limits.org_month_key(case.organization_id), cost_delta=meta.cost_usd - reserved)
         approval = _propose(db, case, rule, s)
         run.output = s.summary
         run.approvals = [str(approval.id)] if approval else []

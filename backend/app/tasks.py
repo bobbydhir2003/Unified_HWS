@@ -148,3 +148,15 @@ def escalate_cases_task() -> dict:
         return stats
     finally:
         db.close()
+
+
+@celery_app.task(name="app.tasks.assist_retention")
+def assist_retention_task() -> dict:
+    """Daily: redact expired HMS Assist conversation content, expire stale prepared actions and agent proposals."""
+    from app.services.assist import retention_sweep
+
+    db = SessionLocal()
+    try:
+        return retention_sweep(db)
+    finally:
+        db.close()

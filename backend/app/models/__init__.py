@@ -1,5 +1,6 @@
 from app.models.agents import AgentConfig, AgentConfigVersion, AgentRun, AIFeedback
 from app.models.ai_settings import AIProviderSettings, AIUsageCounter, DemoAISettings
+from app.models.assist import AssistActionDraft, AssistConversation, AssistMessage
 from app.models.automation import AutomationRun, AutomationWorkflow, Task, VoiceCall
 from app.models.base import Base
 from app.models.billing import Charge, Claim, ClaimEvent, ClaimSubmission, FeeScheduleItem, Invoice, Payment
@@ -93,6 +94,9 @@ __all__ = [
     "Prediction",
     "AIEvalRun",
     "AgentConfig",
+    "AssistActionDraft",
+    "AssistConversation",
+    "AssistMessage",
     "AgentConfigVersion",
     "AgentRun",
     "AIFeedback",
