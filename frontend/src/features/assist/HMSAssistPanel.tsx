@@ -294,7 +294,7 @@ export function HMSAssistSheet({ agent, context, open, onOpenChange, autoAsk, te
           {conv?.status && conv.status !== "active" && <p className="text-label text-muted-foreground">This conversation is {conv.status}. Start a new one with +.</p>}
         </div>
         {!!prompts.length && conv?.status === "active" && (
-          <div className="flex flex-wrap gap-1.5 border-t px-4 pt-2 pb-0.5" aria-label="Suggested questions">
+          <div className="flex flex-wrap gap-1.5 border-t px-4 pt-2 pb-0.5" aria-label="Suggestions">
             {prompts.slice(0, 4).map((p) => <button key={p} type="button" disabled={busy} onClick={() => conv && send(conv, p)} className="shrink-0 rounded-full border bg-card px-2.5 py-1 text-label hover:border-primary hover:text-primary disabled:opacity-50">{p}</button>)}
           </div>
         )}
